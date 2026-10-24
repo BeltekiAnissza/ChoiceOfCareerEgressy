@@ -1,0 +1,89 @@
+﻿@page
+@model ChoiceOfCareerEgressy.Pages.Teacher.ImportModel
+@{
+    ViewData["Title"] = "Tanárok importálása";
+}
+
+<div class="container mt-4">
+
+    <h2>Tanárok importálása</h2>
+
+    <p>
+        Tölts fel egy .xlsx fájlt az alábbi oszlopokkal:
+        <strong>név, osztály, om azonosító, email</strong>.
+    </p>
+
+    <p class="text-muted">
+        Az osztály mező üresen hagyható.
+        Az OM-azonosító lesz a kezdeti jelszó.
+    </p>
+
+    <form method="post" enctype="multipart/form-data">
+
+        <div class="mb-3">
+            <label asp-for="ExcelFile" class="form-label">
+                Excel-fájl
+            </label>
+
+            <input asp-for="ExcelFile"
+                   type="file"
+                   accept=".xlsx"
+                   class="form-control"
+                   required />
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            Tanárok importálása
+        </button>
+
+    </form>
+
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="alert alert-danger mt-3">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    @if (Model.Result != null)
+    {
+        <div class="alert alert-info mt-4">
+            <h5>Importálás eredménye</h5>
+
+            <p>
+                Sikeresen importált tanárok:
+                <strong>@Model.Result.ImportedCount</strong>
+            </p>
+
+            <p>
+                Kihagyott sorok:
+                <strong>@Model.Result.SkippedCount</strong>
+            </p>
+        </div>
+
+        @if (Model.Result.Errors.Any())
+        {
+            <h4>Hibás sorok</h4>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Sor</th>
+                            <th>Hiba</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var error in Model.Result.Errors)
+                        {
+                            <tr>
+                                <td>@error.RowNumber</td>
+                                <td>@error.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+</div>

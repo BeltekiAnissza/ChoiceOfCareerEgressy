@@ -1,31 +1,481 @@
+﻿
+/* =========================================
+   CHOICE OF CAREER - SZÍNTÉMÁK
+   ========================================= */
+
+:root,
+html[data-theme="purple"] {
+    --theme-primary: #7654d4;
+    --theme-dark: #4f359c;
+    --theme-light: #eee7ff;
+    --theme-rgb: 118, 84, 212;
+    --theme-header-mid: #9875e8;
+}
+
+html[data-theme="blue"] {
+    --theme-primary: #3478df;
+    --theme-dark: #174c9b;
+    --theme-light: #e4efff;
+    --theme-rgb: 52, 120, 223;
+    --theme-header-mid: #5799ef;
+}
+
+html[data-theme="gray"] {
+    --theme-primary: #64748b;
+    --theme-dark: #334155;
+    --theme-light: #e9eef3;
+    --theme-rgb: 100, 116, 139;
+    --theme-header-mid: #8492a6;
+}
+
+html[data-theme="pink"] {
+    --theme-primary: #db5d9d;
+    --theme-dark: #9b3569;
+    --theme-light: #ffe4f1;
+    --theme-rgb: 219, 93, 157;
+    --theme-header-mid: #e57ab1;
+}
+
+html[data-theme="green"] {
+    --theme-primary: #269f78;
+    --theme-dark: #14674f;
+    --theme-light: #ddf8ec;
+    --theme-rgb: 38, 159, 120;
+    --theme-header-mid: #36b88a;
+}
+
+/* =========================================
+   BOOTSTRAP SZÍNEK
+   ========================================= */
+
+:root {
+    --bs-primary: var(--theme-primary);
+    --bs-primary-rgb: var(--theme-rgb);
+    --bs-link-color: var(--theme-dark);
+    --bs-link-hover-color: var(--theme-primary);
+}
+
+/* =========================================
+   OLDALHÁTTÉR
+   ========================================= */
+
 html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+    min-height: 100%;
 }
 
 body {
-  margin-bottom: 60px;
+    min-height: 100vh;
+    min-width: 320px;
+    background: linear-gradient( 135deg, var(--theme-dark) 0%, var(--theme-primary) 45%, var(--theme-light) 100% );
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: #253047;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+/* =========================================
+   ANIMÁLT FEJLÉC
+   ========================================= */
+
+.navbar {
+    position: relative;
+    z-index: 1030;
+    /*
+       A háttér szándékosan sokkal szélesebb,
+       mint maga a navigációs sáv.
+    */
+
+    background-image: linear-gradient( 90deg, var(--theme-dark) 0%, var(--theme-primary) 20%, var(--theme-header-mid) 40%, var(--theme-primary) 60%, var(--theme-dark) 80%, var(--theme-primary) 100% ) !important;
+    background-color: var(--theme-dark) !important;
+    background-size: 400% 100% !important;
+    background-repeat: no-repeat !important;
+    animation: navbarGradient 8s linear infinite;
+    box-shadow: 0 4px 18px rgba(var(--theme-rgb), 0.25) !important;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+/*
+   A háttér folyamatosan mozog
+   balról jobbra, majd vissza.
+*/
+
+@keyframes navbarGradient {
+
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* =========================================
+   NAVIGÁCIÓ SZÖVEGEK
+   ========================================= */
+
+.navbar .navbar-brand,
+.navbar .nav-link,
+.navbar .navbar-text {
+    color: #ffffff !important;
+}
+
+.navbar .navbar-brand {
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.navbar .nav-link {
+    padding: 10px 12px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+    .navbar .nav-link:hover,
+    .navbar .nav-link:focus {
+        color: #ffffff !important;
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+/* =========================================
+   MOBIL MENÜ GOMB
+   ========================================= */
+
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.45);
+}
+
+.navbar-toggler-icon {
+    filter: brightness(0) invert(1);
+}
+
+/* =========================================
+   LEGÖRDÜLŐ MENÜK
+   ========================================= */
+
+.navbar .dropdown-menu {
+    z-index: 1050;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(var(--theme-rgb), 0.12);
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+.navbar .dropdown-item {
+    padding: 10px 16px;
+    border-radius: 6px;
+    color: #253047;
+}
+
+    .navbar .dropdown-item:hover,
+    .navbar .dropdown-item:focus {
+        background-color: var(--theme-light);
+        color: var(--theme-dark);
+    }
+
+/* =========================================
+   KÁRTYÁK
+   ========================================= */
+
+.card {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(var(--theme-rgb), 0.13);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(30, 41, 59, 0.08);
+}
+
+.card-header {
+    background: var(--theme-light);
+    border-bottom: 1px solid rgba(var(--theme-rgb), 0.12);
+    font-weight: 600;
+}
+
+.card-body {
+    min-width: 0;
+}
+
+/* =========================================
+   GOMBOK
+   ========================================= */
+
+.btn-primary {
+    --bs-btn-bg: var(--theme-primary);
+    --bs-btn-border-color: var(--theme-primary);
+    --bs-btn-hover-bg: var(--theme-dark);
+    --bs-btn-hover-border-color: var(--theme-dark);
+    --bs-btn-active-bg: var(--theme-dark);
+    --bs-btn-active-border-color: var(--theme-dark);
+    --bs-btn-disabled-bg: var(--theme-primary);
+    --bs-btn-disabled-border-color: var(--theme-primary);
+    border-radius: 9px;
+    font-weight: 500;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--theme-dark);
+    --bs-btn-border-color: var(--theme-primary);
+    --bs-btn-hover-bg: var(--theme-primary);
+    --bs-btn-hover-border-color: var(--theme-primary);
+    --bs-btn-active-bg: var(--theme-dark);
+    --bs-btn-active-border-color: var(--theme-dark);
+}
+
+/* =========================================
+   ŰRLAPOK
+   ========================================= */
+
+.form-control,
+.form-select {
+    min-height: 42px;
+    border-radius: 9px;
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--theme-rgb), 0.16);
+}
+
+/* =========================================
+   AKKORDIONOK
+   ========================================= */
+
+.accordion-button {
+    gap: 10px;
+}
+
+    .accordion-button:not(.collapsed) {
+        background-color: var(--theme-light);
+        color: var(--theme-dark);
+    }
+
+    .accordion-button:focus {
+        box-shadow: 0 0 0 0.2rem rgba(var(--theme-rgb), 0.16);
+    }
+
+/* =========================================
+   TÁBLÁZATOK
+   ========================================= */
+
+.table {
+    vertical-align: middle;
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table thead th {
+    background-color: var(--theme-light);
+    color: var(--theme-dark);
+}
+
+/* =========================================
+   AKTÍV FÜLEK
+   ========================================= */
+
+.nav-tabs .nav-link.active {
+    color: var(--theme-dark);
+    border-bottom: 3px solid var(--theme-primary);
+    font-weight: 600;
+}
+
+/* =========================================
+   SZÍNVÁLASZTÓ
+   ========================================= */
+
+.theme-choice {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    background: var(--choice-color);
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+    .theme-choice:hover {
+        transform: scale(1.12);
+    }
+
+    .theme-choice.theme-selected {
+        outline: 2px solid var(--theme-dark);
+        outline-offset: 3px;
+    }
+
+    .theme-choice:focus-visible {
+        outline: 3px solid #111827;
+        outline-offset: 3px;
+    }
+
+/* =========================================
+   FEJLÉC SZÍNVÁLASZTÓ GOMB
+   ========================================= */
+
+#themeDropdown {
+    white-space: nowrap;
+    border-radius: 9px;
+    padding: 7px 12px;
+}
+
+/* =========================================
+   PROGRAMVÁLASZTÓ ŰRLAPOK
+   ========================================= */
+
+.registration-form-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .registration-form-row .form-select {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .registration-form-row .btn {
+        flex-shrink: 0;
+    }
+
+/* =========================================
+   TABLET ÉS MOBIL
+   ========================================= */
+
+@media (max-width: 991.98px) {
+
+    .navbar-collapse {
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    .navbar-nav {
+        width: 100%;
+    }
+
+    .navbar .nav-link {
+        padding: 12px;
+    }
+
+    .navbar .dropdown-menu {
+        border: none;
+        box-shadow: none;
+        padding-left: 12px;
+        background: rgba(255, 255, 255, 0.98);
+    }
+
+    .navbar .dropdown-item {
+        padding: 12px 16px;
+        white-space: normal;
+    }
+}
+
+/* =========================================
+   MOBIL
+   ========================================= */
+
+@media (max-width: 767.98px) {
+
+    main {
+        min-width: 0;
+        padding: 12px !important;
+    }
+
+    h1 {
+        font-size: 1.6rem;
+    }
+
+    h2 {
+        font-size: 1.4rem;
+    }
+
+    h3 {
+        font-size: 1.2rem;
+    }
+
+    .card-body,
+    .accordion-body {
+        padding: 12px;
+    }
+
+    .accordion-button {
+        padding: 12px;
+        font-size: 0.95rem;
+    }
+
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .btn {
+        min-height: 44px;
+    }
+
+    .registration-form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+        .registration-form-row .form-select,
+        .registration-form-row .btn {
+            width: 100%;
+        }
+
+    .table {
+        font-size: 0.875rem;
+    }
+
+        .table th,
+        .table td {
+            padding: 8px;
+        }
+
+    .nav-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+
+        .nav-tabs .nav-link {
+            white-space: nowrap;
+        }
+}
+
+/* =========================================
+   KIS MOBIL
+   ========================================= */
+
+@media (max-width: 575.98px) {
+
+    .navbar-brand {
+        font-size: 1rem !important;
+    }
+
+    #themeDropdown {
+        padding: 8px 10px;
+    }
+}
+
+/* =========================================
+   AKADÁLYMENTESSÉG
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .navbar {
+        animation: none;
+    }
+
+    .theme-choice {
+        transition: none;
+    }
 }

@@ -1,52 +1,351 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@using System.Security.Claims
+@using ChoiceOfCareerEgressy.Model
+@inject HomeroomService HomeroomService
+
+@{
+    bool isAuthenticated = User.Identity?.IsAuthenticated == true;
+    bool isAdmin = User.IsInRole("Admin");
+    bool isStudent = User.IsInRole("Student");
+    bool isTeacher = User.IsInRole("Teacher");
+
+    bool isHomeroomTeacher = false;
+
+    if (isTeacher)
+    {
+        var teacherIdValue = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (int.TryParse(teacherIdValue, out int teacherId))
+        {
+            isHomeroomTeacher =
+                await HomeroomService.IsHomeroomTeacherAsync(teacherId);
+        }
+    }
+}
+
+<!DOCTYPE html>
+<html lang="hu">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ChoiceOfCareerEgressy</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/ChoiceOfCareerEgressy.styles.css" asp-append-version="true" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"] - ChoiceOfCareer</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+    <script>
+        (function () {
+            try {
+                const theme = localStorage.getItem(
+                    "choiceOfCareerTheme"
+                );
+
+                const allowed = [
+                    "purple", "blue", "gray", "pink", "green"
+                ];
+
+                document.documentElement.dataset.theme =
+                    allowed.includes(theme) ? theme : "purple";
+            } catch {
+                document.documentElement.dataset.theme = "purple";
+            }
+        })();
+    </script>
 </head>
-<body>
+
+<body class="d-flex flex-column min-vh-100">
+
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">ChoiceOfCareerEgressy</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+            <div class="container-fluid">
+
+                <!-- LOGÓ -->
+                <a class="navbar-brand fw-bold"
+                   asp-page="/Index">
+                    ChoiceOfCareer
+                </a>
+                <div class="d-flex align-items-center gap-2 ms-auto order-lg-3">
+
+                    <!-- SZÍNVÁLASZTÓ -->
+                    <div class="dropdown">
+
+                        <button class="btn btn-outline-light btn-sm dropdown-toggle"
+                                type="button"
+                                id="themeDropdown"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            🎨 <span class="d-none d-sm-inline">Színtéma</span>
+                        </button>
+
+                        <div class="dropdown-menu dropdown-menu-end p-3"
+                             aria-labelledby="themeDropdown">
+
+                            <div class="fw-semibold mb-2">
+                                Válassz színt!
+                            </div>
+
+                            <div class="d-flex gap-2">
+
+                                <button type="button"
+                                        class="theme-choice"
+                                        data-theme-choice="purple"
+                                        aria-label="Lila téma"
+                                        title="Lila"
+                                        style="--choice-color: #7654d4;">
+                                </button>
+
+                                <button type="button"
+                                        class="theme-choice"
+                                        data-theme-choice="blue"
+                                        aria-label="Kék téma"
+                                        title="Kék"
+                                        style="--choice-color: #3478df;">
+                                </button>
+
+                                <button type="button"
+                                        class="theme-choice"
+                                        data-theme-choice="gray"
+                                        aria-label="Szürke téma"
+                                        title="Szürke"
+                                        style="--choice-color: #64748b;">
+                                </button>
+
+                                <button type="button"
+                                        class="theme-choice"
+                                        data-theme-choice="pink"
+                                        aria-label="Rózsaszín téma"
+                                        title="Rózsaszín"
+                                        style="--choice-color: #db5d9d;">
+                                </button>
+
+                                <button type="button"
+                                        class="theme-choice"
+                                        data-theme-choice="green"
+                                        aria-label="Zöld téma"
+                                        title="Zöld"
+                                        style="--choice-color: #269f78;">
+                                </button>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- MOBIL MENÜ -->
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#mainNavbar"
+                        aria-controls="mainNavbar"
+                        aria-expanded="false"
+                        aria-label="Menü megnyitása">
+
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
-                        </li>
+
+                <div class="collapse navbar-collapse order-lg-2"
+                     id="mainNavbar">
+
+                    <!-- BAL OLDALI MENÜ -->
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                        @if (isAuthenticated)
+                        {
+                            <!-- ADMIN MENÜ -->
+                            @if (isAdmin)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link"
+                                       asp-page="/Admin/Index">
+                                        Kezdőlap
+                                    </a>
+                                </li>
+
+                                <!-- ESEMÉNYEK -->
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link dropdown-toggle"
+                                       href="#"
+                                       id="adminEventsDropdown"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+                                        Események
+                                    </a>
+
+                                    <ul class="dropdown-menu"
+                                        aria-labelledby="adminEventsDropdown">
+
+                                        <li>
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Events/Create">
+                                                Új esemény
+                                            </a>
+                                        </li>
+
+                                    </ul>
+                                </li>
+
+                                <!-- JELENTKEZÉSEK -->
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link dropdown-toggle"
+                                       href="#"
+                                       id="adminRegistrationsDropdown"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+                                        Jelentkezések
+                                    </a>
+
+                                    <ul class="dropdown-menu"
+                                        aria-labelledby="adminRegistrationsDropdown">
+
+                                        <li>
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Registrations/Index">
+                                                Diákjelentkezések
+                                            </a>
+                                        </li>
+
+                                        <li>
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/TeacherSupervisions/Index">
+                                                Tanári felügyeletek
+                                            </a>
+                                        </li>
+
+                                    </ul>
+                                </li>
+                                <!-- IMPORTÁLÁS -->
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link dropdown-toggle"
+                                       href="#"
+                                       id="adminImportDropdown"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+                                        Importálás
+                                    </a>
+
+                                    <ul class="dropdown-menu"
+                                        aria-labelledby="adminImportDropdown">
+
+                                        <li>
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Students/Import">
+                                                Diákok importálása
+                                            </a>
+                                        </li>
+
+                                        <li>
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Teachers/Import">
+                                                Tanárok importálása
+                                            </a>
+                                        </li>
+
+                                        <li>
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Programs/Import">
+                                                Programok importálása
+                                            </a>
+                                        </li>
+
+                                    </ul>
+                                </li>
+                            }
+
+                            <!-- DIÁK MENÜ -->
+                            @if (isStudent)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link"
+                                       asp-page="/Student/Index">
+                                        Programjelentkezés
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- TANÁR MENÜ -->
+                            @if (isTeacher)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link"
+                                       asp-page="/Teacher/Index">
+                                        Felügyeleti jelentkezés
+                                    </a>
+                                </li>
+
+                                @if (isHomeroomTeacher)
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link"
+                                           asp-page="/Teacher/Homeroom">
+                                            Osztályom jelentkezései
+                                        </a>
+                                    </li>
+                                }
+                            }
+                        }
+
                     </ul>
+
+                    <!-- JOBB OLDALI FELHASZNÁLÓI MENÜ -->
+                    @if (isAuthenticated)
+                    {
+                        <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2">
+
+                            <span class="navbar-text me-lg-2">
+                                @User.Identity?.Name
+                            </span>
+
+                            <form method="post"
+                                  asp-page="/Account/Logout"
+                                  class="mb-0">
+
+                                <button type="submit"
+                                        class="btn btn-outline-danger btn-sm">
+                                    Kijelentkezés
+                                </button>
+
+                            </form>
+                        </div>
+                    }
+
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - ChoiceOfCareerEgressy - <a asp-area="" asp-page="/Privacy">Privacy</a>
+    <!-- OLDAL TARTALMA -->
+    <main class="container-fluid flex-grow-1 py-4 px-3 px-lg-4">
+        @RenderBody()
+    </main>
+
+    <!-- LÁBLÉC -->
+    <footer class="border-top bg-light py-3 mt-auto">
+        <div class="container-fluid text-center text-muted">
+            &copy; @DateTime.Now.Year - ChoiceOfCareer
         </div>
     </footer>
 
+    <!-- JAVASCRIPT -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script src="~/js/site.js"
+            asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

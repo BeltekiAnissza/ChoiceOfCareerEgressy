@@ -1,0 +1,216 @@
+﻿@page
+@model ChoiceOfCareerEgressy.Pages.Admin.TeacherSupervisions.IndexModel
+@{
+    ViewData["Title"] = "Tanári felügyeletek kezelése";
+}
+
+<div class="container mt-4">
+
+    <h2>Tanári felügyeletek kezelése</h2>
+
+    <p class="text-muted">
+        A tanárok felügyeleti jelentkezéseinek áttekintése,
+        módosítása és törlése.
+    </p>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">
+            @success
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    @if (!Model.Data.Events.Any())
+    {
+        <div class="alert alert-info">
+            Még nincs létrehozott esemény.
+        </div>
+    }
+    else
+    {
+        <form method="get" class="mb-4">
+            <label class="form-label">Esemény</label>
+
+            <select name="eventId"
+                    class="form-select"
+                    onchange="this.form.submit()">
+
+                @foreach (var ev in Model.Data.Events)
+                {
+                    <option value="@ev.EventId"
+                            selected="@(ev.EventId == Model.Data.EventId)">
+                        @ev.EventName
+                        (@ev.EventDate.ToString("yyyy.MM.dd."))
+                    </option>
+                }
+            </select>
+        </form>
+
+        <div class="card shadow-sm">
+
+            <div class="card-header d-flex justify-content-between">
+                <strong>Tanárok</strong>
+
+                <span>
+                    @Model.Data.Teachers.Count fő
+                </span>
+            </div>
+
+            <div class="card-body">
+
+                <div class="accordion" id="teachersAccordion">
+
+                    @foreach (var teacher in Model.Data.Teachers)
+                    {
+                        <div class="accordion-item">
+
+                            <h2 class="accordion-header">
+
+                                <button class="accordion-button collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#teacher-@teacher.UserId"
+                                        aria-expanded="false"
+                                        aria-controls="teacher-@teacher.UserId">
+
+                                    <span class="me-3">
+                                        @teacher.UserName
+                                    </span>
+
+                                    <span class="badge @(teacher.SupervisionCount == teacher.TimeSlots.Count ? "bg-success" : "bg-warning text-dark")">
+                                        @teacher.SupervisionCount / @teacher.TimeSlots.Count
+                                    </span>
+                                </button>
+                            </h2>
+
+                            <div id="teacher-@teacher.UserId"
+                                 class="accordion-collapse collapse"
+                                 data-bs-parent="#teachersAccordion">
+
+                                <div class="accordion-body">
+
+                                    <p class="text-muted">
+                                        @teacher.EmailAddress
+                                    </p>
+
+                                    @foreach (var slot in teacher.TimeSlots)
+                                    {
+                                        <div class="border rounded p-3 mb-3">
+
+                                            <h5>@slot.TimeSlotName</h5>
+
+                                            @if (slot.SupervisionId != null)
+                                            {
+                                                <div class="alert alert-success py-2">
+                                                    <strong>
+                                                        @slot.CurrentProgramName
+                                                    </strong>
+
+                                                    <div class="small">
+                                                        @slot.CurrentLocationName
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="alert alert-warning py-2">
+                                                    Nincs felügyeleti jelentkezés.
+                                                </div>
+                                            }
+
+                                            <form method="post"
+                                                  asp-page-handler="Save"
+                                                  class="mb-2">
+
+                                                <input type="hidden"
+                                                       name="Change.TeacherId"
+                                                       value="@teacher.UserId" />
+
+                                                <input type="hidden"
+                                                       name="Change.EventId"
+                                                       value="@Model.Data.EventId" />
+
+                                                <input type="hidden"
+                                                       name="Change.TimeSlotId"
+                                                       value="@slot.TimeSlotId" />
+
+                                                <label class="form-label">
+                                                    Program kiválasztása
+                                                </label>
+
+                                                <div class="registration-form-row">
+
+                                                    <select name="Change.PlanSessionId"
+                                                            class="form-select"
+                                                            required>
+
+                                                        <option value="">
+                                                            Válassz programot!
+                                                        </option>
+
+                                                        @foreach (var program in slot.Programs)
+                                                        {
+                                                            <option value="@program.PlanSessionId"
+                                                                    selected="@(program.PlanSessionId == slot.SelectedPlanSessionId)">
+                                                                @program.PlanName
+                                                                – @program.LocationName
+                                                                (szabad felügyelői hely:
+                                                                @program.AvailablePlaces)
+                                                            </option>
+                                                        }
+                                                    </select>
+
+                                                    <button type="submit"
+                                                            class="btn btn-primary">
+                                                        Mentés
+                                                    </button>
+                                                </div>
+                                            </form>
+
+                                            @if (slot.SupervisionId != null)
+                                            {
+                                                <form method="post"
+                                                      asp-page-handler="Delete"
+                                                      onsubmit="return confirm('Biztosan törlöd a felügyeleti jelentkezést?')">
+
+                                                    <input type="hidden"
+                                                           name="teacherId"
+                                                           value="@teacher.UserId" />
+
+                                                    <input type="hidden"
+                                                           name="supervisionId"
+                                                           value="@slot.SupervisionId" />
+
+                                                    <input type="hidden"
+                                                           name="eventId"
+                                                           value="@Model.Data.EventId" />
+
+                                                    <button type="submit"
+                                                            class="btn btn-outline-danger btn-sm">
+                                                        Felügyelet törlése
+                                                    </button>
+                                                </form>
+                                            }
+
+                                        </div>
+                                    }
+
+                                </div>
+                            </div>
+
+                        </div>
+                    }
+                </div>
+
+            </div>
+        </div>
+    }
+
+</div>

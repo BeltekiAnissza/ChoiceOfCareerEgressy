@@ -1,0 +1,178 @@
+﻿@page
+@model ChoiceOfCareerEgressy.Pages.Events.IndexModel
+
+@{
+    ViewData["Title"] = "Események és programok";
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+        <h2>Események és programok</h2>
+        <p class="text-muted">
+            A pályaorientációs napok programjai,
+            jelentkezési adatai és kapacitásai.
+        </p>
+    </div>
+
+    @if (!Model.Events.Any())
+    {
+        <div class="alert alert-info">
+            Jelenleg nincs létrehozott esemény.
+        </div>
+    }
+
+    @foreach (var ev in Model.Events)
+    {
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-header">
+                <div class="d-flex justify-content-between
+                                align-items-center flex-wrap gap-2">
+
+                    <div>
+                        <h4 class="mb-1">@ev.EventName</h4>
+                        <small>
+                            @ev.EventDate.ToString("yyyy.MM.dd.")
+                        </small>
+                    </div>
+
+                    @if (ev.IsRegistrationEnabled)
+                    {
+                        <span class="badge bg-success">
+                            Jelentkezés engedélyezve
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">
+                            Jelentkezés letiltva
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <div class="card-body">
+
+                <p class="mb-3">
+                    <strong>Jelentkezési időszak:</strong>
+                    @ev.RegistrationStart.ToString("yyyy.MM.dd. HH:mm")
+                    –
+                    @ev.RegistrationEnd.ToString("yyyy.MM.dd. HH:mm")
+                </p>
+
+                @if (!ev.TimeSlots.Any())
+                {
+                    <div class="alert alert-warning">
+                        Ehhez az eseményhez még nincs idősáv.
+                    </div>
+                }
+
+                @foreach (var slot in ev.TimeSlots)
+                {
+                    <div class="mb-4">
+
+                        <h5 class="border-bottom pb-2">
+                            @slot.TimeSlotName
+                            <small class="text-muted">
+                                (@slot.BeginDate.ToString("HH:mm")
+                                –
+                                @slot.EndDate.ToString("HH:mm"))
+                            </small>
+                        </h5>
+
+                        @if (!slot.Programs.Any())
+                        {
+                            <p class="text-muted">
+                                Ebben az idősávban még nincs program.
+                            </p>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-striped
+                                                          table-hover align-middle">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Program</th>
+                                            <th>Terem</th>
+                                            <th>Nem</th>
+                                            <th>Ágazat</th>
+                                            <th class="text-center">
+                                                Kapacitás
+                                            </th>
+                                            <th class="text-center">
+                                                Jelentkezők
+                                            </th>
+                                            <th class="text-center">
+                                                Szabad hely
+                                            </th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var program in slot.Programs)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>
+                                                        @program.PlanName
+                                                    </strong>
+
+                                                    @if (!string.IsNullOrWhiteSpace(
+                                                                                        program.Description))
+                                                    {
+                                                        <div class="small text-muted">
+                                                            @program.Description
+                                                        </div>
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    @program.LocationName
+                                                </td>
+
+                                                <td>
+                                                    @program.SexName
+                                                </td>
+
+                                                <td>
+                                                    @program.BranchName
+                                                </td>
+
+                                                <td class="text-center">
+                                                    @program.Capacity
+                                                </td>
+
+                                                <td class="text-center">
+                                                    @program.RegisteredCount
+                                                </td>
+
+                                                <td class="text-center">
+                                                    @if (program.AvailablePlaces == 0)
+                                                    {
+                                                        <span class="badge bg-danger">
+                                                            Betelt
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success">
+                                                            @program.AvailablePlaces
+                                                        </span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+</div>

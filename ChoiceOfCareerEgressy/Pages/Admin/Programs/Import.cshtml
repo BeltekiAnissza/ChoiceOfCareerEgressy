@@ -1,0 +1,445 @@
+﻿@page
+@model ChoiceOfCareerEgressy.Pages.Admin.Programs.ImportModel
+
+@{
+    ViewData["Title"] = "Programok importálása";
+}
+
+<div class="container mt-4">
+
+    <h2>Programok importálása</h2>
+
+    <p class="text-muted">
+        Excel-fájl feltöltése a pályaorientációs nap
+        programjainak létrehozásához.
+    </p>
+
+    <!-- IMPORTÁLÁSI ŰRLAP -->
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+
+            <form method="post"
+                  enctype="multipart/form-data">
+
+                <div class="mb-3">
+                    <label asp-for="EventId"
+                           class="form-label">
+                        Pályaorientációs nap
+                    </label>
+
+                    <select asp-for="EventId"
+                            class="form-select"
+                            required>
+
+                        <option value="0">
+                            Válassz eseményt!
+                        </option>
+
+                        @foreach (var item in Model.Events)
+                        {
+                            <option value="@item.EventId">
+                                @item.EventName
+                            </option>
+                        }
+
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ExcelFile"
+                           class="form-label">
+                        Excel-fájl
+                    </label>
+
+                    <input asp-for="ExcelFile"
+                           type="file"
+                           accept=".xlsx"
+                           class="form-control"
+                           required />
+
+                    <div class="form-text">
+                        Kizárólag .xlsx formátumú Excel-fájl tölthető fel.
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Programok importálása
+                </button>
+
+            </form>
+
+        </div>
+    </div>
+
+    <!-- EXCEL KITÖLTÉSI ÚTMUTATÓ -->
+
+    <div class="accordion mb-4"
+         id="excelGuideAccordion">
+
+        <div class="accordion-item">
+
+            <h2 class="accordion-header"
+                id="excelGuideHeading">
+
+                <button class="accordion-button collapsed"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#excelGuideContent"
+                        aria-expanded="false"
+                        aria-controls="excelGuideContent">
+
+                    Excel-fájl kitöltési útmutató
+
+                </button>
+            </h2>
+
+            <div id="excelGuideContent"
+                 class="accordion-collapse collapse"
+                 aria-labelledby="excelGuideHeading"
+                 data-bs-parent="#excelGuideAccordion">
+
+                <div class="accordion-body">
+
+                    <p>
+                        Az Excel-fájl minden sora egy programot
+                        tartalmazzon. Az első sorban szerepeljenek
+                        az oszlopok fejlécei.
+                    </p>
+
+                    <h5 class="mt-4">
+                        1. Szükséges adatok
+                    </h5>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped align-middle">
+
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Oszlop</th>
+                                    <th>Megadandó adat</th>
+                                    <th>Példa</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <tr>
+                                    <td><strong>Program neve</strong></td>
+                                    <td>
+                                        A program megnevezése.
+                                    </td>
+                                    <td>
+                                        Robotika alapjai
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><strong>Leírás</strong></td>
+                                    <td>
+                                        A program rövid ismertetése,
+                                        amelyet a diákok is láthatnak.
+                                    </td>
+                                    <td>
+                                        Ismerkedés a robotprogramozással.
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><strong>Kezdés dátuma</strong></td>
+                                    <td>
+                                        A program kezdési dátuma
+                                        és időpontja.
+                                    </td>
+                                    <td>
+                                        <code>2026.11.20. 09:00</code>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><strong>Vége dátuma</strong></td>
+                                    <td>
+                                        A program befejezési dátuma
+                                        és időpontja.
+                                    </td>
+                                    <td>
+                                        <code>2026.11.20. 10:30</code>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><strong>Kapacitás</strong></td>
+                                    <td>
+                                        A programra jelentkező
+                                        diákok maximális száma.
+                                    </td>
+                                    <td>
+                                        <code>25</code>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><strong>Teremszám</strong></td>
+                                    <td>
+                                        A program helyszíne.
+                                    </td>
+                                    <td>
+                                        <code>204</code>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><strong>Nem</strong></td>
+                                    <td>
+                                        Nő, Férfi vagy Unisex.
+                                    </td>
+                                    <td>
+                                        Unisex
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><strong>Ágazat</strong></td>
+                                    <td>
+                                        Egy vagy több ágazat neve.
+                                        Üresen is hagyható.
+                                    </td>
+                                    <td>
+                                        Informatika, Gépészet
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h5 class="mt-4">
+                        2. Nemek megadása
+                    </h5>
+
+                    <p>
+                        A <strong>Nem</strong> oszlopban
+                        az alábbi értékek szerepelhetnek:
+                    </p>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle">
+
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Érték</th>
+                                    <th>Jelentés</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr>
+                                    <td><strong>Nő</strong></td>
+                                    <td>
+                                        Csak női diákok jelentkezhetnek.
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><strong>Férfi</strong></td>
+                                    <td>
+                                        Csak férfi diákok jelentkezhetnek.
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><strong>Unisex</strong></td>
+                                    <td>
+                                        Minden diák jelentkezhet.
+                                    </td>
+                                </tr>
+                            </tbody>
+
+                        </table>
+                    </div>
+
+                    <h5 class="mt-4">
+                        3. Ágazatok megadása
+                    </h5>
+
+                    <p>
+                        Az <strong>Ágazat</strong> oszlopban
+                        több ágazat is felsorolható.
+                        Az ágazatokat vesszővel kell elválasztani.
+                    </p>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle">
+
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Excelben szereplő érték</th>
+                                    <th>Jelentés</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <tr>
+                                    <td>
+                                        <code>Informatika</code>
+                                    </td>
+                                    <td>
+                                        Csak informatika ágazatos diákok.
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <code>Informatika, Gépészet</code>
+                                    </td>
+                                    <td>
+                                        Informatika vagy gépészet ágazatos diákok.
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <code>Informatika,  Gépészet , Elektronika</code>
+                                    </td>
+                                    <td>
+                                        A felesleges szóközök nem számítanak.
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <em>Üres cella</em>
+                                    </td>
+                                    <td>
+                                        Minden ágazat számára elérhető.
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h5 class="mt-4">
+                        4. Példa egy Excel-sorra
+                    </h5>
+
+                    <p>
+                        Az alábbi táblázat egy lehetséges
+                        kitöltési mintát mutat.
+                    </p>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Program neve</th>
+                                    <th>Leírás</th>
+                                    <th>Kezdés</th>
+                                    <th>Vége</th>
+                                    <th>Kapacitás</th>
+                                    <th>Teremszám</th>
+                                    <th>Nem</th>
+                                    <th>Ágazat</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr>
+                                    <td>Robotika alapjai</td>
+                                    <td>
+                                        Ismerkedés a robotprogramozással.
+                                    </td>
+                                    <td>2026.11.20. 09:00</td>
+                                    <td>2026.11.20. 10:30</td>
+                                    <td>25</td>
+                                    <td>204</td>
+                                    <td>Unisex</td>
+                                    <td>Informatika, Gépészet</td>
+                                </tr>
+                            </tbody>
+
+                        </table>
+                    </div>
+
+                    <div class="alert alert-warning mt-3">
+                        <strong>Fontos!</strong>
+                        A kezdési és befejezési időpontnak
+                        a kiválasztott esemény valamelyik
+                        idősávjához kell tartoznia.
+                        A kapacitást pozitív egész számként
+                        kell megadni.
+                    </div>
+
+                    <div class="alert alert-info mb-0">
+                        <strong>Jelentkezési szabály:</strong>
+                        A diák csak azokat a programokat
+                        választhatja, amelyek megfelelnek
+                        a nemének és az ágazatának.
+                        Az Unisex minden nem számára,
+                        az üres ágazat pedig minden
+                        ágazat számára elérhető.
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HIBAÜZENET -->
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="alert alert-danger mt-3">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <!-- IMPORTÁLÁS EREDMÉNYE -->
+    @if (Model.Result != null)
+    {
+        <div class="alert alert-info mt-4">
+
+            <h5>Importálás eredménye</h5>
+
+            <p>
+                Sikeresen importálva:
+                <strong>@Model.Result.ImportedCount</strong>
+            </p>
+
+            <p>
+                Kihagyott sorok:
+                <strong>@Model.Result.SkippedCount</strong>
+            </p>
+
+        </div>
+
+        @if (Model.Result.Errors.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Sor</th>
+                            <th>Hiba</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var error in Model.Result.Errors)
+                        {
+                            <tr>
+                                <td>@error.RowNumber</td>
+                                <td>@error.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+            </div>
+        }
+    }
+
+</div>

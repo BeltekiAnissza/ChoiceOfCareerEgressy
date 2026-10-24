@@ -1,0 +1,198 @@
+﻿@page
+@model ChoiceOfCareerEgressy.Pages.Events.CreateModel
+@{
+    ViewData["Title"] = "Esemény létrehozása";
+}
+
+<div class="container mt-4">
+
+    <h2>Új esemény létrehozása</h2>
+
+    <p class="text-muted">
+        Add meg a pályaorientációs nap adatait,
+        a jelentkezési időszakot és a két idősávot.
+    </p>
+
+    <form method="post">
+
+        <div asp-validation-summary="All"
+             class="text-danger mb-3">
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Esemény adatai</h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label asp-for="EventInput.EventName"
+                           class="form-label">
+                        Esemény neve
+                    </label>
+
+                    <input asp-for="EventInput.EventName"
+                           class="form-control"
+                           placeholder="Pályaorientációs nap 2026"
+                           required />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="EventInput.EventDate"
+                           class="form-label">
+                        Esemény dátuma
+                    </label>
+
+                    <input asp-for="EventInput.EventDate"
+                           type="date"
+                           asp-format="{0:yyyy-MM-dd}"
+                           class="form-control"
+                           required />
+                </div>
+
+                <div class="form-check">
+                    <input asp-for="EventInput.IsRegistrationEnabled"
+                           class="form-check-input" />
+
+                    <label asp-for="EventInput.IsRegistrationEnabled"
+                           class="form-check-label">
+                        Jelentkezés engedélyezése
+                    </label>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Jelentkezési időszak</h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="EventInput.RegistrationStart"
+                               class="form-label">
+                            Jelentkezés kezdete
+                        </label>
+
+                        <input asp-for="EventInput.RegistrationStart"
+                               type="datetime-local"
+                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="EventInput.RegistrationEnd"
+                               class="form-label">
+                            Jelentkezés vége
+                        </label>
+
+                        <input asp-for="EventInput.RegistrationEnd"
+                               type="datetime-local"
+                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                               class="form-control"
+                               required />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">1. idősáv</h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="EventInput.FirstSlotStart"
+                               class="form-label">
+                            Kezdés
+                        </label>
+
+                        <input asp-for="EventInput.FirstSlotStart"
+                               type="datetime-local"
+                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="EventInput.FirstSlotEnd"
+                               class="form-label">
+                            Befejezés
+                        </label>
+
+                        <input asp-for="EventInput.FirstSlotEnd"
+                               type="datetime-local"
+                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                               class="form-control"
+                               required />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">2. idősáv</h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="EventInput.SecondSlotStart"
+                               class="form-label">
+                            Kezdés
+                        </label>
+
+                        <input asp-for="EventInput.SecondSlotStart"
+                               type="datetime-local"
+                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="EventInput.SecondSlotEnd"
+                               class="form-label">
+                            Befejezés
+                        </label>
+
+                        <input asp-for="EventInput.SecondSlotEnd"
+                               type="datetime-local"
+                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                               class="form-control"
+                               required />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <button type="submit"
+                class="btn btn-success">
+            Esemény létrehozása
+        </button>
+
+        <a asp-page="/Admin/Users/Index"
+           class="btn btn-secondary ms-2">
+            Mégse
+        </a>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+}

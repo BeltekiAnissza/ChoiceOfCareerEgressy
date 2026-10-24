@@ -1,0 +1,379 @@
+﻿@page
+@model ChoiceOfCareerEgressy.Pages.Admin.Registrations.IndexModel
+@{
+    ViewData["Title"] = "Diákjelentkezések kezelése";
+
+    var eventId = Model.Data.EventId;
+    var gradeId = Model.Data.SelectedGrade?.GradeId;
+    var planSessionId = Model.Data.SelectedProgram?.PlanSessionId;
+}
+
+<div class="container mt-4">
+
+    <h2>Diákjelentkezések kezelése</h2>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">@success</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    @if (!Model.Data.Events.Any())
+    {
+        <div class="alert alert-info">
+            Még nincs létrehozott esemény.
+        </div>
+    }
+    else
+    {
+        <form method="get" class="mb-4">
+            <label class="form-label">Esemény</label>
+
+            <input type="hidden"
+                   name="Change.TimeSlotId"
+                   value="@Model.Data.SelectedProgram!.TimeSlotId" />
+
+            <select name="eventId"
+                    class="form-select"
+                    onchange="this.form.submit()">
+                @foreach (var ev in Model.Data.Events)
+                {
+                    <option value="@ev.EventId"
+                            selected="@(ev.EventId == eventId)">
+                        @ev.EventName
+                        (@ev.EventDate.ToString("yyyy.MM.dd."))
+                    </option>
+                }
+            </select>
+        </form>
+
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link @(Model.ViewMode == "grades" ? "active" : "")"
+                   asp-page="./Index"
+                   asp-route-eventId="@eventId"
+                   asp-route-viewMode="grades">
+                    Osztályok szerint
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @(Model.ViewMode == "programs" ? "active" : "")"
+                   asp-page="./Index"
+                   asp-route-eventId="@eventId"
+                   asp-route-viewMode="programs">
+                    Programok szerint
+                </a>
+            </li>
+        </ul>
+
+        @if (Model.ViewMode == "grades")
+        {
+            <h4>Osztályok összesítése</h4>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Osztály</th>
+                            <th>Létszám</th>
+                            <th>Legalább 1 jelentkezés</th>
+                            <th>Mindkét program megvan</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var grade in Model.Data.Grades)
+                        {
+                            <tr>
+                                <td>@grade.GradeName</td>
+                                <td>@grade.StudentCount</td>
+                                <td>
+                                    @grade.StartedCount / @grade.StudentCount
+                                </td>
+                                <td>
+                                    @grade.CompletedCount / @grade.StudentCount
+                                </td>
+                                <td>
+                                    <a class="btn btn-outline-primary btn-sm"
+                                       asp-page="./Index"
+                                       asp-route-eventId="@eventId"
+                                       asp-route-gradeId="@grade.GradeId"
+                                       asp-route-viewMode="grades">
+                                        Diákok megtekintése
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.Data.SelectedGrade is { } selectedGrade)
+            {
+                <h4>@selectedGrade.GradeName – diákok</h4>
+
+                <div class="accordion mb-4" id="studentsAccordion">
+                    @foreach (var student in selectedGrade.Students)
+                    {
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#student-@student.UserId">
+                                    <span class="me-3">
+                                        @student.UserName
+                                    </span>
+
+                                    <span class="badge @(student.RegistrationCount == 2 ? "bg-success" : "bg-warning text-dark")">
+                                        @student.RegistrationCount / 2
+                                    </span>
+                                </button>
+                            </h2>
+
+                            <div id="student-@student.UserId"
+                                 class="accordion-collapse collapse"
+                                 data-bs-parent="#studentsAccordion">
+
+                                <div class="accordion-body">
+                                    <p class="text-muted">
+                                        @student.EmailAddress
+                                    </p>
+
+                                    @foreach (var slot in student.TimeSlots)
+                                    {
+                                        var current = student.Applications
+                                        .FirstOrDefault(a =>
+                                        a.ApplicationId == slot.ApplicationId);
+
+                                        <div class="border rounded p-3 mb-3">
+                                            <h5>@slot.TimeSlotName</h5>
+
+                                            @if (current != null)
+                                            {
+                                                <p>
+                                                    <strong>@current.PlanName</strong>
+                                                    – @current.LocationName
+                                                </p>
+                                                <p class="text-muted small">
+                                                    @current.BeginDate.ToString("HH:mm")
+                                                    –
+                                                    @current.EndDate.ToString("HH:mm")
+                                                </p>
+                                            }
+                                            else
+                                            {
+                                                <p class="text-warning">
+                                                    Nincs jelentkezés.
+                                                </p>
+                                            }
+
+                                            <form method="post"
+                                                  asp-page-handler="Change"
+                                                  asp-route-gradeId="@gradeId"
+                                                  asp-route-viewMode="grades"
+                                                  class="mb-2">
+
+                                                <input type="hidden"
+                                                       name="Change.StudentId"
+                                                       value="@student.UserId" />
+                                                <input type="hidden"
+                                                       name="Change.EventId"
+                                                       value="@eventId" />
+                                                <input type="hidden"
+                                                       name="Change.TimeSlotId"
+                                                       value="@slot.TimeSlotId" />
+
+                                                <div class="registration-form-row">
+                                                    <select class="form-select"
+                                                            name="Change.PlanSessionId"
+                                                            required>
+                                                        <option value="">
+                                                            Válassz programot!
+                                                        </option>
+
+                                                        @foreach (var program in slot.Programs)
+                                                        {
+                                                            <option value="@program.PlanSessionId"
+                                                                    selected="@(program.PlanSessionId == slot.SelectedPlanSessionId)">
+                                                                @program.PlanName
+                                                                – @program.LocationName
+                                                                (szabad: @program.AvailablePlaces)
+                                                            </option>
+                                                        }
+                                                    </select>
+
+                                                    <button type="submit"
+                                                            class="btn btn-primary">
+                                                        Mentés
+                                                    </button>
+                                                </div>
+                                            </form>
+
+                                            @if (current != null)
+                                            {
+                                                <form method="post"
+                                                      asp-page-handler="Delete"
+                                                      asp-route-gradeId="@gradeId"
+                                                      asp-route-viewMode="grades"
+                                                      onsubmit="return confirm('Biztosan törlöd a jelentkezést?')">
+
+                                                    <input type="hidden" name="studentId"
+                                                           value="@student.UserId" />
+                                                    <input type="hidden" name="applicationId"
+                                                           value="@current.ApplicationId" />
+                                                    <input type="hidden" name="eventId"
+                                                           value="@eventId" />
+
+                                                    <button type="submit"
+                                                            class="btn btn-outline-danger btn-sm">
+                                                        Jelentkezés törlése
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <h4>Program kiválasztása</h4>
+
+            <form method="get" class="mb-4">
+                <input type="hidden" name="eventId" value="@eventId" />
+                <input type="hidden" name="viewMode" value="programs" />
+
+                <select name="planSessionId"
+                        class="form-select"
+                        onchange="this.form.submit()">
+
+                    <option value="">Válassz programot!</option>
+
+                    @foreach (var program in Model.Data.Programs)
+                    {
+                        <option value="@program.PlanSessionId"
+                                selected="@(program.PlanSessionId == planSessionId)">
+                            @program.TimeSlotName –
+                            @program.PlanName –
+                            @program.LocationName
+                            (@program.RegisteredCount/@program.Capacity)
+                        </option>
+                    }
+                </select>
+            </form>
+
+            @if (Model.Data.SelectedProgram is { } selectedProgram)
+            {
+                <h4>@selectedProgram.PlanName</h4>
+
+                <p>
+                    @selectedProgram.TimeSlotName –
+                    @selectedProgram.LocationName
+                </p>
+
+                <p>
+                    Jelentkezők:
+                    <strong>
+                        @selectedProgram.Students.Count
+                        / @selectedProgram.Capacity
+                    </strong>
+                </p>
+
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Diák</th>
+                                <th>Osztály</th>
+                                <th>Másik program</th>
+                                <th>Törlés</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var student in selectedProgram.Students)
+                            {
+                                <tr>
+                                    <td>@student.StudentName</td>
+                                    <td>@student.GradeName</td>
+
+                                    <td>
+                                        <form method="post"
+                                              asp-page-handler="Change"
+                                              asp-route-planSessionId="@planSessionId"
+                                              asp-route-viewMode="programs">
+
+                                            <input type="hidden"
+                                                   name="Change.StudentId"
+                                                   value="@student.StudentId" />
+                                            <input type="hidden"
+                                                   name="Change.EventId"
+                                                   value="@eventId" />
+
+                                            <input type="hidden"
+                                                   name="Change.TimeSlotId"
+                                                   value="@(Model.Data.Programs.First(p => p.PlanSessionId == planSessionId).PlanSessionId == 0 ? 0 : 0)" />
+
+                                            <div class="registration-form-row">
+                                                <select name="Change.PlanSessionId"
+                                                        class="form-select"
+                                                        required>
+                                                    @foreach (var option in student.AvailablePrograms)
+                                                    {
+                                                        <option value="@option.PlanSessionId"
+                                                                selected="@(option.PlanSessionId == planSessionId)">
+                                                            @option.PlanName
+                                                            – @option.LocationName
+                                                        </option>
+                                                    }
+                                                </select>
+
+                                                <button class="btn btn-primary btn-sm"
+                                                        type="submit">
+                                                    Mentés
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </td>
+
+                                    <td>
+                                        <form method="post"
+                                              asp-page-handler="Delete"
+                                              asp-route-planSessionId="@planSessionId"
+                                              asp-route-viewMode="programs"
+                                              onsubmit="return confirm('Biztosan törlöd a jelentkezést?')">
+
+                                            <input type="hidden" name="studentId"
+                                                   value="@student.StudentId" />
+                                            <input type="hidden" name="applicationId"
+                                                   value="@student.ApplicationId" />
+                                            <input type="hidden" name="eventId"
+                                                   value="@eventId" />
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm">
+                                                Törlés
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    }
+
+</div>

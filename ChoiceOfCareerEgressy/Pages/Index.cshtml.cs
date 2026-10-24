@@ -12,9 +12,29 @@ namespace ChoiceOfCareerEgressy.Pages
             _logger = logger;
         }
 
-        public void OnGet()
+        public IActionResult OnGet()
         {
+            if (User.Identity?.IsAuthenticated != true)
+            {
+                return RedirectToPage("/Account/Login");
+            }
 
+            if (User.IsInRole("Admin"))
+            {
+                return RedirectToPage("/Admin/Users/Index");
+            }
+
+            if (User.IsInRole("Teacher"))
+            {
+                return RedirectToPage("/Teacher/Index");
+            }
+
+            if (User.IsInRole("Student"))
+            {
+                return RedirectToPage("/Student/Index");
+            }
+
+            return RedirectToPage("/Account/Login");
         }
     }
 }
