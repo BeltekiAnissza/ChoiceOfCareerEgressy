@@ -33,15 +33,17 @@
     else
     {
         <form method="get" class="mb-4">
+
             <label class="form-label">Esemény</label>
 
             <input type="hidden"
-                   name="Change.TimeSlotId"
-                   value="@Model.Data.SelectedProgram!.TimeSlotId" />
+                   name="viewMode"
+                   value="@Model.ViewMode" />
 
             <select name="eventId"
                     class="form-select"
                     onchange="this.form.submit()">
+
                 @foreach (var ev in Model.Data.Events)
                 {
                     <option value="@ev.EventId"
@@ -50,7 +52,9 @@
                         (@ev.EventDate.ToString("yyyy.MM.dd."))
                     </option>
                 }
+
             </select>
+
         </form>
 
         <ul class="nav nav-tabs mb-4">

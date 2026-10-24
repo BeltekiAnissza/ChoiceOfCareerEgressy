@@ -1,0 +1,36 @@
+﻿@page
+@model ChoiceOfCareerEgressy.Pages.Account.LogoutModel
+@{
+    ViewData["Title"] = "Kijelentkezés";
+}
+
+<div class="container mt-4">
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <h2>Kijelentkezés</h2>
+
+            <p class="text-muted">
+                Biztosan ki szeretnél jelentkezni?
+            </p>
+
+            <form method="post" asp-page="/Account/Logout">
+
+                <button type="submit" class="btn btn-outline-danger">
+                    Kijelentkezés
+                </button>
+
+                <a href="/"
+                   class="btn btn-outline-secondary">
+                    Mégse
+                </a>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>

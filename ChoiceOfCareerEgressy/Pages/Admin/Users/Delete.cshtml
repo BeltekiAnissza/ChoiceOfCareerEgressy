@@ -1,0 +1,94 @@
+﻿@page "{id:int}"
+@model ChoiceOfCareerEgressy.Pages.Admin.Users.DeleteModel
+
+@{
+    ViewData["Title"] = "Felhasználó törlése";
+}
+
+<div class="container mt-4 mb-5">
+
+    <h2 class="mb-4">Felhasználó törlése</h2>
+
+    <div asp-validation-summary="All"
+         class="text-danger mb-3"></div>
+
+    <div class="alert alert-danger">
+        <strong>Figyelem!</strong>
+        A felhasználó törlése végleges.
+        A hozzá tartozó jelentkezések és
+        tanári felügyeletek is törlődnek.
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <strong>Felhasználó adatai</strong>
+        </div>
+
+        <div class="card-body">
+
+            <dl class="row mb-0">
+
+                <dt class="col-sm-4">Név</dt>
+                <dd class="col-sm-8">
+                    @Model.DeletedUser.UserName
+                </dd>
+
+                <dt class="col-sm-4">E-mail-cím</dt>
+                <dd class="col-sm-8">
+                    @Model.DeletedUser.EmailAddress
+                </dd>
+
+                <dt class="col-sm-4">Szerepkör</dt>
+                <dd class="col-sm-8">
+                    @Model.DeletedUser.Role
+                </dd>
+
+                <dt class="col-sm-4">Jelentkezések</dt>
+                <dd class="col-sm-8">
+                    @Model.DeletedUser.ApplicationCount
+                </dd>
+
+                <dt class="col-sm-4">Tanári felügyeletek</dt>
+                <dd class="col-sm-8">
+                    @Model.DeletedUser.SupervisionCount
+                </dd>
+
+            </dl>
+
+        </div>
+    </div>
+
+    <form method="post"
+          asp-route-id="@Model.DeletedUser.UserId">
+
+        <div class="form-check mb-4">
+
+            <input asp-for="ConfirmDelete"
+                   class="form-check-input" />
+
+            <label asp-for="ConfirmDelete"
+                   class="form-check-label">
+                Megértettem, hogy a felhasználó
+                és kapcsolódó adatai véglegesen törlődnek.
+            </label>
+
+            <div>
+                <span asp-validation-for="ConfirmDelete"
+                      class="text-danger"></span>
+            </div>
+
+        </div>
+
+        <button type="submit"
+                class="btn btn-danger">
+            Felhasználó végleges törlése
+        </button>
+
+        <a asp-page="./Index"
+           class="btn btn-outline-secondary">
+            Mégse
+        </a>
+
+    </form>
+
+</div>

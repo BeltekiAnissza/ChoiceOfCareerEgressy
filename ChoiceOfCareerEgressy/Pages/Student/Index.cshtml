@@ -10,8 +10,9 @@
     <h2>Pályaorientációs programválasztás</h2>
 
     <p class="text-muted">
-        Válassz egy-egy különböző programot
-        a két idősávban!
+        Válassz olyan programokat, amelyek együtt lefedik
+        a pályaorientációs nap időszakait!
+        Egy hosszabb program több idősávot is teljesíthet.
     </p>
 
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
@@ -61,8 +62,7 @@
                 @if (ev.HasRegistration)
                 {
                     <div class="alert alert-success">
-                        Már van rögzített jelentkezésed
-                        erre az eseményre.
+                        Már van rögzített jelentkezésed erre az eseményre.
                     </div>
                 }
 
@@ -76,78 +76,109 @@
                                name="Registration.EventId"
                                value="@ev.EventId" />
 
-                        @for (int i = 0; i < ev.TimeSlots.Count; i++)
+                        @foreach (var slot in ev.TimeSlots)
                         {
-                            var slot = ev.TimeSlots[i];
-
                             <div class="mb-4">
 
-                                <h5>
+                                <h5 class="border-bottom pb-2">
                                     @slot.TimeSlotName
-                                    (@slot.BeginDate.ToString("HH:mm")
-                                    –
-                                    @slot.EndDate.ToString("HH:mm"))
+                                    <small class="text-muted">
+                                        (@slot.BeginDate.ToString("HH:mm")
+                                        –
+                                        @slot.EndDate.ToString("HH:mm"))
+                                    </small>
                                 </h5>
 
-                                <select class="form-select student-program-select"
-                                        name="@(i == 0
-                                                                                    ? "Registration.FirstPlanSessionId"
-                                                                                    : "Registration.SecondPlanSessionId")"
-                            required>
-
-                                    <option value="">
-                                        Válassz programot!
-                                    </option>
-
-                        @foreach (var program in slot.Programs)
-                                    {
-                                        bool isSelected =
-                                        slot.SelectedPlanSessionId ==
-                                        program.PlanSessionId;
-
-                                        bool isFull =
-                                        program.AvailablePlaces <= 0;
-
-                                        <option value="@program.PlanSessionId"
-                                                data-program-name="@program.PlanName"
-                                                disabled="@(isFull && !isSelected)"
-                                                selected="@isSelected">
-
-                                            @program.PlanName
-                                            – @program.LocationName
-
-                                            @(isFull
-                                                                        ? (isSelected
-                                                                        ? "(Saját foglalásod)"
-                                                                        : "(Betelt)")
-                                                                        : $"({program.AvailablePlaces} szabad hely)")
-
-                        </option>
-                                                }
-                                </select>
+                                @if (!slot.Programs.Any())
+                                {
+                                    <p class="text-muted">
+                                        Ebben az idősávban nincs számodra
+                                        elérhető program.
+                                    </p>
+                                }
 
                                 @foreach (var program in slot.Programs)
                                 {
+                                    bool isFull =
+                                    program.AvailablePlaces <= 0;
+
                                     <div class="border rounded p-3 mt-2">
 
-                                        <strong>@program.PlanName</strong>
+                                        <div class="form-check">
 
-                                        <p class="mb-1">
-                                            @program.Description
-                                        </p>
+                                            <input type="checkbox"
+                                                   class="form-check-input student-program-checkbox"
+                                                   name="Registration.SelectedPlanSessionIds"
+                                                   value="@program.PlanSessionId"
+                                                   id="program-@ev.EventId-@program.PlanSessionId"
+                                                   data-program-name="@program.PlanName"
+                                                   data-start="@program.BeginDate.ToUnixTimeMilliseconds()"
+                                                   data-end="@program.EndDate.ToUnixTimeMilliseconds()"
+                                                   checked="@program.IsSelected"
+                                                   disabled="@(isFull && !program.IsSelected)" />
+
+                                            <label class="form-check-label"
+                                                   for="program-@ev.EventId-@program.PlanSessionId">
+
+                                                <strong>@program.PlanName</strong>
+
+                                            </label>
+
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(
+                                                                program.Description))
+                                        {
+                                            <p class="mb-1 mt-2">
+                                                @program.Description
+                                            </p>
+                                        }
 
                                         <small class="text-muted">
-                                            Terem: @program.LocationName |
-                                            Kapacitás: @program.Capacity |
-                                            Szabad hely:
-                                            @program.AvailablePlaces
+                                            Időpont:
+                                            @program.BeginDate.ToString("HH:mm")
+                                            –
+                                            @program.EndDate.ToString("HH:mm")
+                                            |
+                                            Terem: @program.LocationName
+                                            |
+                                            Kapacitás: @program.Capacity
+                                            |
+                                            Szabad hely: @program.AvailablePlaces
                                         </small>
+
+                                        @if (isFull)
+                                        {
+                                            <div class="mt-2">
+                                                @if (program.IsSelected)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        Saját foglalásod
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">
+                                                        Betelt
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
 
                                     </div>
                                 }
 
                             </div>
                         }
+
+                        <div class="alert alert-info">
+                            A kiválasztott programok nem ütközhetnek
+                            időben, és együtt le kell fedniük
+                            az esemény összes idősávját.
+                        </div>
+
+                        <div class="student-selection-summary mb-3">
+                        </div>
 
                         @if (ev.HasRegistration)
                         {
@@ -160,7 +191,7 @@
                         {
                             <button type="submit"
                                     class="btn btn-success">
-                                Jelentkezés mindkét programra
+                                Jelentkezés mentése
                             </button>
                         }
 
@@ -169,42 +200,27 @@
                 else if (ev.HasRegistration)
                 {
                     <div class="alert alert-secondary">
-                        A jelentkezési időszak lezárult,
-                        ezért a programjaid már nem módosíthatók.
+                        A jelentkezés jelenleg nem módosítható.
                     </div>
 
                     @foreach (var slot in ev.TimeSlots)
                     {
-                        var selected = slot.Programs
-                        .FirstOrDefault(p =>
-                        p.PlanSessionId ==
-                        slot.SelectedPlanSessionId);
+                        var selectedPrograms = slot.Programs
+                        .Where(p => p.IsSelected)
+                        .ToList();
 
-                        <div class="mb-3">
-
-                            <h5>
-                                @slot.TimeSlotName
-                                (@slot.BeginDate.ToString("HH:mm")
-                                –
-                                @slot.EndDate.ToString("HH:mm"))
-                            </h5>
-
-                            @if (selected != null)
-                            {
-                                <p>
-                                    <strong>@selected.PlanName</strong>
-                                    – @selected.LocationName
-                                </p>
-                            }
-                            else
-                            {
-                                <p class="text-muted">
-                                    A kiválasztott program
-                                    nem jeleníthető meg.
-                                </p>
-                            }
-
-                        </div>
+                        @foreach (var program in selectedPrograms)
+                        {
+                            <div class="mb-3">
+                                <strong>@program.PlanName</strong>
+                                – @program.LocationName
+                                <span class="text-muted">
+                                    (@program.BeginDate.ToString("HH:mm")
+                                    –
+                                    @program.EndDate.ToString("HH:mm"))
+                                </span>
+                            </div>
+                        }
                     }
                 }
                 else
@@ -230,77 +246,92 @@
 
             forms.forEach(form => {
 
-                const selects = form.querySelectorAll(
-                    ".student-program-select"
+                const checkboxes = Array.from(
+                    form.querySelectorAll(
+                        ".student-program-checkbox"
+                    )
                 );
 
-                function updatePrograms() {
+                const summary = form.querySelector(
+                    ".student-selection-summary"
+                );
 
-                    selects.forEach(currentSelect => {
-
-                        const selectedNames = Array.from(selects)
-                            .filter(select => select !== currentSelect)
-                            .map(select => {
-
-                                const option =
-                                    select.options[select.selectedIndex];
-
-                                return option?.dataset.programName
-                                    ?.trim()
-                                    .toLocaleLowerCase("hu-HU");
-
-                            })
-                            .filter(Boolean);
-
-                        Array.from(currentSelect.options).forEach(option => {
-
-                            const programName =
-                                option.dataset.programName
-                                    ?.trim()
-                                    .toLocaleLowerCase("hu-HU");
-
-                            if (!programName) {
-                                option.hidden = false;
-                                return;
-                            }
-
-                            option.hidden =
-                                selectedNames.includes(programName);
-                        });
-                    });
+                function selectedPrograms() {
+                    return checkboxes.filter(c => c.checked);
                 }
 
-                selects.forEach(select => {
-                    select.addEventListener("change", updatePrograms);
+                function overlaps(first, second) {
+                    const firstStart = Number(first.dataset.start);
+                    const firstEnd = Number(first.dataset.end);
+                    const secondStart = Number(second.dataset.start);
+                    const secondEnd = Number(second.dataset.end);
+
+                    return firstStart < secondEnd &&
+                           secondStart < firstEnd;
+                }
+
+                function updateSummary() {
+                    const selected = selectedPrograms();
+
+                    if (selected.length === 0) {
+                        summary.textContent =
+                            "Még nem választottál programot.";
+                        return;
+                    }
+
+                    summary.textContent =
+                        "Kiválasztott programok: " +
+                        selected.map(c => c.dataset.programName)
+                            .join(", ");
+                }
+
+                checkboxes.forEach(checkbox => {
+
+                    checkbox.addEventListener("change", function () {
+
+                        if (checkbox.checked) {
+
+                            const selected = selectedPrograms()
+                                .filter(c => c !== checkbox);
+
+                            const duplicate = selected.some(c =>
+                                c.dataset.programName
+                                    .trim()
+                                    .toLocaleLowerCase("hu-HU") ===
+                                checkbox.dataset.programName
+                                    .trim()
+                                    .toLocaleLowerCase("hu-HU")
+                            );
+
+                            const conflict = selected.some(c =>
+                                overlaps(c, checkbox)
+                            );
+
+                            if (duplicate || conflict) {
+                                checkbox.checked = false;
+
+                                alert(duplicate
+                                    ? "Ugyanazt a programot csak egyszer választhatod."
+                                    : "Ez a program időben ütközik egy már kiválasztott programmal.");
+
+                                updateSummary();
+                                return;
+                            }
+                        }
+
+                        updateSummary();
+                    });
                 });
 
                 form.addEventListener("submit", function (event) {
 
-                    const selectedNames = Array.from(selects)
-                        .map(select => {
-
-                            const option =
-                                select.options[select.selectedIndex];
-
-                            return option?.dataset.programName
-                                ?.trim()
-                                .toLocaleLowerCase("hu-HU");
-
-                        })
-                        .filter(Boolean);
-
-                    if (selectedNames.length !== 2 ||
-                        selectedNames[0] === selectedNames[1]) {
-
+                    if (selectedPrograms().length === 0) {
                         event.preventDefault();
-
-                        alert(
-                            "Két különböző programot kell választanod!"
-                        );
+                        alert("Válassz legalább egy programot!");
                     }
                 });
 
-                updatePrograms();
+                updateSummary();
             });
         });
     </script>

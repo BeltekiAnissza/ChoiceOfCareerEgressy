@@ -15,12 +15,15 @@ namespace ChoiceOfCareerEgressy.Model
 
         public async Task<bool> IsHomeroomTeacherAsync(int teacherId)
         {
-            return await _context.Grades
-                .AnyAsync(g => g.HomeroomTeacherId == teacherId);
+            return await _context.Users
+                .AsNoTracking()
+                .AnyAsync(u =>
+                    u.UserId == teacherId &&
+                    u.Role == RoleChoice.Teacher &&
+                    u.GradeId != null);
         }
 
-        public async Task<HomeroomPageDto> GetPageAsync(
-            int teacherId, int? eventId)
+        public async Task<HomeroomPageDto> GetPageAsync( int teacherId, int? eventId)
         {
             await CheckTeacherAsync(teacherId);
 
@@ -49,10 +52,24 @@ namespace ChoiceOfCareerEgressy.Model
             if (selectedEvent == null)
                 return result;
 
+            var teacherGradeId = await _context.Users
+                .AsNoTracking()
+                .Where(u =>
+                    u.UserId == teacherId &&
+                    u.Role == RoleChoice.Teacher)
+                .Select(u => u.GradeId)
+                .FirstOrDefaultAsync();
+
+            if (!teacherGradeId.HasValue)
+            {
+                throw new UnauthorizedAccessException(
+                    "Ehhez a tanárhoz nincs osztály rendelve.");
+            }
+
             var grades = await _context.Grades
                 .AsNoTracking()
                 .Include(g => g.Users)
-                .Where(g => g.HomeroomTeacherId == teacherId)
+                .Where(g => g.GradeId == teacherGradeId.Value)
                 .ToListAsync();
 
             var slots = await _context.TimeSlots
@@ -191,8 +208,7 @@ namespace ChoiceOfCareerEgressy.Model
             await using var transaction =
                 await _context.Database.BeginTransactionAsync();
 
-            var student = await GetAuthorizedStudentAsync(
-                teacherId, dto.StudentId);
+            var student = await GetAuthorizedStudentAsync( teacherId, dto.StudentId);
 
             var session = await _context.PlanSessions
                 .Include(s => s.Plan)
@@ -313,32 +329,47 @@ namespace ChoiceOfCareerEgressy.Model
 
         private async Task CheckTeacherAsync(int teacherId)
         {
-            bool isTeacher = await _context.Users
+            bool isHomeroomTeacher = await _context.Users
+                .AsNoTracking()
                 .AnyAsync(u =>
                     u.UserId == teacherId &&
-                    u.Role == RoleChoice.Teacher);
+                    u.Role == RoleChoice.Teacher &&
+                    u.GradeId != null);
 
-            if (!isTeacher)
+            if (!isHomeroomTeacher)
+            {
                 throw new UnauthorizedAccessException(
-                    "Csak tanár használhatja ezt a funkciót.");
+                    "A felhasználó nem osztályfőnök, " +
+                    "vagy nincs hozzá osztály rendelve.");
+            }
         }
 
-        private async Task<User> GetAuthorizedStudentAsync(
-            int teacherId, int studentId)
+        private async Task<User> GetAuthorizedStudentAsync( int teacherId, int studentId)
         {
             await CheckTeacherAsync(teacherId);
 
-            var student = await _context.Users
-                .Include(u => u.Grade)
-                .FirstOrDefaultAsync(u =>
-                    u.UserId == studentId &&
-                    u.Role == RoleChoice.Student);
+            var teacherGradeId = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.UserId == teacherId)
+                .Select(u => u.GradeId)
+                .FirstOrDefaultAsync();
 
-            if (student == null ||
-                student.Grade?.HomeroomTeacherId != teacherId)
+            if (!teacherGradeId.HasValue)
             {
                 throw new UnauthorizedAccessException(
-                    "Nem módosíthatod ezt a diákot.");
+                    "Nem vagy osztályfőnök.");
+            }
+
+            var student = await _context.Users
+                .FirstOrDefaultAsync(u =>
+                    u.UserId == studentId &&
+                    u.Role == RoleChoice.Student &&
+                    u.GradeId == teacherGradeId.Value);
+
+            if (student == null)
+            {
+                throw new UnauthorizedAccessException(
+                    "Csak a saját osztályod diákjait módosíthatod.");
             }
 
             return student;

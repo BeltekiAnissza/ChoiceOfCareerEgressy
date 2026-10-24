@@ -15,24 +15,15 @@ namespace ChoiceOfCareerEgressy.Model
             _context = context;
         }
 
-        // =========================================
-        // SEGÉDFÜGGVÉNYEK
-        // =========================================
-
         private static bool IsBranchAllowed(
             string? allowedBranches,
             string? studentBranch)
         {
-            // Üres ágazat = minden diák számára elérhető.
             if (string.IsNullOrWhiteSpace(allowedBranches))
                 return true;
 
-            // Ha a program ágazathoz kötött,
-            // de a diáknak nincs ágazata, nem jogosult.
             if (string.IsNullOrWhiteSpace(studentBranch))
                 return false;
-
-            string normalizedStudentBranch = studentBranch.Trim();
 
             return allowedBranches
                 .Split(
@@ -41,7 +32,7 @@ namespace ChoiceOfCareerEgressy.Model
                     StringSplitOptions.TrimEntries)
                 .Any(branch => string.Equals(
                     branch,
-                    normalizedStudentBranch,
+                    studentBranch.Trim(),
                     StringComparison.OrdinalIgnoreCase));
         }
 
@@ -49,24 +40,19 @@ namespace ChoiceOfCareerEgressy.Model
             string? programSex,
             string? studentSex)
         {
-            // A nem nélküli programot általánosnak tekintjük.
             if (string.IsNullOrWhiteSpace(programSex))
                 return true;
 
-            string requiredSex = programSex.Trim();
-
-            // Unisex = minden diák.
             if (string.Equals(
-                requiredSex,
+                programSex.Trim(),
                 "Unisex",
                 StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
 
-            // Nő vagy férfi = egyeznie kell.
             return string.Equals(
-                requiredSex,
+                programSex.Trim(),
                 studentSex?.Trim(),
                 StringComparison.OrdinalIgnoreCase);
         }
@@ -76,11 +62,6 @@ namespace ChoiceOfCareerEgressy.Model
             string? studentBranch,
             string? studentSex)
         {
-            string? allowedBranches = plan.Branch?.BranchName;
-            string? requiredSex = plan.Sex?.SexName;
-
-            // Ha van BranchId, de a kapcsolat nem található,
-            // ne tekintsük korlátozás nélkülinek.
             if (plan.BranchId != null && plan.Branch == null)
                 return false;
 
@@ -88,20 +69,81 @@ namespace ChoiceOfCareerEgressy.Model
                 return false;
 
             return IsBranchAllowed(
-                       allowedBranches,
+                       plan.Branch?.BranchName,
                        studentBranch)
                    &&
                    IsSexAllowed(
-                       requiredSex,
+                       plan.Sex?.SexName,
                        studentSex);
         }
 
-        // =========================================
-        // ESEMÉNYEK ÉS PROGRAMOK LEKÉRÉSE
-        // =========================================
+        // A kiválasztott programok nem fedhetik át egymást.
+        private static bool HasOverlappingPrograms(
+            List<PlanSession> sessions)
+        {
+            var ordered = sessions
+                .OrderBy(s => s.TimeSlot.BeginDate)
+                .ToList();
 
-        public async Task<List<StudentEventDto>> GetEventsAsync(
-            int userId)
+            for (int i = 1; i < ordered.Count; i++)
+            {
+                if (ordered[i].TimeSlot.BeginDate <
+                    ordered[i - 1].TimeSlot.EndDate)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Minden olyan időszakaszt le kell fedni,
+        // amelyben az esemény valamely idősávja aktív.
+        private static bool CoversAllTimeSlots(List<TimeSlot> slots, List<PlanSession> selectedSessions)
+        {
+            if (slots.Count == 0 || selectedSessions.Count == 0)
+                return false;
+
+            // Azok az idősávok, amelyek nem tartalmaznak
+            // teljes egészében másik, rövidebb idősávot.
+            // Ezek lesznek a kötelező alapidősávok.
+            var requiredSlots = slots
+                .Where(slot => !slots.Any(other =>
+                    other.TimeSlotId != slot.TimeSlotId &&
+                    other.BeginDate >= slot.BeginDate &&
+                    other.EndDate <= slot.EndDate &&
+                    (
+                        other.BeginDate > slot.BeginDate ||
+                        other.EndDate < slot.EndDate
+                    )))
+                .ToList();
+
+            // Minden kötelező alapidősávot le kell fednie
+            // valamelyik kiválasztott programnak.
+            foreach (var requiredSlot in requiredSlots)
+            {
+                bool covered = selectedSessions.Any(session =>
+                    session.TimeSlot.BeginDate <= requiredSlot.BeginDate &&
+                    session.TimeSlot.EndDate >= requiredSlot.EndDate);
+
+                if (!covered)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsRegistrationOpen(
+            Event ev,
+            DateTimeOffset now)
+        {
+            return ev.IsRegistrationEnabled &&
+                   now >= ev.RegistrationStart &&
+                   now <= ev.RegistrationEnd &&
+                   ev.TimeSlots.Count > 0;
+        }
+
+        public async Task<List<StudentEventDto>> GetEventsAsync(int userId)
         {
             var student = await _context.Users
                 .AsNoTracking()
@@ -122,6 +164,7 @@ namespace ChoiceOfCareerEgressy.Model
 
             var events = await _context.Events
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Include(e => e.TimeSlots)
                     .ThenInclude(t => t.PlanSessions)
                         .ThenInclude(s => s.Plan)
@@ -135,15 +178,44 @@ namespace ChoiceOfCareerEgressy.Model
                         .ThenInclude(s => s.Location)
                 .ToListAsync();
 
-            var activeApplications = await _context.Applications
-                .AsNoTracking()
-                .Where(a =>
-                    a.Status == ApplicationStatus.Active)
-                .Select(a => new
+            foreach (var ev in events)
+            {
+                foreach (var slot in ev.TimeSlots)
                 {
-                    a.PlanSessionId
+                    foreach (var session in slot.PlanSessions)
+                    {
+                        if (session.Plan.PlanName.Contains(
+                            "jóga",
+                            StringComparison.OrdinalIgnoreCase))
+                        {
+                            Console.WriteLine("=== JÓGA ELLENŐRZÉS ===");
+                            Console.WriteLine($"Program: {session.Plan.PlanName}");
+                            Console.WriteLine($"Idősáv: {slot.TimeSlotName}");
+                            Console.WriteLine($"Nemi korlátozás: {session.Plan.Sex?.SexName}");
+                            Console.WriteLine($"Ágazati korlátozás: {session.Plan.Branch?.BranchName}");
+                            Console.WriteLine($"Diák neme: {studentSex}");
+                            Console.WriteLine($"Diák ágazata: {studentBranch}");
+                            Console.WriteLine(
+                                $"Megjelenhet: {IsProgramAllowed(session.Plan, studentBranch, studentSex)}");
+                        }
+                    }
+                }
+            }
+
+            var applicationCounts = await _context.Applications
+                .AsNoTracking()
+                .Where(a => a.Status == ApplicationStatus.Active)
+                .GroupBy(a => a.PlanSessionId)
+                .Select(g => new
+                {
+                    g.Key,
+                    Count = g.Count()
                 })
                 .ToListAsync();
+
+            var counts = applicationCounts.ToDictionary(
+                x => x.Key,
+                x => x.Count);
 
             var myApplications = await _context.Applications
                 .AsNoTracking()
@@ -154,7 +226,7 @@ namespace ChoiceOfCareerEgressy.Model
                     a.Status == ApplicationStatus.Active)
                 .ToListAsync();
 
-            var now = DateTimeOffset.UtcNow;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
 
             return events
                 .OrderBy(e => e.EventDate)
@@ -170,11 +242,9 @@ namespace ChoiceOfCareerEgressy.Model
                             e.EventId)
                         .ToList();
 
-                    bool registrationOpen =
-                        e.IsRegistrationEnabled &&
-                        now >= e.RegistrationStart &&
-                        now <= e.RegistrationEnd &&
-                        slots.Count == 2;
+                    var selectedIds = mine
+                        .Select(a => a.PlanSessionId)
+                        .ToHashSet();
 
                     return new StudentEventDto
                     {
@@ -184,8 +254,7 @@ namespace ChoiceOfCareerEgressy.Model
                         RegistrationStart = e.RegistrationStart,
                         RegistrationEnd = e.RegistrationEnd,
 
-                        CanRegister = registrationOpen,
-
+                        CanRegister = IsRegistrationOpen(e, now),
                         HasRegistration = mine.Count > 0,
 
                         TimeSlots = slots
@@ -207,26 +276,24 @@ namespace ChoiceOfCareerEgressy.Model
                                         IsProgramAllowed(
                                             s.Plan,
                                             studentBranch,
-                                            studentSex))
+                                            studentSex)
+                                        ||
+                                        selectedIds.Contains(
+                                            s.PlanSessionId))
                                     .OrderBy(s => s.Plan.PlanName)
                                     .Select(s =>
                                     {
                                         int occupied =
-                                            activeApplications.Count(a =>
-                                                a.PlanSessionId ==
-                                                s.PlanSessionId);
+                                            counts.GetValueOrDefault(
+                                                s.PlanSessionId, 0);
 
                                         return new StudentProgramDto
                                         {
-                                            PlanSessionId =
-                                                s.PlanSessionId,
-
+                                            PlanSessionId = s.PlanSessionId,
                                             PlanId = s.PlanId,
-
                                             TimeSlotId = t.TimeSlotId,
 
                                             PlanName = s.Plan.PlanName,
-
                                             Description =
                                                 s.Plan.PlanDescription,
 
@@ -237,10 +304,13 @@ namespace ChoiceOfCareerEgressy.Model
                                             EndDate = t.EndDate,
 
                                             Capacity = s.Capacity,
-
                                             AvailablePlaces = Math.Max(
                                                 0,
-                                                s.Capacity - occupied)
+                                                s.Capacity - occupied),
+
+                                            IsSelected =
+                                                selectedIds.Contains(
+                                                    s.PlanSessionId)
                                         };
                                     })
                                     .ToList()
@@ -251,42 +321,17 @@ namespace ChoiceOfCareerEgressy.Model
                 .ToList();
         }
 
-        // =========================================
-        // ÚJ JELENTKEZÉS
-        // =========================================
-
-        public async Task RegisterAsync(
-            int userId,
-            StudentRegistrationDto dto)
+        public async Task RegisterAsync(int userId, StudentRegistrationDto dto)
         {
-            await SaveRegistrationAsync(
-                userId,
-                dto,
-                false);
+            await SaveRegistrationAsync(userId, dto, false);
         }
 
-        // =========================================
-        // JELENTKEZÉS MÓDOSÍTÁSA
-        // =========================================
-
-        public async Task UpdateRegistrationAsync(
-            int userId,
-            StudentRegistrationDto dto)
+        public async Task UpdateRegistrationAsync( int userId, StudentRegistrationDto dto)
         {
-            await SaveRegistrationAsync(
-                userId,
-                dto,
-                true);
+            await SaveRegistrationAsync(userId, dto, true);
         }
 
-        // =========================================
-        // JELENTKEZÉS MENTÉSE
-        // =========================================
-
-        private async Task SaveRegistrationAsync(
-            int userId,
-            StudentRegistrationDto dto,
-            bool isUpdate)
+        private async Task SaveRegistrationAsync(int userId, StudentRegistrationDto dto, bool isUpdate)
         {
             await using var transaction =
                 await _context.Database.BeginTransactionAsync();
@@ -299,13 +344,8 @@ namespace ChoiceOfCareerEgressy.Model
                     u.Role == RoleChoice.Student);
 
             if (student == null)
-            {
                 throw new InvalidOperationException(
                     "Csak diák jelentkezhet.");
-            }
-
-            string? studentBranch = student.Branch?.BranchName;
-            string? studentSex = student.Sex?.SexName;
 
             var selectedEvent = await _context.Events
                 .Include(e => e.TimeSlots)
@@ -313,36 +353,36 @@ namespace ChoiceOfCareerEgressy.Model
                     e.EventId == dto.EventId);
 
             if (selectedEvent == null)
-            {
                 throw new InvalidOperationException(
                     "Az esemény nem található.");
-            }
 
-            var now = DateTimeOffset.UtcNow;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
 
-            if (!selectedEvent.IsRegistrationEnabled ||
-                now < selectedEvent.RegistrationStart ||
-                now > selectedEvent.RegistrationEnd)
-            {
+            if (!IsRegistrationOpen(selectedEvent, now))
                 throw new InvalidOperationException(
                     "A jelentkezés jelenleg nem engedélyezett.");
-            }
 
             var slots = selectedEvent.TimeSlots
                 .OrderBy(t => t.BeginDate)
                 .ToList();
 
-            if (slots.Count != 2)
-            {
+            if (slots.Any(t => t.BeginDate >= t.EndDate))
                 throw new InvalidOperationException(
-                    "Az eseménynek pontosan két idősávval kell rendelkeznie.");
-            }
+                    "Az esemény egyik idősávjának időpontjai hibásak.");
 
-            if (dto.FirstPlanSessionId ==
-                dto.SecondPlanSessionId)
+            var ids = (dto.SelectedPlanSessionIds ?? new List<int>())
+                .Distinct()
+                .ToList();
+
+            if (ids.Count == 0)
+                throw new InvalidOperationException(
+                    "Legalább egy programot választanod kell.");
+
+            if (ids.Count !=
+                (dto.SelectedPlanSessionIds?.Count ?? 0))
             {
                 throw new InvalidOperationException(
-                    "Két különböző programot kell választani.");
+                    "Egy programot csak egyszer választhatsz.");
             }
 
             var selectedSessions = await _context.PlanSessions
@@ -351,56 +391,49 @@ namespace ChoiceOfCareerEgressy.Model
                 .Include(s => s.Plan)
                     .ThenInclude(p => p.Sex)
                 .Include(s => s.TimeSlot)
-                .Where(s =>
-                    s.PlanSessionId == dto.FirstPlanSessionId ||
-                    s.PlanSessionId == dto.SecondPlanSessionId)
+                .Where(s => ids.Contains(s.PlanSessionId))
                 .ToListAsync();
 
-            if (selectedSessions.Count != 2)
-            {
+            if (selectedSessions.Count != ids.Count)
                 throw new InvalidOperationException(
                     "Az egyik kiválasztott program nem található.");
-            }
 
-            var first = selectedSessions.SingleOrDefault(s =>
-                s.PlanSessionId == dto.FirstPlanSessionId);
-
-            var second = selectedSessions.SingleOrDefault(s =>
-                s.PlanSessionId == dto.SecondPlanSessionId);
-
-            if (first == null ||
-                second == null ||
-                first.TimeSlotId != slots[0].TimeSlotId ||
-                second.TimeSlotId != slots[1].TimeSlotId)
+            if (selectedSessions.Any(s =>
+                s.TimeSlot.EventId != dto.EventId))
             {
                 throw new InvalidOperationException(
-                    "Mindkét idősávból egy-egy programot kell választani.");
+                    "A kiválasztott program nem ehhez az eseményhez tartozik.");
             }
 
-            // =========================================
-            // DUPLIKÁLT PROGRAM ELLENŐRZÉSE
-            // =========================================
+            if (selectedSessions.Any(s =>
+                s.TimeSlot.BeginDate >= s.TimeSlot.EndDate))
+            {
+                throw new InvalidOperationException(
+                    "Az egyik program időpontja hibás.");
+            }
 
-            if (first.PlanId == second.PlanId ||
-                string.Equals(
-                    first.Plan.PlanName.Trim(),
-                    second.Plan.PlanName.Trim(),
-                    StringComparison.OrdinalIgnoreCase))
+            var duplicateNames = selectedSessions
+                .GroupBy(
+                    s => s.Plan.PlanName.Trim(),
+                    StringComparer.OrdinalIgnoreCase)
+                .Any(g => g.Count() > 1);
+
+            if (selectedSessions
+                    .Select(s => s.PlanId)
+                    .Distinct()
+                    .Count() != selectedSessions.Count
+                || duplicateNames)
             {
                 throw new InvalidOperationException(
                     "Ugyanarra a programra nem lehet kétszer jelentkezni.");
             }
 
-            // =========================================
-            // NEM ÉS ÁGAZAT ELLENŐRZÉSE
-            // =========================================
-
             foreach (var session in selectedSessions)
             {
                 if (!IsProgramAllowed(
                     session.Plan,
-                    studentBranch,
-                    studentSex))
+                    student.Branch?.BranchName,
+                    student.Sex?.SexName))
                 {
                     throw new InvalidOperationException(
                         $"A(z) {session.Plan.PlanName} programra " +
@@ -408,9 +441,14 @@ namespace ChoiceOfCareerEgressy.Model
                 }
             }
 
-            // =========================================
-            // MEGLÉVŐ JELENTKEZÉSEK
-            // =========================================
+            if (HasOverlappingPrograms(selectedSessions))
+                throw new InvalidOperationException(
+                    "A kiválasztott programok időben ütköznek.");
+
+            if (!CoversAllTimeSlots(slots, selectedSessions))
+                throw new InvalidOperationException(
+                    "A kiválasztott programok nem fedik le " +
+                    "az esemény összes kötelező időszakát.");
 
             var existingApplications = await _context.Applications
                 .Include(a => a.PlanSession)
@@ -422,32 +460,12 @@ namespace ChoiceOfCareerEgressy.Model
                 .ToListAsync();
 
             if (!isUpdate && existingApplications.Count > 0)
-            {
                 throw new InvalidOperationException(
                     "Erre az eseményre már jelentkeztél.");
-            }
 
-            if (isUpdate)
-            {
-                if (existingApplications.Count != 2 ||
-                    existingApplications
-                        .Select(a => a.PlanSession.TimeSlotId)
-                        .Distinct()
-                        .Count() != 2 ||
-                    existingApplications.Any(a =>
-                        !slots.Any(t =>
-                            t.TimeSlotId ==
-                            a.PlanSession.TimeSlotId)))
-                {
-                    throw new InvalidOperationException(
-                        "A meglévő jelentkezés hiányos vagy hibás. " +
-                        "Kérd az osztályfőnök segítségét.");
-                }
-            }
-
-            // =========================================
-            // KAPACITÁS ELLENŐRZÉSE
-            // =========================================
+            if (isUpdate && existingApplications.Count == 0)
+                throw new InvalidOperationException(
+                    "Nincs módosítható jelentkezésed.");
 
             foreach (var session in selectedSessions)
             {
@@ -468,46 +486,36 @@ namespace ChoiceOfCareerEgressy.Model
                 }
             }
 
-            // =========================================
-            // MÓDOSÍTÁS
-            // =========================================
-
             if (isUpdate)
             {
-                foreach (var session in selectedSessions)
+                // A változatlan jelentkezéseket megtartjuk.
+                // A már nem kiválasztottakat lemondjuk.
+                foreach (var application in existingApplications)
                 {
-                    var application =
-                        existingApplications.Single(a =>
-                            a.PlanSession.TimeSlotId ==
-                            session.TimeSlotId);
-
-                    if (application.PlanSessionId !=
-                        session.PlanSessionId)
+                    if (!ids.Contains(application.PlanSessionId))
                     {
-                        application.PlanSessionId =
-                            session.PlanSessionId;
-
+                        application.Status = ApplicationStatus.Cancelled;
                         application.UpdateDate = now;
                     }
                 }
             }
-            else
-            {
-                // =========================================
-                // ÚJ JELENTKEZÉS
-                // =========================================
 
-                foreach (var session in selectedSessions)
+            var existingSelectedIds = existingApplications
+                .Select(a => a.PlanSessionId)
+                .ToHashSet();
+
+            foreach (var session in selectedSessions)
+            {
+                if (existingSelectedIds.Contains(session.PlanSessionId))
+                    continue;
+
+                _context.Applications.Add(new Application
                 {
-                    _context.Applications.Add(
-                        new Application
-                        {
-                            UserId = userId,
-                            PlanSessionId = session.PlanSessionId,
-                            ApplicationDate = now,
-                            Status = ApplicationStatus.Active
-                        });
-                }
+                    UserId = userId,
+                    PlanSessionId = session.PlanSessionId,
+                    ApplicationDate = now,
+                    Status = ApplicationStatus.Active
+                });
             }
 
             await _context.SaveChangesAsync();

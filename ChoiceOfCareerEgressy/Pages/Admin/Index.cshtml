@@ -9,11 +9,27 @@
 
     <div class="mb-4">
         <h2>Események és programok</h2>
+
         <p class="text-muted">
             A pályaorientációs napok programjai,
             jelentkezési adatai és kapacitásai.
         </p>
     </div>
+
+    <!-- Visszajelzések -->
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">
+            @success
+        </div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-danger">
+            @error
+        </div>
+    }
 
     @if (!Model.Events.Any())
     {
@@ -26,40 +42,105 @@
     {
         <div class="card shadow-sm mb-4">
 
+            <!-- Esemény fejléc -->
+
             <div class="card-header">
+
                 <div class="d-flex justify-content-between
-                                align-items-center flex-wrap gap-2">
+                                align-items-center flex-wrap gap-3">
 
                     <div>
-                        <h4 class="mb-1">@ev.EventName</h4>
+                        <h4 class="mb-1">
+                            @ev.EventName
+                        </h4>
+
                         <small>
                             @ev.EventDate.ToString("yyyy.MM.dd.")
                         </small>
                     </div>
 
-                    @if (ev.IsRegistrationEnabled)
-                    {
-                        <span class="badge bg-success">
-                            Jelentkezés engedélyezve
-                        </span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">
-                            Jelentkezés letiltva
-                        </span>
-                    }
+                    <div class="d-flex align-items-center
+                                    flex-wrap gap-2">
+
+                        @if (ev.IsRegistrationEnabled)
+                        {
+                            <span class="badge bg-success">
+                                Jelentkezés engedélyezve
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">
+                                Jelentkezés letiltva
+                            </span>
+                        }
+
+                        <!-- Jelentkezés állapotának módosítása -->
+
+                        <form method="post"
+                              asp-page-handler="ToggleRegistration">
+
+                            <input type="hidden"
+                                   name="eventId"
+                                   value="@ev.EventId" />
+
+                            @if (ev.IsRegistrationEnabled)
+                            {
+                                <button type="submit"
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="return confirm('Biztosan letiltod a jelentkezést ehhez az eseményhez?')">
+
+                                    Jelentkezés letiltása
+
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit"
+                                        class="btn btn-success btn-sm"
+                                        onclick="return confirm('Biztosan engedélyezed a jelentkezést ehhez az eseményhez?')">
+
+                                    Jelentkezés engedélyezése
+
+                                </button>
+                            }
+
+                        </form>
+
+                    </div>
+
                 </div>
+
             </div>
+
+            <!-- Esemény tartalma -->
 
             <div class="card-body">
 
                 <p class="mb-3">
                     <strong>Jelentkezési időszak:</strong>
+
                     @ev.RegistrationStart.ToString("yyyy.MM.dd. HH:mm")
                     –
                     @ev.RegistrationEnd.ToString("yyyy.MM.dd. HH:mm")
                 </p>
+
+                @if (ev.IsRegistrationEnabled)
+                {
+                    <div class="alert alert-info">
+                        A jelentkezés engedélyezve van.
+                        A diákok a megadott jelentkezési
+                        időszakon belül jelentkezhetnek.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        A jelentkezés jelenleg le van tiltva.
+                        A diákok nem tudnak új jelentkezést
+                        leadni vagy módosítani.
+                    </div>
+                }
 
                 @if (!ev.TimeSlots.Any())
                 {
@@ -68,17 +149,21 @@
                     </div>
                 }
 
+                <!-- Idősávok -->
                 @foreach (var slot in ev.TimeSlots)
                 {
                     <div class="mb-4">
 
                         <h5 class="border-bottom pb-2">
+
                             @slot.TimeSlotName
+
                             <small class="text-muted">
                                 (@slot.BeginDate.ToString("HH:mm")
                                 –
                                 @slot.EndDate.ToString("HH:mm"))
                             </small>
+
                         </h5>
 
                         @if (!slot.Programs.Any())
@@ -90,6 +175,7 @@
                         else
                         {
                             <div class="table-responsive">
+
                                 <table class="table table-striped
                                                           table-hover align-middle">
 
@@ -99,12 +185,15 @@
                                             <th>Terem</th>
                                             <th>Nem</th>
                                             <th>Ágazat</th>
+
                                             <th class="text-center">
                                                 Kapacitás
                                             </th>
+
                                             <th class="text-center">
                                                 Jelentkezők
                                             </th>
+
                                             <th class="text-center">
                                                 Szabad hely
                                             </th>
@@ -112,9 +201,11 @@
                                     </thead>
 
                                     <tbody>
+
                                         @foreach (var program in slot.Programs)
                                         {
                                             <tr>
+
                                                 <td>
                                                     <strong>
                                                         @program.PlanName
@@ -150,6 +241,7 @@
                                                 </td>
 
                                                 <td class="text-center">
+
                                                     @if (program.AvailablePlaces == 0)
                                                     {
                                                         <span class="badge bg-danger">
@@ -162,16 +254,24 @@
                                                             @program.AvailablePlaces
                                                         </span>
                                                     }
+
                                                 </td>
+
                                             </tr>
                                         }
+
                                     </tbody>
+
                                 </table>
+
                             </div>
                         }
+
                     </div>
                 }
+
             </div>
+
         </div>
     }
 

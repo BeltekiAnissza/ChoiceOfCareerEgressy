@@ -1,0 +1,365 @@
+﻿@page
+@model ChoiceOfCareerEgressy.Pages.Admin.Programs.CreateModel
+
+@{
+    ViewData["Title"] = "Új program hozzáadása";
+}
+
+<div class="container mt-4 mb-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Új program hozzáadása</h2>
+            <p class="text-muted mb-0">
+                Új pályaorientációs program létrehozása.
+            </p>
+        </div>
+
+        <a asp-page="./Index"
+           class="btn btn-outline-secondary">
+            Vissza a programokhoz
+        </a>
+    </div>
+
+    <form method="post">
+
+        <div asp-validation-summary="All"
+             class="text-danger mb-3"></div>
+
+        <!-- PROGRAM ALAPADATAI -->
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Program alapadatai</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label asp-for="Program.PlanName"
+                           class="form-label"></label>
+
+                    <input asp-for="Program.PlanName"
+                           class="form-control"
+                           placeholder="Például: Robotika bemutató" />
+
+                    <span asp-validation-for="Program.PlanName"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Program.PlanDescription"
+                           class="form-label"></label>
+
+                    <textarea asp-for="Program.PlanDescription"
+                              class="form-control"
+                              rows="4"
+                              placeholder="A program rövid bemutatása..."></textarea>
+
+                    <span asp-validation-for="Program.PlanDescription"
+                          class="text-danger"></span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- JELENTKEZÉSI FELTÉTELEK -->
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Jelentkezési feltételek</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label asp-for="Program.BranchId"
+                               class="form-label"></label>
+
+                        <select asp-for="Program.BranchId"
+                                class="form-select">
+
+                            <option value="">
+                                Minden ágazat
+                            </option>
+
+                            @foreach (var branch in Model.Options.Branches)
+                            {
+                                <option value="@branch.Id">
+                                    @branch.Name
+                                </option>
+                            }
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Program.SexId"
+                               class="form-label"></label>
+
+                        <select asp-for="Program.SexId"
+                                class="form-select">
+
+                            <option value="">
+                                Unisex
+                            </option>
+
+                            @foreach (var sex in Model.Options.Sexes)
+                            {
+                                <option value="@sex.Id">
+                                    @sex.Name
+                                </option>
+                            }
+
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="form-text mt-3">
+                    Ha nem választasz ágazatot, a program
+                    minden ágazat számára elérhető.
+                    Az Unisex beállítás minden nem számára
+                    engedélyezi a jelentkezést.
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ESEMÉNY ÉS IDŐSÁV -->
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Esemény és időpont</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label asp-for="Program.EventId"
+                               class="form-label"></label>
+
+                        <select asp-for="Program.EventId"
+                                class="form-select"
+                                id="eventSelect">
+
+                            <option value="">
+                                Válassz eseményt!
+                            </option>
+
+                            @foreach (var ev in Model.Options.Events)
+                            {
+                                <option value="@ev.Id">
+                                    @ev.Name
+                                </option>
+                            }
+
+                        </select>
+
+                        <span asp-validation-for="Program.EventId"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Program.TimeSlotId"
+                               class="form-label"></label>
+
+                        <select asp-for="Program.TimeSlotId"
+                                class="form-select"
+                                id="timeSlotSelect">
+
+                            <option value="">
+                                Válassz idősávot!
+                            </option>
+
+                            @foreach (var slot in Model.Options.TimeSlots)
+                            {
+                                <option value="@slot.TimeSlotId"
+                                        data-event-id="@slot.EventId">
+                                    @slot.DisplayName
+                                </option>
+                            }
+
+                        </select>
+
+                        <span asp-validation-for="Program.TimeSlotId"
+                              class="text-danger"></span>
+                    </div>
+
+                </div>
+
+                <div class="form-text mt-3">
+                    Először válassz eseményt, majd az ahhoz
+                    tartozó idősávok közül választhatsz.
+                </div>
+
+            </div>
+        </div>
+
+        <!-- HELYSZÍN -->
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Helyszín</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label asp-for="Program.LocationId"
+                           class="form-label"></label>
+
+                    <select asp-for="Program.LocationId"
+                            class="form-select">
+
+                        <option value="">
+                            Válassz meglévő termet!
+                        </option>
+
+                        @foreach (var location in Model.Options.Locations)
+                        {
+                            <option value="@location.Id">
+                                @location.Name
+                            </option>
+                        }
+
+                    </select>
+
+                    <span asp-validation-for="Program.LocationId"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Program.NewLocationName"
+                           class="form-label"></label>
+
+                    <input asp-for="Program.NewLocationName"
+                           class="form-control"
+                           placeholder="Például: B204" />
+
+                    <div class="form-text">
+                        Csak akkor töltsd ki, ha új termet
+                        szeretnél megadni. Az új teremnév
+                        elsőbbséget élvez a kiválasztott teremmel szemben.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- KAPACITÁS ÉS FELÜGYELŐK -->
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Kapacitás és felügyelet</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label asp-for="Program.Capacity"
+                               class="form-label"></label>
+
+                        <input asp-for="Program.Capacity"
+                               type="number"
+                               min="1"
+                               class="form-control" />
+
+                        <span asp-validation-for="Program.Capacity"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Program.RequiredSupervisors"
+                               class="form-label"></label>
+
+                        <input asp-for="Program.RequiredSupervisors"
+                               type="number"
+                               min="0"
+                               class="form-control" />
+
+                        <span asp-validation-for="Program.RequiredSupervisors"
+                              class="text-danger"></span>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- MENTÉS -->
+
+        <div class="d-flex gap-2">
+
+            <button type="submit"
+                    class="btn btn-success">
+                Program létrehozása
+            </button>
+
+            <a asp-page="./Index"
+               class="btn btn-outline-secondary">
+                Mégse
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const eventSelect =
+                document.getElementById("eventSelect");
+
+            const timeSlotSelect =
+                document.getElementById("timeSlotSelect");
+
+            function filterTimeSlots() {
+
+                const selectedEventId = eventSelect.value;
+
+                let selectedSlotStillValid = false;
+
+                Array.from(timeSlotSelect.options).forEach(option => {
+
+                    if (!option.value) {
+                        option.hidden = false;
+                        option.disabled = false;
+                        return;
+                    }
+
+                    const matches =
+                        option.dataset.eventId === selectedEventId;
+
+                    option.hidden = !matches;
+                    option.disabled = !matches;
+
+                    if (matches &&
+                        option.value === timeSlotSelect.value) {
+                        selectedSlotStillValid = true;
+                    }
+                });
+
+                if (!selectedSlotStillValid) {
+                    timeSlotSelect.value = "";
+                }
+            }
+
+            eventSelect.addEventListener("change", filterTimeSlots);
+
+            filterTimeSlots();
+        });
+    </script>
+}
+

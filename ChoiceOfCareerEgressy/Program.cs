@@ -2,6 +2,7 @@
 using ChoiceOfCareerEgressy.Model;
 using ChoiceOfCareerEgressy.Model.Admin;
 using ChoiceOfCareerEgressy.Model.Admin.Imports;
+using ChoiceOfCareerEgressy.Model.Admin.Programs;
 using ChoiceOfCareerEgressy.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -47,7 +48,7 @@ builder.Services.AddScoped<TeacherSupervisionService>();
 builder.Services.AddScoped<HomeroomService>();
 builder.Services.AddScoped<AdminRegistrationService>();
 builder.Services.AddScoped<AdminTeacherSupervisionService>();
-
+builder.Services.AddScoped<AdminProgramService>();
 builder.Services.AddAuthentication(
     CookieAuthenticationDefaults.AuthenticationScheme
 )
@@ -97,14 +98,20 @@ if (!app.Environment.IsDevelopment())
 }
 
 
-
 app.UseHttpsRedirection();
 
 app.UseRouting();
 
+// Bejelentkezett felhasználó azonosítása
+app.UseAuthentication();
+
+// Jogosultságok ellenőrzése
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.MapStaticAssets();
+
 app.MapRazorPages()
    .WithStaticAssets();
 

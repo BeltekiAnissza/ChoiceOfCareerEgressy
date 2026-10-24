@@ -1,11 +1,14 @@
 using ChoiceOfCareerEgressy.Dto.Homeroom;
 using ChoiceOfCareerEgressy.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ChoiceOfCareerEgressy.Pages.Teacher
 {
+    [Authorize(Roles = "Teacher,Admin")]
     public class HomeroomModel : PageModel
     {
         private readonly HomeroomService _service;

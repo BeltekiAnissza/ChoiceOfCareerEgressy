@@ -1,0 +1,220 @@
+﻿@page "{id:int}"
+@model ChoiceOfCareerEgressy.Pages.Admin.Programs.DeleteModel
+
+@{
+    ViewData["Title"] = "Program törlése";
+}
+
+<div class="container mt-4 mb-5">
+
+    <div class="mb-4">
+        <h2>Program törlése</h2>
+
+        <p class="text-muted">
+            A kiválasztott program végleges eltávolítása.
+        </p>
+    </div>
+
+    <div asp-validation-summary="ModelOnly"
+         class="text-danger mb-3"></div>
+
+    <!-- FIGYELMEZTETÉS -->
+
+    <div class="alert alert-danger">
+        <h5 class="alert-heading">
+            Figyelem! A művelet nem vonható vissza.
+        </h5>
+
+        <p class="mb-0">
+            A program törlésével az összes kapcsolódó
+            diákjelentkezés és tanári felügyelet is törlődik.
+            Ez a már lemondott jelentkezésekre is vonatkozik.
+        </p>
+    </div>
+
+    <!-- PROGRAM ADATAI -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>Törlendő program adatai</strong>
+        </div>
+
+        <div class="card-body">
+
+            <dl class="row mb-0">
+
+                <dt class="col-sm-4">
+                    Program neve
+                </dt>
+                <dd class="col-sm-8">
+                    @Model.Program.PlanName
+                </dd>
+
+                <dt class="col-sm-4">
+                    Esemény
+                </dt>
+                <dd class="col-sm-8">
+                    @Model.Program.EventName
+                </dd>
+
+                <dt class="col-sm-4">
+                    Idősáv
+                </dt>
+                <dd class="col-sm-8">
+                    @Model.Program.TimeSlotName
+                </dd>
+
+                <dt class="col-sm-4">
+                    Időpont
+                </dt>
+                <dd class="col-sm-8">
+                    @Model.Program.BeginDate.ToString("yyyy.MM.dd. HH:mm")
+                    –
+                    @Model.Program.EndDate.ToString("HH:mm")
+                </dd>
+
+                <dt class="col-sm-4">
+                    Terem
+                </dt>
+                <dd class="col-sm-8">
+                    @Model.Program.LocationName
+                </dd>
+
+            </dl>
+
+        </div>
+    </div>
+
+    <!-- TÖRLÉSSEL ÉRINTETT ADATOK -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="card border-danger h-100">
+                <div class="card-body text-center">
+
+                    <div class="text-muted">
+                        Összes jelentkezés
+                    </div>
+
+                    <h2 class="text-danger mb-0">
+                        @Model.Program.TotalApplicationCount
+                    </h2>
+
+                    <div class="small text-muted">
+                        Aktív és lemondott együtt
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-warning h-100">
+                <div class="card-body text-center">
+
+                    <div class="text-muted">
+                        Aktív jelentkezések
+                    </div>
+
+                    <h2 class="mb-0">
+                        @Model.Program.ActiveApplicationCount
+                    </h2>
+
+                    <div class="small text-muted">
+                        Jelenleg regisztrált diákok
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-secondary h-100">
+                <div class="card-body text-center">
+
+                    <div class="text-muted">
+                        Tanári felügyeletek
+                    </div>
+
+                    <h2 class="mb-0">
+                        @Model.Program.SupervisionCount
+                    </h2>
+
+                    <div class="small text-muted">
+                        Törlendő beosztások
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    @if (Model.Program.HasOtherSessions)
+    {
+        <div class="alert alert-info">
+            Ez a program más idősávban is szerepel.
+
+            <strong>
+                Csak a kiválasztott programalkalmat töröljük.
+            </strong>
+
+            A többi alkalom és azok jelentkezései megmaradnak.
+        </div>
+    }
+
+    <!-- TÖRLÉS MEGERŐSÍTÉSE -->
+
+    <form method="post"
+          asp-route-id="@Model.Program.PlanSessionId">
+
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-body">
+
+                <div class="form-check">
+
+                    <input asp-for="ConfirmDelete"
+                           class="form-check-input"
+                           type="checkbox" />
+
+                    <label asp-for="ConfirmDelete"
+                           class="form-check-label">
+
+                        Megértettem, hogy a program és a hozzá
+                        kapcsolódó jelentkezések, valamint
+                        tanári felügyeletek véglegesen törlődnek.
+
+                    </label>
+
+                </div>
+
+                <span asp-validation-for="ConfirmDelete"
+                      class="text-danger"></span>
+
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+
+            <button type="submit"
+                    class="btn btn-danger">
+                Program végleges törlése
+            </button>
+
+            <a asp-page="./Index"
+               class="btn btn-outline-secondary">
+                Mégse
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

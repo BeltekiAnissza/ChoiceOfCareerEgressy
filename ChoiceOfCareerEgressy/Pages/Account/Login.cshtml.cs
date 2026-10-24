@@ -61,9 +61,7 @@ namespace ChoiceOfCareerEgressy.Pages.Account
                 new ClaimsPrincipal(identity)
             );
 
-            if (user.MustChangePassword)
-                return RedirectToPage("/Account/ChangePassword");
-
+           
             return user.Role switch
             {
                 "Admin" => RedirectToPage("/Admin/Users/Index"),

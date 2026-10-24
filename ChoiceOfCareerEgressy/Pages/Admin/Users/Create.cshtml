@@ -1,0 +1,178 @@
+﻿@page
+@using ChoiceOfCareerEgressy.Persistence
+@model ChoiceOfCareerEgressy.Pages.Admin.Users.CreateModel
+
+@{
+    ViewData["Title"] = "Új felhasználó";
+}
+
+<div class="container mt-4 mb-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Új felhasználó hozzáadása</h2>
+
+        <a asp-page="./Index" class="btn btn-outline-secondary">
+            Vissza
+        </a>
+    </div>
+
+    <form method="post">
+
+        <div asp-validation-summary="All"
+             class="text-danger mb-3"></div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Alapadatok</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label asp-for="NewUser.UserName"
+                           class="form-label"></label>
+                    <input asp-for="NewUser.UserName"
+                           class="form-control" />
+                    <span asp-validation-for="NewUser.UserName"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="NewUser.EmailAddress"
+                           class="form-label"></label>
+                    <input asp-for="NewUser.EmailAddress"
+                           class="form-control" />
+                    <span asp-validation-for="NewUser.EmailAddress"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="NewUser.Role"
+                           class="form-label"></label>
+
+                    <select asp-for="NewUser.Role"
+                            class="form-select">
+                        <option value="">Válassz szerepkört!</option>
+                        <option value="@RoleChoice.Student">Diák</option>
+                        <option value="@RoleChoice.Teacher">Tanár</option>
+                        <option value="@RoleChoice.Admin">Admin</option>
+                    </select>
+
+                    <span asp-validation-for="NewUser.Role"
+                          class="text-danger"></span>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Iskolai adatok</strong>
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label asp-for="NewUser.SexId"
+                               class="form-label"></label>
+
+                        <select asp-for="NewUser.SexId"
+                                class="form-select">
+                            <option value="">Nincs megadva</option>
+                            @foreach (var sex in Model.Options.Sexes)
+                            {
+                                <option value="@sex.Id">@sex.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="NewUser.BranchId"
+                               class="form-label"></label>
+
+                        <select asp-for="NewUser.BranchId"
+                                class="form-select">
+                            <option value="">Nincs megadva</option>
+                            @foreach (var branch in Model.Options.Branches)
+                            {
+                                <option value="@branch.Id">@branch.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="NewUser.GradeId"
+                               class="form-label"></label>
+
+                        <select asp-for="NewUser.GradeId"
+                                class="form-select">
+                            <option value="">Nincs megadva</option>
+                            @foreach (var grade in Model.Options.Grades)
+                            {
+                                <option value="@grade.Id">@grade.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Bejelentkezési adatok</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label asp-for="NewUser.Password"
+                               class="form-label"></label>
+                        <input asp-for="NewUser.Password"
+                               type="password"
+                               autocomplete="new-password"
+                               class="form-control" />
+                        <span asp-validation-for="NewUser.Password"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="NewUser.ConfirmPassword"
+                               class="form-label"></label>
+                        <input asp-for="NewUser.ConfirmPassword"
+                               type="password"
+                               autocomplete="new-password"
+                               class="form-control" />
+                        <span asp-validation-for="NewUser.ConfirmPassword"
+                              class="text-danger"></span>
+                    </div>
+
+                </div>
+
+                <div class="form-check mt-3">
+                    <input asp-for="NewUser.MustChangePassword"
+                           class="form-check-input" />
+                    <label asp-for="NewUser.MustChangePassword"
+                           class="form-check-label"></label>
+                </div>
+
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success">
+            Felhasználó létrehozása
+        </button>
+
+        <a asp-page="./Index" class="btn btn-outline-secondary">
+            Mégse
+        </a>
+
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

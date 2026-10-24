@@ -1,0 +1,217 @@
+﻿@page "{id:int}"
+@model ChoiceOfCareerEgressy.Pages.Admin.Users.EditModel
+
+@{
+    ViewData["Title"] = "Felhasználó módosítása";
+}
+
+<div class="container mt-4 mb-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Felhasználó módosítása</h2>
+
+        <a asp-page="./Index"
+           class="btn btn-outline-secondary">
+            Vissza
+        </a>
+    </div>
+
+    <form method="post"
+          asp-route-id="@Model.EditedUser.UserId">
+
+        <input type="hidden" asp-for="EditedUser.UserId" />
+
+        <div asp-validation-summary="All"
+             class="text-danger mb-3"></div>
+
+        <!-- ALAPADATOK -->
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Alapadatok</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label asp-for="EditedUser.UserName"
+                           class="form-label"></label>
+
+                    <input asp-for="EditedUser.UserName"
+                           class="form-control" />
+
+                    <span asp-validation-for="EditedUser.UserName"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="EditedUser.EmailAddress"
+                           class="form-label"></label>
+
+                    <input asp-for="EditedUser.EmailAddress"
+                           class="form-control" />
+
+                    <span asp-validation-for="EditedUser.EmailAddress"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        Szerepkör
+                    </label>
+
+                    <input value="@Model.EditedUser.Role"
+                           class="form-control"
+                           disabled />
+
+                    <div class="form-text">
+                        A szerepkör ezen az oldalon nem módosítható.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ISKOLAI ADATOK -->
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Iskolai adatok</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label asp-for="EditedUser.SexId"
+                               class="form-label"></label>
+
+                        <select asp-for="EditedUser.SexId"
+                                class="form-select">
+
+                            <option value="">Nincs megadva</option>
+
+                            @foreach (var sex in Model.Options.Sexes)
+                            {
+                                <option value="@sex.Id">
+                                    @sex.Name
+                                </option>
+                            }
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="EditedUser.BranchId"
+                               class="form-label"></label>
+
+                        <select asp-for="EditedUser.BranchId"
+                                class="form-select">
+
+                            <option value="">Nincs megadva</option>
+
+                            @foreach (var branch in Model.Options.Branches)
+                            {
+                                <option value="@branch.Id">
+                                    @branch.Name
+                                </option>
+                            }
+
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="EditedUser.GradeId"
+                               class="form-label"></label>
+
+                        <select asp-for="EditedUser.GradeId"
+                                class="form-select">
+
+                            <option value="">Nincs megadva</option>
+
+                            @foreach (var grade in Model.Options.Grades)
+                            {
+                                <option value="@grade.Id">
+                                    @grade.Name
+                                </option>
+                            }
+
+                        </select>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- JELSZÓ MÓDOSÍTÁSA -->
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <strong>Jelszó módosítása</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="alert alert-info">
+                    Ha nem szeretnéd megváltoztatni a jelszót,
+                    hagyd üresen az alábbi mezőket.
+                </div>
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label asp-for="EditedUser.NewPassword"
+                               class="form-label"></label>
+
+                        <input asp-for="EditedUser.NewPassword"
+                               type="password"
+                               autocomplete="new-password"
+                               class="form-control" />
+
+                        <span asp-validation-for="EditedUser.NewPassword"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="EditedUser.ConfirmPassword"
+                               class="form-label"></label>
+
+                        <input asp-for="EditedUser.ConfirmPassword"
+                               type="password"
+                               autocomplete="new-password"
+                               class="form-control" />
+
+                        <span asp-validation-for="EditedUser.ConfirmPassword"
+                              class="text-danger"></span>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- MENTÉS -->
+
+        <div class="d-flex gap-2">
+
+            <button type="submit"
+                    class="btn btn-primary">
+                Módosítások mentése
+            </button>
+
+            <a asp-page="./Index"
+               class="btn btn-outline-secondary">
+                Mégse
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
