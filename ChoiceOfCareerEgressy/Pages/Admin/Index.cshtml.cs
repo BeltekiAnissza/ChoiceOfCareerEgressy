@@ -24,7 +24,7 @@ namespace ChoiceOfCareerEgressy.Pages.Events
         {
             await LoadEventsAsync();
         }
-
+      
         // Jelentkezés engedélyezése vagy letiltása
         public async Task<IActionResult> OnPostToggleRegistrationAsync(
             int eventId)
@@ -132,6 +132,7 @@ namespace ChoiceOfCareerEgressy.Pages.Events
                 })
                 .ToList();
         }
+
 
         public class EventOverviewDto
         {

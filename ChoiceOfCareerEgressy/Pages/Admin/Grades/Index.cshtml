@@ -1,0 +1,210 @@
+@page
+@model ChoiceOfCareerEgressy.Pages.Admin.Grades.IndexModel
+
+@{
+    ViewData["Title"] = "Osztályok kezelése";
+}
+
+<h1>Osztályok kezelése</h1>
+
+@if (Model.ErrorMessage != null)
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+
+@if (Model.SuccessMessage != null)
+{
+    <div class="alert alert-success">
+        @Model.SuccessMessage
+    </div>
+}
+
+<!-- Új osztály létrehozása -->
+<section class="card p-3 mb-4">
+    <h2 class="h5">Új osztály</h2>
+
+    <form method="post"
+          asp-page-handler="Create"
+          class="d-flex gap-2">
+
+        <input asp-for="Create.GradeName"
+               class="form-control"
+               placeholder="Például: 9.K"
+               maxlength="100"
+               required />
+
+        <button type="submit" class="btn btn-primary">
+            Létrehozás
+        </button>
+    </form>
+</section>
+
+<!-- Osztályok listája -->
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+
+        <thead>
+            <tr>
+                <th>Osztály</th>
+                <th>Diákok</th>
+                <th>Tanárok</th>
+                <th>Átnevezés</th>
+                <th>Ballagtatás</th>
+                <th>Törlés</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var grade in Model.Grades)
+            {
+                bool isGraduated = string.Equals(
+                grade.GradeName,
+                "Elballagott",
+                StringComparison.OrdinalIgnoreCase
+                );
+
+                <tr>
+                    <td>
+                        @grade.GradeName
+                    </td>
+
+                    <td>
+                        @grade.StudentCount
+                    </td>
+
+                    <td>
+                        @grade.TeacherCount
+                    </td>
+
+                    <!-- Osztály átnevezése -->
+                    <td>
+                        @if (!isGraduated)
+                        {
+                            <form method="post"
+                                  asp-page-handler="Rename"
+                                  class="d-flex gap-2">
+
+                                <input type="hidden"
+                                       name="Rename.GradeId"
+                                       value="@grade.GradeId" />
+
+                                <input type="text"
+                                       name="Rename.NewGradeName"
+                                       value="@grade.GradeName"
+                                       class="form-control"
+                                       maxlength="100"
+                                       required />
+
+                                <button type="submit"
+                                        class="btn btn-outline-primary">
+                                    Mentés
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="text-muted">
+                                Speciális osztály
+                            </span>
+                        }
+                    </td>
+
+                    <!-- Teljes osztály ballagtatása -->
+                    <td>
+                        @if (!isGraduated)
+                        {
+                            <form method="post"
+                                  asp-page-handler="Graduate"
+                                  onsubmit="return confirm('Biztosan elballagtatod az egész osztályt? A diákok az Elballagott osztályba kerülnek, az eredeti osztály törlődik.');">
+
+                                <input type="hidden"
+                                       name="gradeId"
+                                       value="@grade.GradeId" />
+
+                                <button type="submit"
+                                        class="btn btn-outline-warning">
+                                    Ballagtatás
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="text-muted">–</span>
+                        }
+                    </td>
+
+                    <!-- Üres osztály törlése -->
+                    <td>
+                        @if (isGraduated)
+                        {
+                            <form method="post"
+                                  asp-page-handler="DeleteGraduated"
+                                  onsubmit="return confirm('FIGYELEM! Az összes elballagott diák, a jelentkezéseik és az osztály is VÉGLEGESEN törlődik. Biztosan folytatod?');">
+
+                                <input type="hidden"
+                                       name="gradeId"
+                                       value="@grade.GradeId" />
+
+                                <label class="form-label small">
+                                    A törlés megerősítéséhez írd be:
+                                    <strong>VÉGLEGES TÖRLÉS</strong>
+                                </label>
+
+                                <input type="text"
+                                       name="confirmation"
+                                       class="form-control mb-2"
+                                       placeholder="VÉGLEGES TÖRLÉS"
+                                       autocomplete="off"
+                                       required />
+
+                                <button type="submit"
+                                        class="btn btn-danger">
+                                    Végleges törlés
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form method="post"
+                                  asp-page-handler="Delete"
+                                  onsubmit="return confirm('Biztosan törlöd ezt az üres osztályt?');">
+
+                                <input type="hidden"
+                                       name="DeleteGradeId"
+                                       value="@grade.GradeId" />
+
+                                <button type="submit"
+                                        class="btn btn-outline-danger"
+                                        disabled="@(grade.StudentCount + grade.TeacherCount > 0)">
+                                    Törlés
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="alert alert-info mt-3">
+    <strong>Tájékoztatás:</strong>
+    <ul class="mb-0">
+        <li>
+            Az átnevezés megtartja a diákokat és az osztályfőnököt.
+        </li>
+        <li>
+            A ballagtatás áthelyezi a diákokat az Elballagott osztályba,
+            majd törli az eredeti osztályt.
+        </li>
+        <li>
+            A Törlés gomb csak üres osztálynál használható.
+        </li>
+        <li>
+            A diákok egyedi osztályváltása továbbra is
+            a felhasználók szerkesztésénél történik.
+        </li>
+    </ul>
+</div>

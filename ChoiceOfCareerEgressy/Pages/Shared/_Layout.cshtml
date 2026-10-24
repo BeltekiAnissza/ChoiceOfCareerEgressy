@@ -1,4 +1,4 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
 @using ChoiceOfCareerEgressy.Model
 @inject HomeroomService HomeroomService
 
@@ -63,7 +63,7 @@
 <body class="d-flex flex-column min-vh-100">
 
     <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+        <nav class="navbar navbar-expand-lg navbar-dark border-bottom shadow-sm" aria-label="Fő navigáció">
             <div class="container-fluid">
 
                 <!-- LOGÓ -->
@@ -71,7 +71,7 @@
                    asp-page="/Index">
                     ChoiceOfCareer
                 </a>
-                <div class="d-flex align-items-center gap-2 ms-auto order-lg-3">
+                <div class="d-flex align-items-center gap-2 ms-auto order-lg-3 header-actions">
 
                     <!-- SZÍNVÁLASZTÓ -->
                     <div class="dropdown">
@@ -149,7 +149,7 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <div class="collapse navbar-collapse order-lg-2"
+                <div class="collapse navbar-collapse order-4 order-lg-2"
                      id="mainNavbar">
 
                     <!-- BAL OLDALI MENÜ -->
@@ -166,10 +166,12 @@
                                         Kezdőlap
                                     </a>
                                 </li>
-                                <a class="nav-link"
-                                   asp-page="/Admin/Programs/Index">
-                                    Programok kezelése
-                                </a>
+                                <li class="nav-item">
+                                    <a class="nav-link"
+                                       asp-page="/Admin/Programs/Index">
+                                        Programok kezelése
+                                    </a>
+                                </li>
                                 <!-- ESEMÉNYEK -->
                                 <li class="nav-item dropdown">
 
@@ -264,6 +266,13 @@
 
                                     </ul>
                                 </li>
+                                <!-- OSZTÁLYOK KEZELÉSE -->
+                                <li class="nav-item">
+                                    <a class="nav-link"
+                                       asp-page="/Admin/Grades/Index">
+                                        Osztályok kezelése
+                                    </a>
+                                </li>
 
                             }
 
@@ -294,6 +303,12 @@
                                         <a class="nav-link"
                                            href="/Teacher/Homeroom">
                                             Osztályom jelentkezései
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link"
+                                           asp-page="/Teacher/RenameGrade">
+                                            Osztályom átnevezése
                                         </a>
                                     </li>
                                 }
@@ -330,7 +345,7 @@
     </header>
 
     <!-- OLDAL TARTALMA -->
-    <main class="container-fluid flex-grow-1 py-4 px-3 px-lg-4">
+    <main class="container-fluid flex-grow-1 py-3 py-lg-4 px-3 px-lg-4 app-main">
         @RenderBody()
     </main>
 
@@ -347,6 +362,10 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="~/js/site.js"
+            asp-append-version="true"></script>
+
+    <!-- Mobil táblázatkártyák: csak a .mobile-card-table osztályú táblázatokon -->
+    <script src="~/js/responsive-tables.js"
             asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)

@@ -1,4 +1,4 @@
-﻿
+
 /* =========================================
    CHOICE OF CAREER - SZÍNTÉMÁK
    ========================================= */
@@ -478,4 +478,185 @@ body {
     .theme-choice {
         transition: none;
     }
+}
+
+
+/* =========================================
+   MOBILOS FELÜLET - KIEGÉSZÍTÉSEK
+   Az eredeti színtémákat és stílusokat megtartjuk.
+   ========================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { max-width: 100%; }
+.app-main { min-width: 0; }
+.app-main > * { max-width: 100%; }
+.app-main .row > [class*="col-"] { min-width: 0; }
+.app-main h1, .app-main h2, .app-main h3 { overflow-wrap: anywhere; }
+.app-main .card, .app-main .accordion, .app-main .alert { min-width: 0; }
+.app-main input, .app-main select, .app-main textarea { max-width: 100%; }
+.app-main .d-flex { min-width: 0; }
+.app-main .table-responsive { border-radius: 12px; }
+
+/* Navigáció: hamburger és téma választó mobilon is látható */
+.header-actions { flex-shrink: 0; }
+.navbar .navbar-toggler { margin-left: .5rem; }
+.navbar .dropdown-menu { max-width: min(92vw, 360px); }
+.navbar .navbar-collapse { min-width: 0; }
+.navbar .navbar-nav { min-width: 0; }
+
+/* Kártyás táblázatok: asztali gépen eredeti táblázat */
+.mobile-card-table { width: 100%; }
+.mobile-card-table td form { min-width: 0; }
+.mobile-card-table td input, .mobile-card-table td select { min-width: 0; }
+
+@media (max-width: 991.98px) {
+    .navbar .container-fluid { flex-wrap: wrap; }
+    .navbar-brand { max-width: calc(100% - 160px); overflow: hidden; text-overflow: ellipsis; }
+    .navbar-collapse { flex-basis: 100%; width: 100%; }
+    .navbar-nav .nav-link { min-height: 44px; display: flex; align-items: center; }
+    .navbar .dropdown-menu { position: static !important; transform: none !important; max-width: 100%; }
+    .navbar .navbar-text { overflow-wrap: anywhere; }
+}
+
+@media (max-width: 767.98px) {
+    .app-main { padding: 12px !important; }
+    .app-main .card { border-radius: 14px; }
+    .app-main .btn { white-space: normal; }
+    .app-main .d-flex.gap-2:not(.navbar-nav):not(.header-actions) { flex-wrap: wrap; }
+    .app-main .d-flex.gap-2 > .form-control { flex: 1 1 160px; }
+    .app-main .d-flex.gap-2 > .btn { flex: 1 1 auto; }
+
+    /* Csak opt-in táblázatok alakulnak kártyává. */
+    .mobile-card-table.is-card-ready,
+    .mobile-card-table.is-card-ready tbody,
+    .mobile-card-table.is-card-ready tr,
+    .mobile-card-table.is-card-ready td { display: block; width: 100%; }
+    .mobile-card-table.is-card-ready thead { display: none; }
+    .mobile-card-table.is-card-ready tbody { display: grid; gap: 12px; }
+    .mobile-card-table.is-card-ready tbody tr {
+        padding: 12px;
+        border: 1px solid rgba(var(--theme-rgb), .18);
+        border-radius: 14px;
+        background: rgba(255,255,255,.97);
+        box-shadow: 0 5px 15px rgba(15,23,42,.08);
+    }
+    .mobile-card-table.is-card-ready tbody td {
+        border: 0;
+        border-bottom: 1px solid #e9edf3;
+        padding: 10px 2px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+    .mobile-card-table.is-card-ready tbody td:last-child { border-bottom: 0; }
+    .mobile-card-table.is-card-ready tbody td::before {
+        content: attr(data-label);
+        display: block;
+        font-weight: 700;
+        color: var(--theme-dark);
+        font-size: .82rem;
+        margin-bottom: 6px;
+    }
+    .mobile-card-table.is-card-ready tbody td[data-label=""]::before { display: none; }
+    .mobile-card-table.is-card-ready tbody td:first-child {
+        font-weight: 700;
+        font-size: 1.05rem;
+    }
+    .mobile-card-table.is-card-ready tbody td form {
+        display: flex !important;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        width: 100%;
+    }
+    .mobile-card-table.is-card-ready tbody td form .btn,
+    .mobile-card-table.is-card-ready tbody td form .form-control,
+    .mobile-card-table.is-card-ready tbody td form .form-select { width: 100%; }
+    .mobile-card-table.is-card-ready tbody td form input[type="hidden"] { display: none; }
+}
+
+@media (max-width: 390px) {
+    .navbar-brand { font-size: .94rem !important; }
+    #themeDropdown { padding: 7px 8px; }
+    .header-actions { gap: 4px !important; }
+}
+
+/* ===== MOBILOS TABLAZAT JAVITAS V2 ===== */
+@media (max-width: 767.98px) {
+  .table-responsive.mobile-cards-wrapper {
+    overflow-x: visible;
+    overflow-y: visible;
+    border: 0;
+  }
+  table.mobile-card-table.is-card-ready {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    background: transparent;
+    border: 0;
+  }
+  table.mobile-card-table.is-card-ready > thead { display: none !important; }
+  table.mobile-card-table.is-card-ready > tbody {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    width: 100%;
+  }
+  table.mobile-card-table.is-card-ready > tbody > tr {
+    display: block !important;
+    min-width: 0;
+    padding: 14px;
+    background: #fff;
+    border: 1px solid rgba(var(--theme-rgb), .18);
+    border-radius: 15px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.07);
+  }
+  table.mobile-card-table.is-card-ready > tbody > tr > td,
+  table.mobile-card-table.is-card-ready > tbody > tr > th {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 10px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid #edf0f4 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    text-align: left !important;
+  }
+  table.mobile-card-table.is-card-ready > tbody > tr > :last-child {
+    border-bottom: 0 !important;
+  }
+  table.mobile-card-table.is-card-ready > tbody > tr > :first-child {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--theme-dark);
+  }
+  table.mobile-card-table.is-card-ready > tbody > tr > [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 5px;
+    font-size: .76rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    color: #59677a;
+  }
+  table.mobile-card-table.is-card-ready > tbody > tr > [data-label=""]::before { display: none; }
+  table.mobile-card-table.is-card-ready form,
+  table.mobile-card-table.is-card-ready form.d-flex,
+  table.mobile-card-table.is-card-ready .d-flex {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100%;
+    min-width: 0;
+  }
+  table.mobile-card-table.is-card-ready :is(input:not([type="hidden"]), select, textarea, button, .btn) {
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+  table.mobile-card-table.is-card-ready :is(button, .btn) { min-height: 44px; }
+  table.mobile-card-table.is-card-ready input[type="hidden"] { display: none; }
 }

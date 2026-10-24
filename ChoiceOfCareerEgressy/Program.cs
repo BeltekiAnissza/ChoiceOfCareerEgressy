@@ -49,6 +49,9 @@ builder.Services.AddScoped<HomeroomService>();
 builder.Services.AddScoped<AdminRegistrationService>();
 builder.Services.AddScoped<AdminTeacherSupervisionService>();
 builder.Services.AddScoped<AdminProgramService>();
+builder.Services.AddScoped<GradeManagementService>();
+
+
 builder.Services.AddAuthentication(
     CookieAuthenticationDefaults.AuthenticationScheme
 )
