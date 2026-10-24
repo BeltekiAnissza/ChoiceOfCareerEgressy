@@ -2,12 +2,14 @@
 using ChoiceOfCareerEgressy.Dto.UserDto.Student;
 using ChoiceOfCareerEgressy.Model;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ChoiceOfCareerEgressy.Controller
 {
 
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Admin")]
     public class UsersController : ControllerBase
     {
         private readonly UserService _userService;

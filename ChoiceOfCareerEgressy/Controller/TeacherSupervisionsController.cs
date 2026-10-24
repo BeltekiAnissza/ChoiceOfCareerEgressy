@@ -20,14 +20,16 @@ namespace ChoiceOfCareerEgressy.Controller
             _service = service;
         }
 
-        private int CurrentUserId =>
-            int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        private bool TryGetCurrentUserId(out int userId) =>
+            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
 
         [HttpGet("events")]
         public async Task<ActionResult<List<TeacherSupervisionEventDto>>>
             GetEvents()
         {
-            return Ok(await _service.GetEventsAsync(CurrentUserId));
+            if (!TryGetCurrentUserId(out int currentUserId))
+                return Unauthorized(new { Message = "Érvénytelen bejelentkezési azonosító." });
+            return Ok(await _service.GetEventsAsync(currentUserId));
         }
 
         [HttpPost]
@@ -35,10 +37,12 @@ namespace ChoiceOfCareerEgressy.Controller
         public async Task<IActionResult> Register(
             [FromBody] TeacherSupervisionRequestDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+                return Unauthorized(new { Message = "Érvénytelen bejelentkezési azonosító." });
             try
             {
                 await _service.RegisterAsync(
-                    CurrentUserId, dto.PlanSessionId);
+                    currentUserId, dto.PlanSessionId);
 
                 return Ok(new
                 {
@@ -69,10 +73,12 @@ namespace ChoiceOfCareerEgressy.Controller
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancel(int planSessionId)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+                return Unauthorized(new { Message = "Érvénytelen bejelentkezési azonosító." });
             try
             {
                 await _service.CancelAsync(
-                    CurrentUserId, planSessionId);
+                    currentUserId, planSessionId);
 
                 return Ok(new
                 {

@@ -19,21 +19,22 @@ namespace ChoiceOfCareerEgressy.Controller
             _service = service;
         }
 
-        private int CurrentUserId =>
-            int.Parse(User.FindFirstValue(
-                ClaimTypes.NameIdentifier)!);
+        private bool TryGetCurrentUserId(out int userId) =>
+            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
 
         [HttpGet]
         public async Task<ActionResult<HomeroomPageDto>> Get(
             [FromQuery] int? eventId)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+                return Unauthorized(new { Message = "Érvénytelen bejelentkezési azonosító." });
             try
             {
-                if (!await _service.IsHomeroomTeacherAsync(CurrentUserId))
+                if (!await _service.IsHomeroomTeacherAsync(currentUserId))
                 {
                     return Forbid();
                 }
-                return Ok(await _service.GetPageAsync(CurrentUserId, eventId));
+                return Ok(await _service.GetPageAsync(currentUserId, eventId));
             }
             catch (UnauthorizedAccessException)
             {
@@ -46,10 +47,12 @@ namespace ChoiceOfCareerEgressy.Controller
         public async Task<IActionResult> ChangeApplication(
             [FromBody] HomeroomChangeApplicationDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+                return Unauthorized(new { Message = "Érvénytelen bejelentkezési azonosító." });
             try
             {
                 await _service.ChangeApplicationAsync(
-                    CurrentUserId, dto);
+                    currentUserId, dto);
 
                 return Ok(new
                 {
@@ -87,10 +90,12 @@ namespace ChoiceOfCareerEgressy.Controller
             [FromQuery] int studentId,
             [FromQuery] int eventId)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+                return Unauthorized(new { Message = "Érvénytelen bejelentkezési azonosító." });
             try
             {
                 await _service.DeleteApplicationAsync(
-                    CurrentUserId,
+                    currentUserId,
                     studentId,
                     applicationId,
                     eventId);

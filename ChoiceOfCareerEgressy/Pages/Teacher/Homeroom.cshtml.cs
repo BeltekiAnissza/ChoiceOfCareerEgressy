@@ -1,14 +1,16 @@
 using ChoiceOfCareerEgressy.Dto.Homeroom;
 using ChoiceOfCareerEgressy.Model;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
 
 namespace ChoiceOfCareerEgressy.Pages.Teacher
 {
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "Teacher, Admin")]
     public class HomeroomModel : PageModel
     {
         private readonly HomeroomService _service;
@@ -26,28 +28,46 @@ namespace ChoiceOfCareerEgressy.Pages.Teacher
 
         public string? ErrorMessage { get; set; }
 
-        private int CurrentUserId =>
-            int.Parse(User.FindFirstValue(
-                ClaimTypes.NameIdentifier)!);
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            return int.TryParse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out userId);
+        }
 
         public async Task<IActionResult> OnGetAsync(int? eventId)
         {
-            if (!await _service.IsHomeroomTeacherAsync(CurrentUserId))
+            if (!TryGetCurrentUserId(out int teacherId))
+                return Challenge();
+
+            if (!await _service.IsHomeroomTeacherAsync(teacherId))
+                return Forbid();
+
+            try
+            {
+                Data = await _service.GetPageAsync(
+                    teacherId, eventId);
+
+                return Page();
+            }
+            catch (UnauthorizedAccessException)
             {
                 return Forbid();
             }
-
-            Data = await _service.GetPageAsync(CurrentUserId, eventId);
-
-            return Page();
         }
 
         public async Task<IActionResult> OnPostChangeAsync()
         {
+            if (!TryGetCurrentUserId(out int teacherId))
+                return Challenge();
+
+            if (!await _service.IsHomeroomTeacherAsync(teacherId))
+                return Forbid();
+
             try
             {
                 await _service.ChangeApplicationAsync(
-                    CurrentUserId, Change);
+                    teacherId, Change);
 
                 TempData["Success"] =
                     "A diák jelentkezését sikeresen mentetted.";
@@ -55,38 +75,42 @@ namespace ChoiceOfCareerEgressy.Pages.Teacher
                 return RedirectToPage(
                     new { eventId = Change.EventId });
             }
-            catch (InvalidOperationException ex)
-            {
-                ErrorMessage = ex.Message;
-            }
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
             }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+            catch (InvalidOperationException ex)
+            {
+                ErrorMessage = ex.Message;
+            }
+            catch (DbUpdateException)
             {
                 ErrorMessage =
                     "A módosítás nem sikerült. Frissítsd az oldalt.";
             }
-            catch (Microsoft.Data.Sqlite.SqliteException)
+            catch (SqliteException)
             {
                 ErrorMessage =
                     "Az adatbázis foglalt. Próbáld újra.";
             }
 
-            Data = await _service.GetPageAsync(
-                CurrentUserId, Change.EventId);
-
-            return Page();
+            return await ReloadPageAsync(
+                teacherId, Change.EventId);
         }
 
         public async Task<IActionResult> OnPostDeleteAsync(
             int studentId, int applicationId, int eventId)
         {
+            if (!TryGetCurrentUserId(out int teacherId))
+                return Challenge();
+
+            if (!await _service.IsHomeroomTeacherAsync(teacherId))
+                return Forbid();
+
             try
             {
                 await _service.DeleteApplicationAsync(
-                    CurrentUserId,
+                    teacherId,
                     studentId,
                     applicationId,
                     eventId);
@@ -96,29 +120,43 @@ namespace ChoiceOfCareerEgressy.Pages.Teacher
 
                 return RedirectToPage(new { eventId });
             }
-            catch (InvalidOperationException ex)
-            {
-                ErrorMessage = ex.Message;
-            }
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
             }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+            catch (InvalidOperationException ex)
+            {
+                ErrorMessage = ex.Message;
+            }
+            catch (DbUpdateException)
             {
                 ErrorMessage = "A törlés nem sikerült.";
             }
-            catch (Microsoft.Data.Sqlite.SqliteException)
+            catch (SqliteException)
             {
                 ErrorMessage =
                     "Az adatbázis foglalt. Próbáld újra.";
             }
 
-            Data = await _service.GetPageAsync(
-                CurrentUserId, eventId);
+            return await ReloadPageAsync(teacherId, eventId);
+        }
 
-            return Page();
+        private async Task<IActionResult> ReloadPageAsync(
+            int teacherId, int? eventId)
+        {
+            try
+            {
+                Data = await _service.GetPageAsync(
+                    teacherId, eventId);
+
+                return Page();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
     }
 }
+
 

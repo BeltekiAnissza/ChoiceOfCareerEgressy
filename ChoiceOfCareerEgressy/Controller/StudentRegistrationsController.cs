@@ -20,13 +20,15 @@ namespace ChoiceOfCareerEgressy.Controller
             _service = service;
         }
 
-        private int CurrentUserId =>
-            int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        private bool TryGetCurrentUserId(out int userId) =>
+            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
 
         [HttpGet("events")]
         public async Task<ActionResult<List<StudentEventDto>>> GetEvents()
         {
-            var events = await _service.GetEventsAsync(CurrentUserId);
+            if (!TryGetCurrentUserId(out int currentUserId))
+                return Unauthorized(new { Message = "Érvénytelen bejelentkezési azonosító." });
+            var events = await _service.GetEventsAsync(currentUserId);
             return Ok(events);
         }
 
@@ -35,9 +37,11 @@ namespace ChoiceOfCareerEgressy.Controller
         public async Task<IActionResult> Register(
             [FromBody] StudentRegistrationDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+                return Unauthorized(new { Message = "Érvénytelen bejelentkezési azonosító." });
             try
             {
-                await _service.RegisterAsync(CurrentUserId, dto);
+                await _service.RegisterAsync(currentUserId, dto);
 
                 return Ok(new
                 {
