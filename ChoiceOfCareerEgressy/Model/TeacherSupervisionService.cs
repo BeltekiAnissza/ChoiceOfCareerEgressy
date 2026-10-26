@@ -14,13 +14,50 @@ namespace ChoiceOfCareerEgressy.Model
             _context = context;
         }
 
+        // =====================================================
+        // AKTUÁLIS ESEMÉNY LEKÉRÉSE
+        // =====================================================
+
+        private async Task<int?> GetCurrentEventIdAsync()
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            // Csak az engedélyezett eseményeket kérjük le az adatbázisból.
+            var events = await _context.Events
+                .AsNoTracking()
+                .Where(e => e.IsRegistrationEnabled)
+                .ToListAsync();
+
+            // A dátumokat már C# oldalon hasonlítjuk össze.
+            var currentEvent = events
+                .Where(e =>
+                    e.RegistrationStart <= now &&
+                    e.RegistrationEnd >= now)
+                .OrderBy(e => e.EventDate)
+                .FirstOrDefault();
+
+            return currentEvent?.EventId;
+        }
+
+        // =====================================================
+        // ESEMÉNYEK ÉS PROGRAMOK LEKÉRÉSE
+        // =====================================================
+
         public async Task<List<TeacherSupervisionEventDto>> GetEventsAsync(
             int userId)
         {
             await CheckTeacherAsync(userId);
 
+            var currentEventId = await GetCurrentEventIdAsync();
+
+            if (currentEventId == null)
+            {
+                return new List<TeacherSupervisionEventDto>();
+            }
+
             var events = await _context.Events
                 .AsNoTracking()
+                .Where(e => e.EventId == currentEventId.Value)
                 .Include(e => e.TimeSlots)
                     .ThenInclude(t => t.PlanSessions)
                         .ThenInclude(s => s.Plan)
@@ -33,7 +70,6 @@ namespace ChoiceOfCareerEgressy.Model
                 .ToListAsync();
 
             return events
-                .OrderBy(e => e.EventDate)
                 .Select(e => new TeacherSupervisionEventDto
                 {
                     EventId = e.EventId,
@@ -56,9 +92,13 @@ namespace ChoiceOfCareerEgressy.Model
                                     PlanSessionId = s.PlanSessionId,
                                     PlanName = s.Plan.PlanName,
                                     LocationName = s.Location.LocationName,
-                                    RequiredSupervisors = s.RequiredSupervisors,
+
+                                    RequiredSupervisors =
+                                        s.RequiredSupervisors,
+
                                     RegisteredSupervisors =
                                         s.Supervisions.Count,
+
                                     IsMySupervision = s.Supervisions
                                         .Any(x => x.UserId == userId)
                                 })
@@ -68,6 +108,10 @@ namespace ChoiceOfCareerEgressy.Model
                 })
                 .ToList();
         }
+
+        // =====================================================
+        // JELENTKEZÉS FELÜGYELETRE
+        // =====================================================
 
         public async Task RegisterAsync(
             int userId,
@@ -85,16 +129,40 @@ namespace ChoiceOfCareerEgressy.Model
                     s.PlanSessionId == planSessionId);
 
             if (session == null)
+            {
                 throw new InvalidOperationException(
                     "A kiválasztott program nem található.");
+            }
 
             var now = DateTimeOffset.UtcNow;
 
-            if (session.TimeSlot.EndDate <= now)
-                throw new InvalidOperationException(
-                    "Lezárult programra nem jelentkezhetsz.");
+            // -------------------------------------------------
+            // AKTUÁLIS ESEMÉNY ELLENŐRZÉSE
+            // -------------------------------------------------
 
-            // A tanár már vállalt felügyeletet ebben az idősávban?
+            var currentEventId = await GetCurrentEventIdAsync();
+
+            if (currentEventId == null ||
+                session.TimeSlot.EventId != currentEventId.Value)
+            {
+                throw new InvalidOperationException(
+                    "Erre a programra jelenleg nem lehet jelentkezni.");
+            }
+
+            // -------------------------------------------------
+            // IDŐSÁV ELLENŐRZÉSE
+            // -------------------------------------------------
+
+            if (session.TimeSlot.BeginDate <= now)
+            {
+                throw new InvalidOperationException(
+                    "A már elkezdődött programra nem jelentkezhetsz.");
+            }
+
+            // -------------------------------------------------
+            // MEGLÉVŐ FELÜGYELET ELLENŐRZÉSE
+            // -------------------------------------------------
+
             bool alreadyAssigned = await _context.Supervisions
                 .AnyAsync(s =>
                     s.UserId == userId &&
@@ -109,8 +177,14 @@ namespace ChoiceOfCareerEgressy.Model
                     ));
 
             if (alreadyAssigned)
+            {
                 throw new InvalidOperationException(
                     "Ebben az idősávban már vállaltál felügyeletet.");
+            }
+
+            // -------------------------------------------------
+            // SZABAD HELYEK ELLENŐRZÉSE
+            // -------------------------------------------------
 
             if (session.Supervisions.Count >=
                 session.RequiredSupervisors)
@@ -118,6 +192,10 @@ namespace ChoiceOfCareerEgressy.Model
                 throw new InvalidOperationException(
                     "Erre a programra már elegendő tanár jelentkezett.");
             }
+
+            // -------------------------------------------------
+            // JELENTKEZÉS MENTÉSE
+            // -------------------------------------------------
 
             _context.Supervisions.Add(new Supervision
             {
@@ -127,8 +205,13 @@ namespace ChoiceOfCareerEgressy.Model
             });
 
             await _context.SaveChangesAsync();
+
             await transaction.CommitAsync();
         }
+
+        // =====================================================
+        // FELÜGYELET LEMONDÁSA
+        // =====================================================
 
         public async Task CancelAsync(
             int userId,
@@ -147,21 +230,51 @@ namespace ChoiceOfCareerEgressy.Model
                     s.PlanSessionId == planSessionId);
 
             if (supervision == null)
+            {
                 throw new InvalidOperationException(
                     "Nincs ilyen felügyeleti jelentkezésed.");
+            }
 
-            if (supervision.PlanSession!.TimeSlot.BeginDate
-                <= DateTimeOffset.UtcNow)
+            var now = DateTimeOffset.UtcNow;
+
+            // -------------------------------------------------
+            // AKTUÁLIS ESEMÉNY ELLENŐRZÉSE
+            // -------------------------------------------------
+
+            var currentEventId = await GetCurrentEventIdAsync();
+
+            if (currentEventId == null ||
+                supervision.PlanSession!.TimeSlot.EventId
+                    != currentEventId.Value)
+            {
+                throw new InvalidOperationException(
+                    "Erre az eseményre jelenleg nem módosítható a jelentkezés.");
+            }
+
+            // -------------------------------------------------
+            // IDŐSÁV ELLENŐRZÉSE
+            // -------------------------------------------------
+
+            if (supervision.PlanSession.TimeSlot.BeginDate <= now)
             {
                 throw new InvalidOperationException(
                     "A már elkezdődött felügyeletet nem mondhatod le.");
             }
 
+            // -------------------------------------------------
+            // JELENTKEZÉS TÖRLÉSE
+            // -------------------------------------------------
+
             _context.Supervisions.Remove(supervision);
 
             await _context.SaveChangesAsync();
+
             await transaction.CommitAsync();
         }
+
+        // =====================================================
+        // TANÁRI JOGOSULTSÁG ELLENŐRZÉSE
+        // =====================================================
 
         private async Task CheckTeacherAsync(int userId)
         {
@@ -171,9 +284,10 @@ namespace ChoiceOfCareerEgressy.Model
                     u.Role == RoleChoice.Teacher);
 
             if (!isTeacher)
+            {
                 throw new UnauthorizedAccessException(
                     "Csak tanár vállalhat felügyeletet.");
+            }
         }
     }
 }
-

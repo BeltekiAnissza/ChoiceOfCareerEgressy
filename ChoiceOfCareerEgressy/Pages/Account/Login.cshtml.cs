@@ -64,7 +64,7 @@ namespace ChoiceOfCareerEgressy.Pages.Account
            
             return user.Role switch
             {
-                "Admin" => RedirectToPage("/Admin/Users/Index"),
+                "Admin" => RedirectToPage("/Admin/Index"),
                 "Teacher" => RedirectToPage("/Teacher/Index"),
                 "Student" => RedirectToPage("/Student/Index"),
                 _ => RedirectToPage("/Index")

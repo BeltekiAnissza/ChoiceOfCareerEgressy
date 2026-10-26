@@ -14,61 +14,55 @@
         a saját osztályod diákjainak jelentkezéseit.
     </p>
 
-@if (TempData["Success"] is string success)
-{
-        <div class="alert alert-success">@success</div>
-}
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">
+            @success
+        </div>
+    }
 
-@if (!string.IsNullOrEmpty(Model.ErrorMessage))
-{
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
         <div class="alert alert-danger">
             @Model.ErrorMessage
         </div>
-}
+    }
 
-@if (Model.Data.Events.Any())
-{
-        <form method="get" class="mb-4">
-            <label class="form-label">Esemény</label>
+    @if (Model.Data.Events.Any())
+    {
+        <div class="mb-4">
+            <label class="form-label">Aktuális esemény</label>
 
-            <select name="eventId"
-                    class="form-select"
-                    onchange="this.form.submit()">
-
-                @foreach (var ev in Model.Data.Events)
-                {
-                    <option value="@ev.EventId"
-                            selected="@(ev.EventId == Model.Data.EventId)">
-                        @ev.EventName
-                        (@ev.EventDate.ToString("yyyy.MM.dd."))
-                    </option>
-                }
-            </select>
-        </form>
-}
-else
-{
-        <div class="alert alert-info">
-            Még nincs létrehozott esemény.
+            @foreach (var ev in Model.Data.Events)
+            {
+                <div class="form-control bg-light">
+                    @ev.EventName
+                    (@ev.EventDate.ToString("yyyy.MM.dd."))
+                </div>
+            }
         </div>
-}
+    }
+    else
+    {
+        <div class="alert alert-info">
+            Jelenleg nincs elérhető esemény.
+        </div>
+    }
 
-@if (!Model.Data.Grades.Any())
-{
+    @if (!Model.Data.Grades.Any() && Model.Data.Events.Any())
+    {
         <div class="alert alert-info">
             Jelenleg nincs hozzád rendelt osztály.
         </div>
-}
+    }
 
-@foreach (var grade in Model.Data.Grades)
-{
+    @foreach (var grade in Model.Data.Grades)
+    {
         <div class="card mb-4 shadow-sm">
 
             <div class="card-header">
                 <h4 class="mb-0">@grade.GradeName</h4>
-                <small>
-                    @grade.Students.Count diák
-                </small>
+                <small>@grade.Students.Count diák</small>
             </div>
 
             <div class="card-body">
@@ -79,7 +73,7 @@ else
                     @foreach (var student in grade.Students)
                     {
                         var count = student.RegistrationCount;
-                        var complete = count == 2;
+                        var complete = count == student.TimeSlots.Count;
 
                         <div class="accordion-item">
 
@@ -98,15 +92,17 @@ else
                                     </span>
 
                                     <span class="badge @(complete ? "bg-success" : "bg-warning text-dark")">
-                                        @count / 2 program
+                                        @count / @student.TimeSlots.Count program
                                     </span>
+
                                 </button>
                             </h2>
 
                             <div id="student-@student.UserId"
                                  class="accordion-collapse collapse"
                                  aria-labelledby="heading-@student.UserId"
-                                 data-bs-parent="#grade-@grade.GradeId">
+                                 data-bs-parent="#grade-@grade.GradeId"
+                                 data-student-id="@student.UserId">
 
                                 <div class="accordion-body">
 
@@ -118,8 +114,7 @@ else
                                     {
                                         var current = student.Applications
                                         .FirstOrDefault(a =>
-                                        a.ApplicationId ==
-                                        slot.ApplicationId);
+                                        a.ApplicationId == slot.ApplicationId);
 
                                         <div class="border rounded p-3 mb-3">
 
@@ -128,9 +123,7 @@ else
                                             @if (current != null)
                                             {
                                                 <p>
-                                                    <strong>
-                                                        @current.PlanName
-                                                    </strong>
+                                                    <strong>@current.PlanName</strong>
 
                                                     <span class="text-muted">
                                                         – @current.LocationName
@@ -152,7 +145,7 @@ else
 
                                             <form method="post"
                                                   asp-page-handler="Change"
-                                                  class="mb-2">
+                                                  class="mb-2 homeroom-action-form">
 
                                                 <input type="hidden"
                                                        name="Change.StudentId"
@@ -191,7 +184,8 @@ else
                                                         }
                                                     </select>
 
-                                                    <button class="btn btn-primary" type="submit">
+                                                    <button class="btn btn-primary"
+                                                            type="submit">
                                                         Mentés
                                                     </button>
 
@@ -202,7 +196,7 @@ else
                                             {
                                                 <form method="post"
                                                       asp-page-handler="Delete"
-                                                      onsubmit="return confirm('Biztosan törlöd a jelentkezést?')">
+                                                      class="homeroom-action-form homeroom-delete-form">
 
                                                     <input type="hidden"
                                                            name="studentId"
@@ -220,6 +214,7 @@ else
                                                             class="btn btn-outline-danger btn-sm">
                                                         Jelentkezés törlése
                                                     </button>
+
                                                 </form>
                                             }
 
@@ -231,7 +226,14 @@ else
 
                         </div>
                     }
+
                 </div>
             </div>
         </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script src="~/js/teacher/homeroom.js" asp-append-version="true"></script>
 }

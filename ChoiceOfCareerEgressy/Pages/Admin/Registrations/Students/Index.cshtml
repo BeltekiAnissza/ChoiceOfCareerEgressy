@@ -43,7 +43,7 @@
 
             <select name="eventId"
                     class="form-select"
-                    onchange="this.form.submit()">
+                    data-auto-submit="true">
 
                 @foreach (var ev in Model.Data.Events)
                 {
@@ -124,8 +124,7 @@
                                                 gradeId = grade.GradeId,
                                                 viewMode = "grades"
                                             })"
-                                            aria-expanded="@(gradeId == grade.GradeId ? "true" : "false")"
-                                            onclick="toggleGradeStudents(this)">
+                                            aria-expanded="@(gradeId == grade.GradeId ? "true" : "false")">
 
                                         @(gradeId == grade.GradeId
                                             ? "Diákok elrejtése"
@@ -275,7 +274,7 @@
                                                                               asp-route-gradeId="@grade.GradeId"
                                                                               asp-route-viewMode="grades"
                                                                               asp-route-studentId="@student.UserId"
-                                                                              onsubmit="return confirm('Biztosan törlöd a jelentkezést?')">
+                                                                              data-confirm-delete="true">
 
                                                                             <input type="hidden"
                                                                                    name="studentId"
@@ -337,7 +336,7 @@
 
                 <select name="planSessionId"
                         class="form-select"
-                        onchange="this.form.submit()">
+                        data-auto-submit="true">
 
                     <option value="">
                         Válassz programot!
@@ -455,7 +454,7 @@
                                               asp-page-handler="Delete"
                                               asp-route-planSessionId="@planSessionId"
                                               asp-route-viewMode="programs"
-                                              onsubmit="return confirm('Biztosan törlöd a jelentkezést?')">
+                                              data-confirm-delete="true">
 
                                             <input type="hidden"
                                                    name="studentId"
@@ -491,246 +490,8 @@
     }
 
 </div>
-
-<script>
-    // =====================================================
-    // GÖRGETÉSI POZÍCIÓ KEZELÉSE MENTÉSHEZ ÉS TÖRLÉSHEZ
-    // =====================================================
-
-    if ("scrollRestoration" in history) {
-        history.scrollRestoration = "manual";
-    }
-
-    const scrollStorageKey = "registrationScrollPosition";
-
-    function saveRegistrationScroll() {
-        sessionStorage.setItem(
-            scrollStorageKey,
-            String(window.scrollY)
-        );
-    }
-
-    document.addEventListener("submit", function (event) {
-
-        const form = event.target;
-
-        if (form instanceof HTMLFormElement &&
-            form.method.toLowerCase() === "post") {
-
-            saveRegistrationScroll();
-        }
-    });
-
-    window.addEventListener("load", function () {
-
-        const savedPosition =
-            sessionStorage.getItem(scrollStorageKey);
-
-        if (savedPosition !== null) {
-
-            sessionStorage.removeItem(scrollStorageKey);
-
-            requestAnimationFrame(function () {
-
-                window.scrollTo({
-                    top: Number(savedPosition),
-                    behavior: "instant"
-                });
-
-            });
-        }
-    });
-
-    // =====================================================
-    // OSZTÁLYOK MEGNYITÁSA OLDALFRISSÍTÉS NÉLKÜL
-    // =====================================================
-
-    let activeGradeRequest = null;
-    let gradeRequestVersion = 0;
-
-    function updateGradeButton(button, isOpen) {
-
-        button.textContent = isOpen
-            ? "Diákok elrejtése"
-            : "Diákok megtekintése";
-
-        button.classList.toggle("btn-primary", isOpen);
-        button.classList.toggle("btn-outline-primary", !isOpen);
-
-        button.setAttribute(
-            "aria-expanded",
-            isOpen ? "true" : "false"
-        );
-    }
-
-    function closeGradeRows() {
-
-        document.querySelectorAll(".grade-students-row")
-            .forEach(function (row) {
-                row.remove();
-            });
-
-        document.querySelectorAll(".grade-toggle")
-            .forEach(function (button) {
-                updateGradeButton(button, false);
-            });
-    }
-
-    async function toggleGradeStudents(button) {
-
-        const gradeId = button.dataset.gradeId;
-
-        const existingRow =
-            document.getElementById("grade-" + gradeId);
-
-        // Ha már nyitva van, bezárjuk.
-        if (existingRow) {
-
-            gradeRequestVersion++;
-
-            if (activeGradeRequest) {
-                activeGradeRequest.abort();
-                activeGradeRequest = null;
-            }
-
-            closeGradeRows();
-            return;
-        }
-
-        // Másik osztály lekérésének megszakítása.
-        if (activeGradeRequest) {
-            activeGradeRequest.abort();
-        }
-
-        const requestVersion = ++gradeRequestVersion;
-        const controller = new AbortController();
-
-        activeGradeRequest = controller;
-
-        // Előző osztály bezárása.
-        closeGradeRows();
-
-        const originalText = button.textContent;
-
-        button.disabled = true;
-        button.textContent = "Betöltés...";
-
-        try {
-
-            const response = await fetch(
-                button.dataset.url,
-                {
-                    method: "GET",
-                    credentials: "same-origin",
-                    signal: controller.signal,
-                    headers: {
-                        "X-Requested-With": "XMLHttpRequest"
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(
-                    "A diákok betöltése nem sikerült."
-                );
-            }
-
-            const html = await response.text();
-
-            if (requestVersion !== gradeRequestVersion) {
-                return;
-            }
-
-            const parser = new DOMParser();
-
-            const documentFromServer =
-                parser.parseFromString(html, "text/html");
-
-            const studentsRow =
-                documentFromServer.getElementById(
-                    "grade-" + gradeId
-                );
-
-            if (!studentsRow) {
-                throw new Error(
-                    "A kiválasztott osztály adatai nem találhatók."
-                );
-            }
-
-            const summaryRow =
-                document.getElementById(
-                    "grade-summary-" + gradeId
-                );
-
-            if (!summaryRow) {
-                throw new Error(
-                    "A kiválasztott osztály sora nem található."
-                );
-            }
-
-            // A szervertől kapott sort a jelenlegi
-            // dokumentumba helyezzük át.
-            const importedRow =
-                document.importNode(studentsRow, true);
-
-            importedRow.classList.add(
-                "grade-students-row"
-            );
-
-            // Közvetlenül az osztály alá kerül.
-            summaryRow.insertAdjacentElement(
-                "afterend",
-                importedRow
-            );
-
-            updateGradeButton(button, true);
-
-            // A címsor URL-jét is frissítjük,
-            // de navigáció és oldalfrissítés nélkül.
-            const url = new URL(
-                button.dataset.url,
-                window.location.origin
-            );
-
-            history.replaceState(
-                history.state,
-                "",
-                url.pathname + url.search
-            );
-
-        }
-        catch (error) {
-
-            if (error.name !== "AbortError" &&
-                requestVersion === gradeRequestVersion) {
-
-                console.error(error);
-
-                alert(
-                    "Nem sikerült betölteni a diákokat. Próbáld újra!"
-                );
-            }
-
-        }
-        finally {
-
-            if (requestVersion === gradeRequestVersion) {
-
-                button.disabled = false;
-
-                if (!document.getElementById(
-                    "grade-" + gradeId
-                )) {
-                    button.textContent = originalText;
-                    updateGradeButton(button, false);
-                }
-
-                activeGradeRequest = null;
-            }
-            else {
-                button.disabled = false;
-                updateGradeButton(button, false);
-            }
-        }
-    }
-</script>
+@section Scripts
+{
+    <script src="~/js/admin/registrations/student_index.js"
+            asp-append-version="true"></script>
+}

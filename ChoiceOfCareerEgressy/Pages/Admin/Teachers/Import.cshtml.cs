@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace ChoiceOfCareerEgressy.Pages.Teacher
+namespace ChoiceOfCareerEgressy.Pages.Admin.Teacher
 {
     [Authorize(Roles = "Admin")]
     public class ImportModel : PageModel

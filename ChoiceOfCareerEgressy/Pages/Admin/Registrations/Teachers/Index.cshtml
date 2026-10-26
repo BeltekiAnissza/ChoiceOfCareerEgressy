@@ -40,13 +40,17 @@
     }
     else
     {
+        <!-- ========================================= -->
+        <!-- ESEMÉNY KIVÁLASZTÁSA                     -->
+        <!-- ========================================= -->
+
         <form method="get" class="mb-4">
 
             <label class="form-label">Esemény</label>
 
             <select name="eventId"
                     class="form-select"
-                    onchange="this.form.submit()">
+                    data-auto-submit="true">
 
                 @foreach (var ev in Model.Data.Events)
                 {
@@ -62,6 +66,10 @@
             </select>
 
         </form>
+
+        <!-- ========================================= -->
+        <!-- TANÁROK                                 -->
+        <!-- ========================================= -->
 
         <div class="card shadow-sm">
 
@@ -81,6 +89,10 @@
 
                     @foreach (var teacher in Model.Data.Teachers)
                     {
+                        <!-- ========================================= -->
+                        <!-- TANÁR KÁRTYÁJA                           -->
+                        <!-- ========================================= -->
+
                         <div class="accordion-item"
                              id="teacher-card-@teacher.UserId">
 
@@ -105,6 +117,10 @@
 
                             </h2>
 
+                            <!-- ========================================= -->
+                            <!-- TANÁR FELÜGYELETEI                       -->
+                            <!-- ========================================= -->
+
                             <div id="teacher-@teacher.UserId"
                                  class="accordion-collapse collapse"
                                  data-bs-parent="#teachersAccordion">
@@ -117,10 +133,17 @@
 
                                     @foreach (var slot in teacher.TimeSlots)
                                     {
+                                        <!-- ========================================= -->
+                                        <!-- IDŐSÁV                                   -->
+                                        <!-- ========================================= -->
+
                                         <div class="border rounded p-3 mb-3">
 
                                             <h5>@slot.TimeSlotName</h5>
 
+                                            <!-- ========================================= -->
+                                            <!-- AKTUÁLIS FELÜGYELET                        -->
+                                            <!-- ========================================= -->
                                             @if (slot.SupervisionId != null)
                                             {
                                                 <div class="alert alert-success py-2">
@@ -141,6 +164,10 @@
                                                     Nincs felügyeleti jelentkezés.
                                                 </div>
                                             }
+
+                                            <!-- ========================================= -->
+                                            <!-- FELÜGYELET MENTÉSE                        -->
+                                            <!-- ========================================= -->
 
                                             <form method="post"
                                                   asp-page-handler="Save"
@@ -198,6 +225,9 @@
 
                                             </form>
 
+                                            <!-- ========================================= -->
+                                            <!-- FELÜGYELET TÖRLÉSE                       -->
+                                            <!-- ========================================= -->
                                             @if (slot.SupervisionId != null)
                                             {
                                                 <form method="post"
@@ -245,189 +275,8 @@
 
 </div>
 
-<script>
-    // =====================================================
-    // AJAX MENTÉS ÉS TÖRLÉS
-    // =====================================================
-
-    document.addEventListener("submit", async function (event) {
-
-        const form = event.target;
-
-        if (!form.classList.contains("supervision-ajax-form")) {
-            return;
-        }
-
-        event.preventDefault();
-
-        // Törlés előtt megerősítés.
-        if (form.classList.contains("supervision-delete-form")) {
-
-            if (!confirm("Biztosan törlöd a felügyeleti jelentkezést?")) {
-                return;
-            }
-        }
-
-        const button = form.querySelector('button[type="submit"]');
-
-        if (button.disabled) {
-            return;
-        }
-
-        const originalText = button.textContent;
-
-        button.disabled = true;
-        button.textContent = "Feldolgozás...";
-
-        const teacherCard = form.closest(".accordion-item");
-        const teacherId = teacherCard?.id.replace("teacher-card-", "");
-
-        try {
-
-            const response = await fetch(form.action, {
-                method: "POST",
-                body: new FormData(form),
-                credentials: "same-origin",
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                }
-            });
-
-            const result = await response.json();
-
-            if (!response.ok || !result.success) {
-                throw new Error(
-                    result.message || "A művelet nem sikerült."
-                );
-            }
-
-            // Friss adatok lekérése a háttérben.
-            await refreshTeacherSupervisions(teacherId);
-
-            showSupervisionMessage(
-                result.message,
-                "success"
-            );
-
-        }
-        catch (error) {
-
-            showSupervisionMessage(
-                error.message || "Ismeretlen hiba történt.",
-                "danger"
-            );
-
-        }
-        finally {
-
-            button.disabled = false;
-            button.textContent = originalText;
-
-        }
-    });
-
-    // =====================================================
-    // TANÁRI ADATOK FRISSÍTÉSE OLDALFRISSÍTÉS NÉLKÜL
-    // =====================================================
-
-    async function refreshTeacherSupervisions(openTeacherId) {
-
-        const url = new URL(window.location.href);
-
-        const response = await fetch(url.toString(), {
-            method: "GET",
-            credentials: "same-origin",
-            headers: {
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(
-                "A frissített adatok betöltése nem sikerült."
-            );
-        }
-
-        const html = await response.text();
-
-        const parser = new DOMParser();
-
-        const newDocument = parser.parseFromString(
-            html,
-            "text/html"
-        );
-
-        const newAccordion =
-            newDocument.getElementById("teachersAccordion");
-
-        const currentAccordion =
-            document.getElementById("teachersAccordion");
-
-        if (!newAccordion || !currentAccordion) {
-            throw new Error(
-                "A tanári adatok nem találhatók."
-            );
-        }
-
-        // A régi accordion lecserélése.
-        currentAccordion.innerHTML = newAccordion.innerHTML;
-
-        // A korábban nyitott tanár kártyáját
-        // ismét megnyitjuk, animáció nélkül.
-        if (openTeacherId) {
-
-            const collapseElement =
-                document.getElementById(
-                    "teacher-" + openTeacherId
-                );
-
-            if (collapseElement) {
-
-                collapseElement.classList.add("show");
-
-                const headerButton =
-                    collapseElement.previousElementSibling
-                        ?.querySelector(".accordion-button");
-
-                if (headerButton) {
-
-                    headerButton.classList.remove("collapsed");
-                    headerButton.setAttribute(
-                        "aria-expanded",
-                        "true"
-                    );
-                }
-            }
-        }
-    }
-
-    // =====================================================
-    // VISSZAJELZÉS
-    // =====================================================
-
-    function showSupervisionMessage(message, type) {
-
-        const container =
-            document.getElementById("supervisionMessage");
-
-        if (!container) {
-            return;
-        }
-
-        const alert = document.createElement("div");
-
-        alert.className = "alert alert-" + type;
-        alert.textContent = message;
-
-        container.replaceChildren(alert);
-
-        // A visszajelzés nem görgeti fel az oldalt.
-        setTimeout(function () {
-
-            if (alert.isConnected) {
-                alert.remove();
-            }
-
-        }, 5000);
-    }
-</script>
+@section Scripts
+{
+    <script src="~/js/admin/registrations/teacher_index.js"
+            asp-append-version="true"></script>
+}

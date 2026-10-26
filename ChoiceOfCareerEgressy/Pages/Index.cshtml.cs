@@ -21,7 +21,7 @@ namespace ChoiceOfCareerEgressy.Pages
 
             if (User.IsInRole("Admin"))
             {
-                return RedirectToPage("/Admin/Users/Index");
+                return RedirectToPage("/Admin/Index");
             }
 
             if (User.IsInRole("Teacher"))

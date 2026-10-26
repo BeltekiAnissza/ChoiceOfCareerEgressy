@@ -70,7 +70,7 @@
 
                         <select asp-for="EventId"
                                 class="form-select"
-                                onchange="document.getElementById('eventForm').submit()">
+                                id="eventSelect">
 
                             @foreach (var ev in Model.Events)
                             {
@@ -201,7 +201,7 @@
     </div>
 
     <!-- ========================================= -->
-    <!-- PROGRAMOK FEJLÉCE                       -->
+    <!-- PROGRAMOK FEJLÉCE                         -->
     <!-- ========================================= -->
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
@@ -524,4 +524,10 @@
         </div>
 
     </div>
+}
+
+@section Scripts
+{
+    <script src="~/js/admin/programs/index.js"
+            asp-append-version="true"></script>
 }

@@ -13,6 +13,10 @@ namespace ChoiceOfCareerEgressy.Model
             _context = context;
         }
 
+        // =====================================================
+        // OSZTÁLYFŐNÖKI JOGOSULTSÁG
+        // =====================================================
+
         public async Task<bool> IsHomeroomTeacherAsync(int teacherId)
         {
             return await _context.Users
@@ -23,47 +27,109 @@ namespace ChoiceOfCareerEgressy.Model
                     u.GradeId != null);
         }
 
-        public async Task<HomeroomPageDto> GetPageAsync( int teacherId, int? eventId)
+        private async Task CheckTeacherAsync(int teacherId)
+        {
+            if (!await IsHomeroomTeacherAsync(teacherId))
+            {
+                throw new UnauthorizedAccessException(
+                    "Nem vagy osztályfőnök, vagy nincs hozzád osztály rendelve.");
+            }
+        }
+
+        // =====================================================
+        // AKTUÁLIS ESEMÉNY
+        // =====================================================
+
+        private async Task<Event?> GetCurrentEventAsync()
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            // SQLite esetén a DateTimeOffset összehasonlítást
+            // memóriában végezzük.
+            var events = await _context.Events
+                .AsNoTracking()
+                .Include(e => e.TimeSlots)
+                .ToListAsync();
+
+            return events
+                .Where(e =>
+                    e.RegistrationStart <= now &&
+                    GetEventStart(e) > now)
+                .OrderBy(e => GetEventStart(e))
+                .FirstOrDefault();
+        }
+
+        private static DateTimeOffset GetEventStart(Event ev)
+        {
+            if (ev.TimeSlots.Count > 0)
+            {
+                return ev.TimeSlots
+                    .Min(t => t.BeginDate);
+            }
+
+            return ev.EventDate;
+        }
+
+        private async Task<Event> GetEditableEventAsync(int eventId)
+        {
+            var currentEvent = await GetCurrentEventAsync();
+
+            if (currentEvent == null ||
+                currentEvent.EventId != eventId)
+            {
+                throw new InvalidOperationException(
+                    "Ez az esemény jelenleg nem módosítható.");
+            }
+
+            return currentEvent;
+        }
+
+        // =====================================================
+        // OLDAL ADATAINAK LEKÉRÉSE
+        // =====================================================
+
+        public async Task<HomeroomPageDto> GetPageAsync(int teacherId, int? eventId)
         {
             await CheckTeacherAsync(teacherId);
 
-            var events = await _context.Events
-                .AsNoTracking()
-                .ToListAsync();
+            var currentEvent = await GetCurrentEventAsync();
 
-            events = events
-                .OrderByDescending(e => e.EventDate)
-                .ToList();
+            var result = new HomeroomPageDto();
 
-            var selectedEvent = events.FirstOrDefault(e =>
-                e.EventId == eventId) ?? events.FirstOrDefault();
-
-            var result = new HomeroomPageDto
-            {
-                EventId = selectedEvent?.EventId ?? 0,
-                Events = events.Select(e => new HomeroomEventDto
-                {
-                    EventId = e.EventId,
-                    EventName = e.EventName,
-                    EventDate = e.EventDate
-                }).ToList()
-            };
-
-            if (selectedEvent == null)
+            if (currentEvent == null)
                 return result;
 
+            // Csak az aktuális esemény szerepelhet a listában.
+            result.EventId = currentEvent.EventId;
+
+            result.Events.Add(new HomeroomEventDto
+            {
+                EventId = currentEvent.EventId,
+                EventName = currentEvent.EventName,
+                EventDate = currentEvent.EventDate
+            });
+
+            // A felhasználó nem választhat másik eseményt.
+            if (eventId.HasValue &&
+                eventId.Value != currentEvent.EventId)
+            {
+                throw new InvalidOperationException(
+                    "A kiválasztott esemény nem aktuális.");
+            }
+
+            // A tanárhoz rendelt osztályok.
             var teacherGradeId = await _context.Users
-                .AsNoTracking()
-                .Where(u =>
-                    u.UserId == teacherId &&
-                    u.Role == RoleChoice.Teacher)
-                .Select(u => u.GradeId)
-                .FirstOrDefaultAsync();
+                    .AsNoTracking()
+                    .Where(u =>
+                        u.UserId == teacherId &&
+                        u.Role == RoleChoice.Teacher)
+                    .Select(u => u.GradeId)
+                    .FirstOrDefaultAsync();
 
             if (!teacherGradeId.HasValue)
             {
                 throw new UnauthorizedAccessException(
-                    "Ehhez a tanárhoz nincs osztály rendelve.");
+                    "Nincs hozzád osztály rendelve.");
             }
 
             var grades = await _context.Grades
@@ -78,10 +144,12 @@ namespace ChoiceOfCareerEgressy.Model
                     .ThenInclude(s => s.Plan)
                 .Include(t => t.PlanSessions)
                     .ThenInclude(s => s.Location)
-                .Where(t => t.EventId == selectedEvent.EventId)
+                .Where(t => t.EventId == currentEvent.EventId)
                 .ToListAsync();
 
-            slots = slots.OrderBy(t => t.BeginDate).ToList();
+            slots = slots
+                .OrderBy(t => t.BeginDate)
+                .ToList();
 
             var applications = await _context.Applications
                 .AsNoTracking()
@@ -94,7 +162,7 @@ namespace ChoiceOfCareerEgressy.Model
                 .Where(a =>
                     a.Status == ApplicationStatus.Active &&
                     a.PlanSession.TimeSlot.EventId ==
-                        selectedEvent.EventId)
+                        currentEvent.EventId)
                 .ToListAsync();
 
             foreach (var grade in grades.OrderBy(g => g.GradeName))
@@ -120,8 +188,8 @@ namespace ChoiceOfCareerEgressy.Model
                         EmailAddress = student.EmailAddress,
                         RegistrationCount = myApplications.Count,
 
-                        Applications = myApplications.Select(a =>
-                            new HomeroomApplicationDto
+                        Applications = myApplications
+                            .Select(a => new HomeroomApplicationDto
                             {
                                 ApplicationId = a.ApplicationId,
                                 PlanSessionId = a.PlanSessionId,
@@ -134,7 +202,8 @@ namespace ChoiceOfCareerEgressy.Model
                                     a.PlanSession.TimeSlot.BeginDate,
                                 EndDate =
                                     a.PlanSession.TimeSlot.EndDate
-                            }).ToList()
+                            })
+                            .ToList()
                     };
 
                     foreach (var slot in slots)
@@ -143,6 +212,12 @@ namespace ChoiceOfCareerEgressy.Model
                             .FirstOrDefault(a =>
                                 a.PlanSession.TimeSlotId ==
                                     slot.TimeSlotId);
+
+                        var registeredPlanIds = myApplications
+                            .Where(a =>
+                                a.PlanSession.TimeSlotId != slot.TimeSlotId)
+                            .Select(a => a.PlanSession.PlanId)
+                            .ToHashSet();
 
                         var slotDto = new HomeroomStudentSlotDto
                         {
@@ -155,20 +230,28 @@ namespace ChoiceOfCareerEgressy.Model
 
                         foreach (var session in slot.PlanSessions
                             .Where(s =>
+                                // Ágazat ellenőrzése
                                 (s.Plan.BranchId == null ||
                                  s.Plan.BranchId == student.BranchId) &&
+
+                                // Nem ellenőrzése
                                 (s.Plan.SexId == null ||
-                                 s.Plan.SexId == student.SexId))
+                                 s.Plan.SexId == student.SexId) &&
+
+                                // A másik idősávban már kiválasztott
+                                // program ne jelenjen meg.
+                                !registeredPlanIds.Contains(s.PlanId))
                             .OrderBy(s => s.Plan.PlanName))
                         {
                             int occupied = applications.Count(a =>
                                 a.PlanSessionId == session.PlanSessionId);
 
                             int available = Math.Max(
-                                0, session.Capacity - occupied);
+                                0,
+                                session.Capacity - occupied);
 
-                            // A saját jelenlegi helye akkor is
-                            // kiválasztható, ha a program betelt.
+                            // A saját programját akkor is láthatja,
+                            // ha időközben betelt.
                             if (available == 0 &&
                                 current?.PlanSessionId !=
                                     session.PlanSessionId)
@@ -201,14 +284,18 @@ namespace ChoiceOfCareerEgressy.Model
             return result;
         }
 
-        public async Task ChangeApplicationAsync(
-            int teacherId,
-            HomeroomChangeApplicationDto dto)
+        // =====================================================
+        // JELENTKEZÉS MÓDOSÍTÁSA
+        // =====================================================
+
+        public async Task ChangeApplicationAsync(int teacherId, HomeroomChangeApplicationDto dto)
         {
             await using var transaction =
                 await _context.Database.BeginTransactionAsync();
 
-            var student = await GetAuthorizedStudentAsync( teacherId, dto.StudentId);
+            var student = await GetAuthorizedStudentAsync(teacherId, dto.StudentId);
+
+            await GetEditableEventAsync(dto.EventId);
 
             var session = await _context.PlanSessions
                 .Include(s => s.Plan)
@@ -242,11 +329,15 @@ namespace ChoiceOfCareerEgressy.Model
                 .ToListAsync();
 
             if (existing.Count > 1)
+            {
                 throw new InvalidOperationException(
                     "A diáknak több jelentkezése van ebben az idősávban.");
+            }
 
             var current = existing.SingleOrDefault();
 
+            // Ha már erre a programra jelentkezett,
+            // nincs szükség módosításra.
             if (current?.PlanSessionId == session.PlanSessionId)
                 return;
 
@@ -267,43 +358,68 @@ namespace ChoiceOfCareerEgressy.Model
                     "A diák ugyanazt a programot nem választhatja kétszer.");
             }
 
-            var occupied = await _context.Applications
+            int occupied = await _context.Applications
                 .CountAsync(a =>
                     a.PlanSessionId == session.PlanSessionId &&
                     a.Status == ApplicationStatus.Active);
 
             if (occupied >= session.Capacity)
+            {
                 throw new InvalidOperationException(
                     "A kiválasztott program betelt.");
+            }
+
+            var now = DateTimeOffset.UtcNow;
+
+            // Korábban már létrehozott jelentkezés keresése.
+            // A UserId + PlanSessionId egyedi index miatt
+            // nem hozhatunk létre ugyanilyen rekordot újra.
+            var previousApplication = await _context.Applications
+                .FirstOrDefaultAsync(a =>
+                    a.UserId == student.UserId &&
+                    a.PlanSessionId == session.PlanSessionId);
 
             if (current != null)
             {
                 current.Status = ApplicationStatus.Cancelled;
-                current.UpdateDate = DateTimeOffset.UtcNow;
+                current.UpdateDate = now;
             }
 
-            _context.Applications.Add(new Application
+            if (previousApplication != null)
             {
-                UserId = student.UserId,
-                PlanSessionId = session.PlanSessionId,
-                ApplicationDate = DateTimeOffset.UtcNow,
-                Status = ApplicationStatus.Active
-            });
+                // Korábban lemondott jelentkezés újraaktiválása.
+                previousApplication.Status = ApplicationStatus.Active;
+                previousApplication.UpdateDate = now;
+            }
+            else
+            {
+                _context.Applications.Add(new Application
+                {
+                    UserId = student.UserId,
+                    PlanSessionId = session.PlanSessionId,
+                    ApplicationDate = now,
+                    Status = ApplicationStatus.Active
+                });
+            }
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
         }
 
-        public async Task DeleteApplicationAsync(
-            int teacherId,
-            int studentId,
-            int applicationId,
-            int eventId)
+        // =====================================================
+        // JELENTKEZÉS TÖRLÉSE
+        // =====================================================
+
+        public async Task DeleteApplicationAsync(int teacherId, int studentId, int applicationId, int eventId)
         {
             await using var transaction =
                 await _context.Database.BeginTransactionAsync();
 
-            await GetAuthorizedStudentAsync(teacherId, studentId);
+            await GetAuthorizedStudentAsync(
+                teacherId,
+                studentId);
+
+            await GetEditableEventAsync(eventId);
 
             var application = await _context.Applications
                 .Include(a => a.PlanSession)
@@ -327,37 +443,26 @@ namespace ChoiceOfCareerEgressy.Model
             await transaction.CommitAsync();
         }
 
-        private async Task CheckTeacherAsync(int teacherId)
-        {
-            bool isHomeroomTeacher = await _context.Users
-                .AsNoTracking()
-                .AnyAsync(u =>
-                    u.UserId == teacherId &&
-                    u.Role == RoleChoice.Teacher &&
-                    u.GradeId != null);
+        // =====================================================
+        // SAJÁT OSZTÁLY DIÁKJÁNAK ELLENŐRZÉSE
+        // =====================================================
 
-            if (!isHomeroomTeacher)
-            {
-                throw new UnauthorizedAccessException(
-                    "A felhasználó nem osztályfőnök, " +
-                    "vagy nincs hozzá osztály rendelve.");
-            }
-        }
-
-        private async Task<User> GetAuthorizedStudentAsync( int teacherId, int studentId)
+        private async Task<User> GetAuthorizedStudentAsync(int teacherId, int studentId)
         {
             await CheckTeacherAsync(teacherId);
 
             var teacherGradeId = await _context.Users
                 .AsNoTracking()
-                .Where(u => u.UserId == teacherId)
+                .Where(u =>
+                    u.UserId == teacherId &&
+                    u.Role == RoleChoice.Teacher)
                 .Select(u => u.GradeId)
                 .FirstOrDefaultAsync();
 
             if (!teacherGradeId.HasValue)
             {
                 throw new UnauthorizedAccessException(
-                    "Nem vagy osztályfőnök.");
+                    "Nincs hozzád osztály rendelve.");
             }
 
             var student = await _context.Users

@@ -228,3 +228,26 @@ body {
         transition: none;
     }
 }
+/* ========================================= */
+/* SZÍNTÉMAVÁLASZTÓ - GOMBOK SZÍNEI          */
+/* ========================================= */
+
+.theme-choice[data-theme-choice="purple"] {
+    --choice-color: #7654d4;
+}
+
+.theme-choice[data-theme-choice="blue"] {
+    --choice-color: #3478df;
+}
+
+.theme-choice[data-theme-choice="gray"] {
+    --choice-color: #64748b;
+}
+
+.theme-choice[data-theme-choice="pink"] {
+    --choice-color: #db5d9d;
+}
+
+.theme-choice[data-theme-choice="green"] {
+    --choice-color: #269f78;
+}

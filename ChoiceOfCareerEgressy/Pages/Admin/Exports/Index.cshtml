@@ -34,7 +34,7 @@
 <div class="row g-3">
 
     <!-- ========================================= -->
-    <!-- OSZTÁLY EXPORT -->
+    <!-- OSZTÁLY EXPORT                           -->
     <!-- ========================================= -->
 
     <div class="col-12 col-lg-6">
@@ -115,7 +115,7 @@
     </div>
 
     <!-- ========================================= -->
-    <!-- PROGRAM EXPORT -->
+    <!-- PROGRAM EXPORT                           -->
     <!-- ========================================= -->
 
     <div class="col-12 col-lg-6">
@@ -216,118 +216,16 @@
 
 </div>
 
+<!-- ========================================= -->
+<!-- PROGRAMOK ÉS IDŐSÁVOK ADATAI             -->
+<!-- ========================================= -->
+
+<script id="exportSessionsData" type="application/json">
+    @Html.Raw(plansJson.Replace("<", "\\u003C"))
+</script>
+
 @section Scripts
 {
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-
-            const sessions = @Html.Raw(plansJson);
-
-            const eventSelect =
-                document.getElementById("planEventId");
-
-            const planSelect =
-                document.getElementById("planId");
-
-            const slotSelect =
-                document.getElementById("timeSlotId");
-
-            const allPlans = Array.from(
-                planSelect.options
-            ).filter(option => option.value !== "");
-
-            // =====================================
-            // PROGRAMOK FRISSÍTÉSE
-            // =====================================
-
-            function updatePlans() {
-
-                const eventId = Number(eventSelect.value);
-
-                planSelect.innerHTML = "";
-
-                const placeholder =
-                    document.createElement("option");
-
-                placeholder.value = "";
-                placeholder.textContent = "Válassz programot";
-
-                planSelect.appendChild(placeholder);
-
-                const availablePlanIds = new Set(
-                    sessions
-                        .filter(s => s.eventId === eventId)
-                        .map(s => s.planId)
-                );
-
-                allPlans.forEach(option => {
-
-                    if (availablePlanIds.has(Number(option.value))) {
-
-                        planSelect.appendChild(
-                            option.cloneNode(true)
-                        );
-                    }
-
-                });
-
-                planSelect.disabled =
-                    availablePlanIds.size === 0;
-
-                updateSlots();
-            }
-
-            // =====================================
-            // IDŐSÁVOK FRISSÍTÉSE
-            // =====================================
-
-            function updateSlots() {
-
-                const eventId = Number(eventSelect.value);
-                const planId = Number(planSelect.value);
-
-                slotSelect.innerHTML = "";
-
-                const placeholder =
-                    document.createElement("option");
-
-                placeholder.value = "";
-                placeholder.textContent = "Válassz idősávot";
-
-                slotSelect.appendChild(placeholder);
-
-                const availableSlots = sessions
-                    .filter(s =>
-                        s.eventId === eventId &&
-                        s.planId === planId)
-                    .sort((a, b) => a.number - b.number);
-
-                availableSlots.forEach(slot => {
-
-                    const option =
-                        document.createElement("option");
-
-                    option.value = slot.timeSlotId;
-
-                    option.textContent =
-                        `${slot.number}. idősáv – ${slot.name}`;
-
-                    slotSelect.appendChild(option);
-                });
-
-                slotSelect.disabled =
-                    availableSlots.length === 0;
-            }
-
-            eventSelect.addEventListener(
-                "change",
-                updatePlans);
-
-            planSelect.addEventListener(
-                "change",
-                updateSlots);
-
-            updatePlans();
-        });
-    </script>
+    <script src="~/js/admin/exports/index.js"
+            asp-append-version="true"></script>
 }

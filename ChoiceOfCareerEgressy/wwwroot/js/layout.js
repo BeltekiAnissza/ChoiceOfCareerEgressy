@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
         "green"
     ];
 
-    const defaultTheme = "purple";
+    const defaultTheme = "gray";
 
     // =====================================
     // AKTUÁLIS TÉMA LEKÉRÉSE
@@ -110,5 +110,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================
 
     updateThemeButtons();
+
+
 
 });

@@ -13,10 +13,22 @@ public class ExportGradeModel : PageModel
 {
     private readonly ChoiceOfCareerPersistence _db;
     private readonly ExcelExportService _export;
-    public ExportGradeModel(ChoiceOfCareerPersistence db, ExcelExportService export)
-    { _db = db; _export = export; }
+
+    public ExportGradeModel(
+        ChoiceOfCareerPersistence db,
+        ExcelExportService export)
+    {
+        _db = db;
+        _export = export;
+    }
+
     public List<EventOption> Events { get; private set; } = new();
+
     public record EventOption(int Id, string Name);
+
+    // =====================================================
+    // OLDAL BETÖLTÉSE
+    // =====================================================
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -36,7 +48,6 @@ public class ExportGradeModel : PageModel
             return Forbid();
         }
 
-        // Események lekérdezése az adatbázisból
         var events = await _db.Events
             .AsNoTracking()
             .Select(e => new
@@ -47,8 +58,6 @@ public class ExportGradeModel : PageModel
             })
             .ToListAsync();
 
-        // Rendezés memóriában, mert a SQLite nem támogatja
-        // a DateTimeOffset típus szerinti rendezést.
         Events = events
             .OrderByDescending(e => e.EventDate)
             .Select(e => new EventOption(
@@ -59,6 +68,9 @@ public class ExportGradeModel : PageModel
         return Page();
     }
 
+    // =====================================================
+    // OSZTÁLY EXCEL EXPORTÁLÁSA
+    // =====================================================
 
     public async Task<IActionResult> OnGetDownloadAsync(int eventId)
     {
@@ -87,19 +99,25 @@ public class ExportGradeModel : PageModel
 
         try
         {
+            // Excel elkészítése
             var bytes = await _export.ExportGradeAsync(
+                eventId,
+                gradeId);
+
+            // Fájlnév lekérése az Admin felületen
+            // is használt közös metódussal
+            var fileName = await _export.GetGradeExportFileNameAsync(
                 eventId,
                 gradeId);
 
             return File(
                 bytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"osztaly_{gradeId}_esemeny_{eventId}.xlsx");
+                fileName);
         }
         catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
         }
     }
-
 }

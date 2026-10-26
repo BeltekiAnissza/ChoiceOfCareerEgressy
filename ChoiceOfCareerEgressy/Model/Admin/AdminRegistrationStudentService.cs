@@ -379,8 +379,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             await transaction.CommitAsync();
         }
 
-        public async Task DeleteAsync(
-            int studentId, int applicationId, int eventId)
+        public async Task DeleteAsync(int studentId, int applicationId, int eventId)
         {
             var application = await _db.Applications
                 .Include(a => a.PlanSession)
