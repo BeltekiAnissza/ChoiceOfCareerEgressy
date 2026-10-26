@@ -234,6 +234,29 @@ namespace ChoiceOfCareerEgressy.Migrations
                     b.ToTable("PlanSessions");
                 });
 
+            modelBuilder.Entity("ChoiceOfCareerEgressy.Persistence.SchoolYearTransition", b =>
+                {
+                    b.Property<int>("SchoolYearTransitionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CalendarYear")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ExecutedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ExecutedByUserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("SchoolYearTransitionId");
+
+                    b.HasIndex("CalendarYear")
+                        .IsUnique();
+
+                    b.ToTable("SchoolYearTransitions");
+                });
+
             modelBuilder.Entity("ChoiceOfCareerEgressy.Persistence.Sex", b =>
                 {
                     b.Property<int>("SexId")
@@ -267,7 +290,7 @@ namespace ChoiceOfCareerEgressy.Migrations
                     b.Property<int?>("SupervisionPlaceId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime?>("UpdateDate")
+                    b.Property<DateTimeOffset?>("UpdateDate")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("UserId")

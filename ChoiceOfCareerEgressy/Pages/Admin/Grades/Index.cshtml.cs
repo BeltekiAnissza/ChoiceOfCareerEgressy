@@ -1,5 +1,6 @@
 using ChoiceOfCareerEgressy.Dto.GradeDto;
 using ChoiceOfCareerEgressy.Model;
+using ChoiceOfCareerEgressy.Model.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,13 +13,19 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Grades
     public class IndexModel : PageModel
     {
         private readonly GradeManagementService _service;
+        private readonly SchoolYearService _schoolYearService;
 
-        public IndexModel(GradeManagementService service)
+        public IndexModel(GradeManagementService service, SchoolYearService schoolYearService)
         {
             _service = service;
+            _schoolYearService = schoolYearService;
         }
 
         public List<GradeListItemDto> Grades { get; set; } = new();
+
+        public bool SchoolYearAlreadyStarted { get; set; }
+
+        public int CurrentYear => DateTime.Now.Year;
 
         [BindProperty]
         public GradeCreateDto Create { get; set; } = new();
@@ -31,8 +38,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Grades
 
         public string? ErrorMessage { get; set; }
 
-        public string? SuccessMessage =>
-            TempData["GradeSuccess"] as string;
+        public string? SuccessMessage => TempData["GradeSuccess"] as string;
 
         // Bejelentkezett adminisztrátor azonosítója
         private int? ActorId =>
@@ -41,16 +47,22 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Grades
                 out var id
             ) ? id : null;
 
-        // Osztályok betöltése
-        public async Task OnGetAsync()
+        // Osztályok és tanévindítási állapot betöltése
+        private async Task LoadDataAsync()
         {
             Grades = await _service.GetGradesAsync();
+
+            SchoolYearAlreadyStarted =
+                await _schoolYearService.HasStartedThisYearAsync();
+        }
+
+        public async Task OnGetAsync()
+        {
+            await LoadDataAsync();
         }
 
         // Közös műveletkezelés
-        private async Task<IActionResult> ExecuteAsync(
-            Func<int, Task> operation,
-            string success)
+        private async Task<IActionResult> ExecuteAsync(Func<int, Task> operation, string success)
         {
             if (ActorId is not int actorId)
             {
@@ -79,7 +91,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Grades
                     "Az adatbázis-művelet nem sikerült. Ellenőrizd a kapcsolódó adatokat.";
             }
 
-            Grades = await _service.GetGradesAsync();
+            await LoadDataAsync();
 
             return Page();
         }
@@ -120,9 +132,8 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Grades
             );
         }
 
-        public Task<IActionResult> OnPostDeleteGraduatedAsync(
-            int gradeId,
-            string confirmation)
+        // Elballagott osztály végleges törlése
+        public Task<IActionResult> OnPostDeleteGraduatedAsync(int gradeId, string confirmation)
         {
             return ExecuteAsync(
                 async actorId =>
@@ -141,5 +152,53 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Grades
             );
         }
 
+        // ======================================================
+        // ÚJ TANÉV INDÍTÁSA
+        // ======================================================
+
+        public async Task<IActionResult> OnPostStartSchoolYearAsync(string confirmation)
+        {
+            if (ActorId is not int actorId)
+            {
+                return Challenge();
+            }
+
+            try
+            {
+                if (confirmation != "ÚJ TANÉV")
+                {
+                    throw new InvalidOperationException(
+                        "A tanévindításhoz pontosan ezt kell megadnod: ÚJ TANÉV");
+                }
+
+                var result = await _schoolYearService.StartAsync(actorId);
+
+                TempData["GradeSuccess"] =
+                    "Az új tanév sikeresen elindult! " +
+                    $"Léptetett osztályok: {result.Advanced}, " +
+                    $"elballagott osztályok: {result.Graduated}, " +
+                    $"elballagott diákok: {result.Students}. " +
+                    "Az új kilencedikes osztályok is létrejöttek.";
+
+                return RedirectToPage();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ErrorMessage = ex.Message;
+            }
+            catch (DbUpdateException)
+            {
+                ErrorMessage =
+                    "A tanévindítás adatbázishiba miatt nem sikerült.";
+            }
+
+            await LoadDataAsync();
+
+            return Page();
+        }
     }
 }

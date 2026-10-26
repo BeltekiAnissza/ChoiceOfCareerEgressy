@@ -7,6 +7,104 @@
 
 <h1>Osztályok kezelése</h1>
 
+<section class="card border-warning mb-4">
+
+    <div class="card-header bg-warning">
+        <h2 class="h5 mb-0">
+            Új tanév indítása
+        </h2>
+    </div>
+
+    <div class="card-body">
+
+        @if (Model.SchoolYearAlreadyStarted)
+        {
+            <div class="alert alert-success mb-0">
+                <strong>
+                    A @Model.CurrentYear. évi tanévindítás már megtörtént.
+                </strong>
+
+                <p class="mb-0 mt-2">
+                    Az osztályok léptetése ebben a naptári évben
+                    már nem indítható újra.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning">
+
+                <strong>Figyelem!</strong>
+
+                <p class="mb-2 mt-2">
+                    A művelet az összes osztályt automatikusan
+                    a következő évfolyamra lépteti.
+                </p>
+
+                <ul class="mb-0">
+                    <li>
+                        A 9–12. évfolyamos osztályok
+                        egy évfolyammal feljebb lépnek.
+                    </li>
+
+                    <li>
+                        A 9.KNy osztályból 9.K lesz.
+                    </li>
+
+                    <li>
+                        A 13. évfolyamos diákok az
+                        Elballagott osztályba kerülnek.
+                    </li>
+
+                    <li>
+                        A végzős osztályok törlődnek.
+                    </li>
+
+                    <li>
+                        A továbbhaladó osztályok megtartják
+                        a diákjaikat és osztályfőnökeiket.
+                    </li>
+
+                    <li>
+                        Automatikusan létrejönnek az új,
+                        üres 9.I, 9.S, 9.E és 9.KNy osztályok.
+                    </li>
+
+                    <li>
+                        A művelet naptári évenként
+                        csak egyszer hajtható végre.
+                    </li>
+                </ul>
+
+            </div>
+
+            <form method="post"
+                  asp-page-handler="StartSchoolYear"
+                  onsubmit="return confirm('Biztosan elindítod az új tanévet? Az összes osztály léptetésre kerül, és a művelet ebben az évben nem ismételhető meg!');">
+
+                <label class="form-label">
+                    A tanévindítás megerősítéséhez írd be:
+                    <strong>ÚJ TANÉV</strong>
+                </label>
+
+                <input type="text"
+                       name="confirmation"
+                       class="form-control mb-3"
+                       placeholder="ÚJ TANÉV"
+                       autocomplete="off"
+                       required />
+
+                <button type="submit"
+                        class="btn btn-warning">
+                    Új tanév indítása
+                </button>
+
+            </form>
+        }
+
+    </div>
+
+</section>
 @if (Model.ErrorMessage != null)
 {
     <div class="alert alert-danger">

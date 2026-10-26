@@ -25,6 +25,7 @@ namespace ChoiceOfCareerEgressy.Persistence
 
         public DbSet<Event> Events => Set<Event>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<SchoolYearTransition> SchoolYearTransitions => Set<SchoolYearTransition>();
 
         public ChoiceOfCareerPersistence(
             DbContextOptions<ChoiceOfCareerPersistence> options
@@ -448,6 +449,22 @@ namespace ChoiceOfCareerEgressy.Persistence
 
         public DateTime CreatedAt { get; set; }
             = DateTime.UtcNow;
+    }
+
+    [Index(nameof(CalendarYear), IsUnique = true)]
+    public class SchoolYearTransition
+    {
+        [Key]
+        public int SchoolYearTransitionId { get; set; }
+
+        // A naptári év, amelyben megtörtént a léptetés
+        public int CalendarYear { get; set; }
+
+        // A léptetés pontos időpontja (UTC)
+        public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
+
+        // A műveletet végrehajtó adminisztrátor azonosítója
+        public int? ExecutedByUserId { get; set; }
     }
 
 }
