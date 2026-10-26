@@ -223,7 +223,18 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                 await _db.SaveChangesAsync();
 
                 // Végzős osztályok törlése
+                // Osztályfőnöki kapcsolatok megszüntetése
+                foreach (var grade in graduatingGrades)
+                {
+                    grade.HomeroomTeacherId = null;
+                }
+
+                await _db.SaveChangesAsync();
+
+                // Végzős osztályok törlése
                 _db.Grades.RemoveRange(graduatingGrades);
+
+                await _db.SaveChangesAsync();
 
                 await _db.SaveChangesAsync();
             }

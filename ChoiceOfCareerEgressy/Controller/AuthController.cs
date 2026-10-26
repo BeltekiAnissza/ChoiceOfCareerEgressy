@@ -22,8 +22,7 @@ namespace ChoiceOfCareerEgressy.Controller
         [HttpPost("login")]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult<LoggedInUserDto>> Login(
-            [FromForm] LoginDto login)
+        public async Task<ActionResult<LoggedInUserDto>> Login([FromForm] LoginDto login)
         {
             var user = await _authService.LoginAsync(login);
 

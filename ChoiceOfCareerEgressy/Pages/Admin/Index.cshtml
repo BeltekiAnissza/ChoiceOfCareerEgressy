@@ -7,16 +7,41 @@
 
 <div class="container mt-4">
 
-    <div class="mb-4">
-        <h2>Események és programok</h2>
+    <!-- FEJLÉC -->
 
-        <p class="text-muted">
-            A pályaorientációs napok programjai,
-            jelentkezési adatai és kapacitásai.
-        </p>
+    <div class="d-flex justify-content-between
+                align-items-start flex-wrap gap-3 mb-4">
+
+        <div>
+            <h2>Események és programok</h2>
+
+            <p class="text-muted mb-0">
+                A pályaorientációs napok programjai,
+                jelentkezési adatai és kapacitásai.
+            </p>
+        </div>
+
+        <!-- ÖSSZES PROGRAM TÖRLÉSE -->
+
+        <form method="post"
+              asp-page-handler="DeleteAllPrograms"
+              id="deleteAllProgramsForm">
+
+            <button type="button"
+                    class="btn btn-danger"
+                    disabled="@(Model.TotalProgramCount == 0)"
+                    onclick="confirmDeleteAllPrograms()">
+
+                Összes program törlése
+                (@Model.TotalProgramCount)
+
+            </button>
+
+        </form>
+
     </div>
 
-    <!-- Visszajelzések -->
+    <!-- VISSZAJELZÉSEK -->
     @if (TempData["Success"] is string success)
     {
         <div class="alert alert-success">
@@ -38,11 +63,12 @@
         </div>
     }
 
+    <!-- ESEMÉNYEK -->
     @foreach (var ev in Model.Events)
     {
         <div class="card shadow-sm mb-4">
 
-            <!-- Esemény fejléc -->
+            <!-- ESEMÉNY FEJLÉC -->
 
             <div class="card-header">
 
@@ -75,7 +101,7 @@
                             </span>
                         }
 
-                        <!-- Jelentkezés állapotának módosítása -->
+                        <!-- JELENTKEZÉS ÁLLAPOTÁNAK MÓDOSÍTÁSA -->
 
                         <form method="post"
                               asp-page-handler="ToggleRegistration">
@@ -113,7 +139,7 @@
 
             </div>
 
-            <!-- Esemény tartalma -->
+            <!-- ESEMÉNY TARTALMA -->
 
             <div class="card-body">
 
@@ -149,7 +175,7 @@
                     </div>
                 }
 
-                <!-- Idősávok -->
+                <!-- IDŐSÁVOK -->
                 @foreach (var slot in ev.TimeSlots)
                 {
                     <div class="mb-4">
@@ -276,3 +302,41 @@
     }
 
 </div>
+
+@section Scripts
+{
+    <script>
+        function confirmDeleteAllPrograms() {
+
+            const firstConfirmation = confirm(
+                "FIGYELEM!\n\n" +
+                "Biztosan törölni szeretnéd az ÖSSZES programot?\n\n" +
+                "A programokhoz tartozó jelentkezések és " +
+                "felügyeletek is törlődnek.\n\n" +
+                "A művelet nem vonható vissza!"
+            );
+
+            if (!firstConfirmation) {
+                return;
+            }
+
+            const confirmationText = prompt(
+                "A törlés megerősítéséhez írd be:\n\nTÖRLÉS"
+            );
+
+            if (confirmationText !== "TÖRLÉS") {
+
+                alert(
+                    "A törlés megszakítva.\n" +
+                    "Nem történt adatváltozás."
+                );
+
+                return;
+            }
+
+            document.getElementById(
+                "deleteAllProgramsForm"
+            ).requestSubmit();
+        }
+    </script>
+}

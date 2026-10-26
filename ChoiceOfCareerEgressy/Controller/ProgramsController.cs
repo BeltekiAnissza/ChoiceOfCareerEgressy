@@ -13,8 +13,7 @@ namespace ChoiceOfCareerEgressy.Controller
     {
         private readonly ProgramImportService _programImportService;
 
-        public ProgramsController(
-            ProgramImportService programImportService)
+        public ProgramsController(ProgramImportService programImportService)
         {
             _programImportService = programImportService;
         }

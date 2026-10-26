@@ -1,10 +1,11 @@
-
-using ChoiceOfCareerEgressy.Model;
+﻿using ChoiceOfCareerEgressy.Model;
+using ChoiceOfCareerEgressy.Model.Admin;
 using ChoiceOfCareerEgressy.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ChoiceOfCareerEgressy.Pages.Events
 {
@@ -12,20 +13,29 @@ namespace ChoiceOfCareerEgressy.Pages.Events
     public class IndexModel : PageModel
     {
         private readonly ChoiceOfCareerPersistence _context;
+        private readonly AdminAllDataDeleteService _deleteService;
 
-        public IndexModel(ChoiceOfCareerPersistence context)
+        public IndexModel(
+            ChoiceOfCareerPersistence context,
+            AdminAllDataDeleteService deleteService)
         {
             _context = context;
+            _deleteService = deleteService;
         }
 
         public List<EventOverviewDto> Events { get; set; } = new();
+
+        public int TotalProgramCount { get; set; }
 
         public async Task OnGetAsync()
         {
             await LoadEventsAsync();
         }
-      
-        // Jelentkez�s enged�lyez�se vagy letilt�sa
+
+        // ============================================
+        // JELENTKEZÉS ENGEDÉLYEZÉSE VAGY LETILTÁSA
+        // ============================================
+
         public async Task<IActionResult> OnPostToggleRegistrationAsync(
             int eventId)
         {
@@ -34,7 +44,9 @@ namespace ChoiceOfCareerEgressy.Pages.Events
 
             if (ev == null)
             {
-                TempData["Error"] = "A kiv�lasztott esem�ny nem tal�lhat�.";
+                TempData["Error"] =
+                    "A kiválasztott esemény nem található.";
+
                 return RedirectToPage();
             }
 
@@ -43,14 +55,62 @@ namespace ChoiceOfCareerEgressy.Pages.Events
             await _context.SaveChangesAsync();
 
             TempData["Success"] = ev.IsRegistrationEnabled
-                ? $"A jelentkez�s enged�lyezve lett: {ev.EventName}"
-                : $"A jelentkez�s letiltva lett: {ev.EventName}";
+                ? $"A jelentkezés engedélyezve lett: {ev.EventName}"
+                : $"A jelentkezés letiltva lett: {ev.EventName}";
 
             return RedirectToPage();
         }
 
+        // ============================================
+        // ÖSSZES PROGRAM TÖRLÉSE
+        // ============================================
+
+        public async Task<IActionResult> OnPostDeleteAllProgramsAsync()
+        {
+            try
+            {
+                string? userId = User.FindFirstValue(
+                    ClaimTypes.NameIdentifier);
+
+                if (!int.TryParse(userId, out int adminId))
+                {
+                    TempData["Error"] =
+                        "A felhasználó azonosítása sikertelen.";
+
+                    return RedirectToPage();
+                }
+
+                int deletedCount =
+                    await _deleteService.DeleteAllProgramsAsync(adminId);
+
+                TempData["Success"] =
+                    $"Sikeresen töröltünk {deletedCount} programot. " +
+                    "A programokhoz tartozó jelentkezések " +
+                    "és felügyeletek is törlődtek.";
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TempData["Error"] =
+                    "Nincs jogosultságod a programok törléséhez.";
+            }
+            catch (Exception)
+            {
+                TempData["Error"] =
+                    "Hiba történt a programok törlése közben. " +
+                    "A művelet nem fejeződött be.";
+            }
+
+            return RedirectToPage();
+        }
+
+        // ============================================
+        // ESEMÉNYEK ÉS PROGRAMOK BETÖLTÉSE
+        // ============================================
+
         private async Task LoadEventsAsync()
         {
+            TotalProgramCount = await _context.Plans.CountAsync();
+
             var events = await _context.Events
                 .AsNoTracking()
                 .AsSplitQuery()
@@ -123,7 +183,7 @@ namespace ChoiceOfCareerEgressy.Pages.Events
                                             ?? "Unisex",
 
                                         BranchName = s.Plan.Branch?.BranchName
-                                            ?? "Minden �gazat"
+                                            ?? "Minden ágazat"
                                     };
                                 })
                                 .ToList()
@@ -133,14 +193,20 @@ namespace ChoiceOfCareerEgressy.Pages.Events
                 .ToList();
         }
 
+        // ============================================
+        // DTO-K
+        // ============================================
 
         public class EventOverviewDto
         {
             public int EventId { get; set; }
+
             public string EventName { get; set; } = "";
 
             public DateTimeOffset EventDate { get; set; }
+
             public DateTimeOffset RegistrationStart { get; set; }
+
             public DateTimeOffset RegistrationEnd { get; set; }
 
             public bool IsRegistrationEnabled { get; set; }
@@ -153,6 +219,7 @@ namespace ChoiceOfCareerEgressy.Pages.Events
             public string TimeSlotName { get; set; } = "";
 
             public DateTimeOffset BeginDate { get; set; }
+
             public DateTimeOffset EndDate { get; set; }
 
             public List<ProgramOverviewDto> Programs { get; set; } = new();
@@ -161,15 +228,19 @@ namespace ChoiceOfCareerEgressy.Pages.Events
         public class ProgramOverviewDto
         {
             public string PlanName { get; set; } = "";
+
             public string? Description { get; set; }
 
             public string LocationName { get; set; } = "";
 
             public int Capacity { get; set; }
+
             public int RegisteredCount { get; set; }
+
             public int AvailablePlaces { get; set; }
 
             public string SexName { get; set; } = "";
+
             public string BranchName { get; set; } = "";
         }
     }

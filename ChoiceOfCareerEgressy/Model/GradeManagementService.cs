@@ -91,11 +91,24 @@ namespace ChoiceOfCareerEgressy.Model
         public async Task DeleteAsync(int actorId, int gradeId)
         {
             await AuthorizeAsync(actorId, null, adminOnly: true);
-            var grade = await _context.Grades.FirstOrDefaultAsync(g => g.GradeId == gradeId)
-                ?? throw new InvalidOperationException("Az osztály nem található.");
-            if (await _context.Users.AnyAsync(u => u.GradeId == gradeId))
-                throw new InvalidOperationException("Az osztályhoz még felhasználók tartoznak. Előbb rendezd a diákok és tanárok hozzárendelését.");
+
+            var grade = await _context.Grades
+                .FirstOrDefaultAsync(g => g.GradeId == gradeId)
+                ?? throw new InvalidOperationException(
+                    "Az osztály nem található.");
+
+            bool hasUsers = await _context.Users
+                .AnyAsync(u => u.GradeId == gradeId);
+
+            if (hasUsers || grade.HomeroomTeacherId != null)
+            {
+                throw new InvalidOperationException(
+                    "Az osztályhoz még diák vagy tanár tartozik. " +
+                    "Előbb szüntesd meg a hozzárendeléseket.");
+            }
+
             _context.Grades.Remove(grade);
+
             await _context.SaveChangesAsync();
         }
         public async Task GraduateAsync(int actorId, int gradeId)

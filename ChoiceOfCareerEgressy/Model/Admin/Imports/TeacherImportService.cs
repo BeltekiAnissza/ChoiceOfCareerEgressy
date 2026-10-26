@@ -24,8 +24,10 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
             IFormFile file)
         {
             if (file.Length == 0 || file.Length > 5 * 1024 * 1024)
+            {
                 throw new InvalidDataException(
                     "A fájl mérete 1 bájt és 5 MB között lehet.");
+            }
 
             if (!string.Equals(
                 Path.GetExtension(file.FileName),
@@ -58,17 +60,19 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
 
             string[] requiredHeaders =
             {
-            "név",
-            "osztály",
-            "om azonosító",
-            "email"
-        };
+                "név",
+                "osztály",
+                "om azonosító",
+                "email"
+            };
 
             foreach (var header in requiredHeaders)
             {
                 if (!headers.ContainsKey(Normalize(header)))
+                {
                     throw new InvalidDataException(
                         $"Hiányzó oszlop: {header}");
+                }
             }
 
             string ReadCell(int row, string column) =>
@@ -84,7 +88,54 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                 .ToListAsync())
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var reservedGrades = new HashSet<int>();
+            // Az osztályokhoz már hozzárendelt tanárok száma.
+            var teacherCounts = await _context.Users
+                .AsNoTracking()
+                .Where(u =>
+                    u.Role == RoleChoice.Teacher &&
+                    u.GradeId != null)
+                .GroupBy(u => u.GradeId!.Value)
+                .Select(g => new
+                {
+                    GradeId = g.Key,
+                    Count = g.Count()
+                })
+                .ToDictionaryAsync(
+                    x => x.GradeId,
+                    x => x.Count
+                );
+
+            // A már megadott elsődleges osztályfőnököt is
+            // figyelembe vesszük, ha nincs User.GradeId kapcsolata.
+            var linkedTeachers = await _context.Users
+                .AsNoTracking()
+                .Where(u => u.Role == RoleChoice.Teacher)
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.GradeId
+                })
+                .ToListAsync();
+
+            foreach (var grade in grades)
+            {
+                if (grade.HomeroomTeacherId == null)
+                    continue;
+
+                bool primaryTeacherAlreadyCounted =
+                    linkedTeachers.Any(u =>
+                        u.UserId == grade.HomeroomTeacherId &&
+                        u.GradeId == grade.GradeId);
+
+                if (!primaryTeacherAlreadyCounted)
+                {
+                    teacherCounts.TryGetValue(
+                        grade.GradeId,
+                        out int count);
+
+                    teacherCounts[grade.GradeId] = count + 1;
+                }
+            }
 
             var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
 
@@ -128,6 +179,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                 }
 
                 Grade? grade = null;
+                int assignedTeacherCount = 0;
 
                 if (error == null &&
                     !string.IsNullOrWhiteSpace(teacher.GradeName))
@@ -140,21 +192,30 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                     {
                         error = "A megadott osztály nem létezik.";
                     }
-                    else if (grade.HomeroomTeacherId != null
-                        || reservedGrades.Contains(grade.GradeId))
+                    else
                     {
-                        error = "Az osztálynak már van osztályfőnöke.";
+                        teacherCounts.TryGetValue(
+                            grade.GradeId,
+                            out assignedTeacherCount);
+
+                        if (assignedTeacherCount >= 2)
+                        {
+                            error =
+                                "Az osztályhoz már két tanár tartozik.";
+                        }
                     }
                 }
 
                 if (error != null)
                 {
                     result.SkippedCount++;
+
                     result.Errors.Add(new TeacherImportErrorDto
                     {
                         RowNumber = row,
                         Message = error
                     });
+
                     continue;
                 }
 
@@ -164,6 +225,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                     EmailAddress = teacher.EmailAddress,
                     PasswordHash = "",
                     Role = RoleChoice.Teacher,
+                    GradeId = grade?.GradeId,
                     MustChangePassword = true
                 };
 
@@ -174,16 +236,26 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
 
                 _context.Users.Add(user);
 
-                // Az új tanár ID-ját az adatbázis generálja
+                // Az adatbázis létrehozza a tanár azonosítóját.
                 await _context.SaveChangesAsync();
 
                 if (grade != null)
                 {
-                    grade.HomeroomTeacherId = user.UserId;
-                    reservedGrades.Add(grade.GradeId);
+                    // Ha még nincs osztályfőnök,
+                    // az első importált tanár lesz az.
+                    if (grade.HomeroomTeacherId == null)
+                    {
+                        grade.HomeroomTeacherId = user.UserId;
+                    }
+
+                    // A második tanár a GradeId alapján
+                    // osztályfőnök-helyettesként kapcsolódik.
+                    teacherCounts[grade.GradeId] =
+                        assignedTeacherCount + 1;
                 }
 
                 existingEmails.Add(teacher.EmailAddress);
+
                 result.ImportedCount++;
             }
 
@@ -192,6 +264,5 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
 
             return result;
         }
-
     }
 }
