@@ -1,0 +1,230 @@
+﻿/* =========================================
+   CHOICE OF CAREER - LAYOUT
+   ========================================= */
+
+/* =========================================
+   ALAPELRENDEZÉS
+   ========================================= */
+
+body {
+    min-height: 100vh;
+    min-width: 320px;
+}
+
+.app-main {
+    min-width: 0;
+    width: 100%;
+}
+
+/* =========================================
+   FELSŐ NAVIGÁCIÓ
+   ========================================= */
+
+.navbar {
+    min-height: 70px;
+}
+
+    .navbar .container-fluid {
+        gap: 8px;
+    }
+
+.navbar-brand {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+    .navbar-brand i {
+        font-size: 22px;
+    }
+
+/* =========================================
+   NAVIGÁCIÓS MENÜPONTOK
+   ========================================= */
+
+.navbar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+    .navbar .nav-link.active {
+        background-color: rgba(255, 255, 255, 0.20);
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+
+    .navbar .nav-link i {
+        font-size: 16px;
+    }
+
+/* =========================================
+   LEGÖRDÜLŐ MENÜK
+   ========================================= */
+
+.navbar .dropdown-menu {
+    min-width: 230px;
+    padding: 8px;
+}
+
+.navbar .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: normal;
+}
+
+    .navbar .dropdown-item i {
+        width: 20px;
+        text-align: center;
+        color: var(--theme-primary);
+    }
+
+    .navbar .dropdown-item:hover {
+        background-color: var(--theme-light);
+        color: var(--theme-dark);
+    }
+
+.navbar .dropdown-divider {
+    margin: 7px 0;
+}
+
+/* =========================================
+   FEJLÉC JOBB OLDALA
+   ========================================= */
+
+.header-actions {
+    flex-shrink: 0;
+}
+
+#themeDropdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.navbar .navbar-text {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* =========================================
+   SZÍNTÉMAVÁLASZTÓ
+   ========================================= */
+
+.theme-choice {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border: 3px solid transparent;
+    border-radius: 50%;
+    background-color: var(--choice-color);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+    .theme-choice:hover {
+        transform: scale(1.12);
+    }
+
+    .theme-choice.active {
+        outline: 2px solid var(--theme-dark);
+        outline-offset: 3px;
+    }
+
+    .theme-choice:focus-visible {
+        outline: 3px solid #111827;
+        outline-offset: 3px;
+    }
+
+/* =========================================
+   TABLET ÉS MOBIL
+   ========================================= */
+
+@media (max-width: 991.98px) {
+
+    .navbar .container-fluid {
+        flex-wrap: wrap;
+    }
+
+    .navbar-brand {
+        max-width: calc(100% - 160px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .navbar-collapse {
+        flex-basis: 100%;
+        width: 100%;
+    }
+
+    .navbar-nav {
+        width: 100%;
+    }
+
+    .navbar .nav-link {
+        min-height: 44px;
+        padding: 12px;
+    }
+
+    .navbar .dropdown-menu {
+        position: static !important;
+        transform: none !important;
+        max-width: 100%;
+        border: none;
+        box-shadow: none;
+        padding-left: 12px;
+    }
+
+    .navbar .dropdown-item {
+        min-height: 44px;
+    }
+
+    .navbar .navbar-text {
+        padding: 12px;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+}
+
+/* =========================================
+   KISEBB MOBILOK
+   ========================================= */
+
+@media (max-width: 575.98px) {
+
+    .navbar-brand {
+        font-size: 1rem !important;
+    }
+
+        .navbar-brand i {
+            font-size: 19px;
+        }
+
+    #themeDropdown {
+        padding: 8px 10px;
+    }
+
+    .header-actions {
+        gap: 4px !important;
+    }
+}
+
+/* =========================================
+   AKADÁLYMENTESSÉG
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .theme-choice {
+        transition: none;
+    }
+}

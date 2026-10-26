@@ -5,17 +5,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChoiceOfCareerEgressy.Model.Admin
 {
-    public class AdminRegistrationService
+    public class AdminRegistrationStudentService
     {
         private readonly ChoiceOfCareerPersistence _db;
 
-        public AdminRegistrationService(ChoiceOfCareerPersistence db)
+        public AdminRegistrationStudentService(ChoiceOfCareerPersistence db)
         {
             _db = db;
         }
 
-        public async Task<AdminRegistrationPageDto> GetPageAsync(
-            int? eventId, int? gradeId, int? planSessionId)
+        public async Task<AdminRegistrationPageDto> GetPageAsync(int? eventId, int? gradeId, int? planSessionId)
         {
             var events = await _db.Events.AsNoTracking().ToListAsync();
             events = events.OrderByDescending(e => e.EventDate).ToList();
@@ -233,21 +232,34 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             return result;
         }
 
-        private static List<HomeroomProgramOptionDto> GetOptions(
-            int timeSlotId,
-            User student,
-            List<TimeSlot> slots,
-            List<Application> applications,
-            int? currentSessionId)
+        private static List<HomeroomProgramOptionDto> GetOptions(int timeSlotId, User student, List<TimeSlot> slots, List<Application> applications, int? currentSessionId)
         {
             var slot = slots.First(t => t.TimeSlotId == timeSlotId);
 
+            // Azoknak a programoknak az azonosítói,
+            // amelyekre a diák már jelentkezett egy másik időpontban.
+            var registeredPlanIds = applications
+                .Where(a =>
+                    a.UserId == student.UserId &&
+                    a.PlanSession.TimeSlotId != timeSlotId)
+                .Select(a => a.PlanSession.PlanId)
+                .ToHashSet();
+
             return slot.PlanSessions
                 .Where(s =>
+
+                    // Ágazat ellenőrzése
                     (s.Plan.BranchId == null ||
                      s.Plan.BranchId == student.BranchId) &&
+
+                    // Nem ellenőrzése
                     (s.Plan.SexId == null ||
-                     s.Plan.SexId == student.SexId))
+                     s.Plan.SexId == student.SexId) &&
+
+                    // Ne jelenjen meg az a program,
+                    // amelyre már jelentkezett egy másik időpontban.
+                    !registeredPlanIds.Contains(s.PlanId)
+                )
                 .Select(s =>
                 {
                     int occupied = applications.Count(a =>
@@ -259,8 +271,9 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                         Available = Math.Max(0, s.Capacity - occupied)
                     };
                 })
-                .Where(x => x.Available > 0 ||
-                            x.Session.PlanSessionId == currentSessionId)
+                .Where(x =>
+                    x.Available > 0 ||
+                    x.Session.PlanSessionId == currentSessionId)
                 .OrderBy(x => x.Session.Plan.PlanName)
                 .Select(x => new HomeroomProgramOptionDto
                 {

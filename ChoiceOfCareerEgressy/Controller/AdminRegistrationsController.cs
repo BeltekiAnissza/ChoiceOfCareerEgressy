@@ -11,10 +11,10 @@ namespace ChoiceOfCareerEgressy.Controller
     [Authorize(Roles = "Admin")]
     public class AdminRegistrationsController : ControllerBase
     {
-        private readonly AdminRegistrationService _service;
+        private readonly AdminRegistrationStudentService _service;
 
         public AdminRegistrationsController(
-            AdminRegistrationService service)
+            AdminRegistrationStudentService service)
         {
             _service = service;
         }

@@ -1,5 +1,6 @@
 ﻿@page
-@model ChoiceOfCareerEgressy.Pages.Admin.TeacherSupervisions.IndexModel
+@model ChoiceOfCareerEgressy.Pages.Admin.Registrations.Teachers.IndexModel
+
 @{
     ViewData["Title"] = "Tanári felügyeletek kezelése";
 }
@@ -13,19 +14,23 @@
         módosítása és törlése.
     </p>
 
-    @if (TempData["Success"] is string success)
-    {
-        <div class="alert alert-success">
-            @success
-        </div>
-    }
+    <div id="supervisionMessage">
 
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-    {
-        <div class="alert alert-danger">
-            @Model.ErrorMessage
-        </div>
-    }
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success">
+                @success
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger">
+                @Model.ErrorMessage
+            </div>
+        }
+
+    </div>
 
     @if (!Model.Data.Events.Any())
     {
@@ -36,6 +41,7 @@
     else
     {
         <form method="get" class="mb-4">
+
             <label class="form-label">Esemény</label>
 
             <select name="eventId"
@@ -46,21 +52,27 @@
                 {
                     <option value="@ev.EventId"
                             selected="@(ev.EventId == Model.Data.EventId)">
+
                         @ev.EventName
                         (@ev.EventDate.ToString("yyyy.MM.dd."))
+
                     </option>
                 }
+
             </select>
+
         </form>
 
         <div class="card shadow-sm">
 
             <div class="card-header d-flex justify-content-between">
+
                 <strong>Tanárok</strong>
 
                 <span>
                     @Model.Data.Teachers.Count fő
                 </span>
+
             </div>
 
             <div class="card-body">
@@ -69,7 +81,8 @@
 
                     @foreach (var teacher in Model.Data.Teachers)
                     {
-                        <div class="accordion-item">
+                        <div class="accordion-item"
+                             id="teacher-card-@teacher.UserId">
 
                             <h2 class="accordion-header">
 
@@ -87,7 +100,9 @@
                                     <span class="badge @(teacher.SupervisionCount == teacher.TimeSlots.Count ? "bg-success" : "bg-warning text-dark")">
                                         @teacher.SupervisionCount / @teacher.TimeSlots.Count
                                     </span>
+
                                 </button>
+
                             </h2>
 
                             <div id="teacher-@teacher.UserId"
@@ -109,6 +124,7 @@
                                             @if (slot.SupervisionId != null)
                                             {
                                                 <div class="alert alert-success py-2">
+
                                                     <strong>
                                                         @slot.CurrentProgramName
                                                     </strong>
@@ -116,6 +132,7 @@
                                                     <div class="small">
                                                         @slot.CurrentLocationName
                                                     </div>
+
                                                 </div>
                                             }
                                             else
@@ -127,7 +144,9 @@
 
                                             <form method="post"
                                                   asp-page-handler="Save"
-                                                  class="mb-2">
+                                                  class="mb-2 supervision-ajax-form">
+
+                                                @Html.AntiForgeryToken()
 
                                                 <input type="hidden"
                                                        name="Change.TeacherId"
@@ -159,26 +178,33 @@
                                                         {
                                                             <option value="@program.PlanSessionId"
                                                                     selected="@(program.PlanSessionId == slot.SelectedPlanSessionId)">
+
                                                                 @program.PlanName
                                                                 – @program.LocationName
                                                                 (szabad felügyelői hely:
                                                                 @program.AvailablePlaces)
+
                                                             </option>
                                                         }
+
                                                     </select>
 
                                                     <button type="submit"
                                                             class="btn btn-primary">
                                                         Mentés
                                                     </button>
+
                                                 </div>
+
                                             </form>
 
                                             @if (slot.SupervisionId != null)
                                             {
                                                 <form method="post"
                                                       asp-page-handler="Delete"
-                                                      onsubmit="return confirm('Biztosan törlöd a felügyeleti jelentkezést?')">
+                                                      class="supervision-ajax-form supervision-delete-form">
+
+                                                    @Html.AntiForgeryToken()
 
                                                     <input type="hidden"
                                                            name="teacherId"
@@ -196,6 +222,7 @@
                                                             class="btn btn-outline-danger btn-sm">
                                                         Felügyelet törlése
                                                     </button>
+
                                                 </form>
                                             }
 
@@ -203,14 +230,204 @@
                                     }
 
                                 </div>
+
                             </div>
 
                         </div>
                     }
+
                 </div>
 
             </div>
+
         </div>
     }
 
 </div>
+
+<script>
+    // =====================================================
+    // AJAX MENTÉS ÉS TÖRLÉS
+    // =====================================================
+
+    document.addEventListener("submit", async function (event) {
+
+        const form = event.target;
+
+        if (!form.classList.contains("supervision-ajax-form")) {
+            return;
+        }
+
+        event.preventDefault();
+
+        // Törlés előtt megerősítés.
+        if (form.classList.contains("supervision-delete-form")) {
+
+            if (!confirm("Biztosan törlöd a felügyeleti jelentkezést?")) {
+                return;
+            }
+        }
+
+        const button = form.querySelector('button[type="submit"]');
+
+        if (button.disabled) {
+            return;
+        }
+
+        const originalText = button.textContent;
+
+        button.disabled = true;
+        button.textContent = "Feldolgozás...";
+
+        const teacherCard = form.closest(".accordion-item");
+        const teacherId = teacherCard?.id.replace("teacher-card-", "");
+
+        try {
+
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: new FormData(form),
+                credentials: "same-origin",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message || "A művelet nem sikerült."
+                );
+            }
+
+            // Friss adatok lekérése a háttérben.
+            await refreshTeacherSupervisions(teacherId);
+
+            showSupervisionMessage(
+                result.message,
+                "success"
+            );
+
+        }
+        catch (error) {
+
+            showSupervisionMessage(
+                error.message || "Ismeretlen hiba történt.",
+                "danger"
+            );
+
+        }
+        finally {
+
+            button.disabled = false;
+            button.textContent = originalText;
+
+        }
+    });
+
+    // =====================================================
+    // TANÁRI ADATOK FRISSÍTÉSE OLDALFRISSÍTÉS NÉLKÜL
+    // =====================================================
+
+    async function refreshTeacherSupervisions(openTeacherId) {
+
+        const url = new URL(window.location.href);
+
+        const response = await fetch(url.toString(), {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                "A frissített adatok betöltése nem sikerült."
+            );
+        }
+
+        const html = await response.text();
+
+        const parser = new DOMParser();
+
+        const newDocument = parser.parseFromString(
+            html,
+            "text/html"
+        );
+
+        const newAccordion =
+            newDocument.getElementById("teachersAccordion");
+
+        const currentAccordion =
+            document.getElementById("teachersAccordion");
+
+        if (!newAccordion || !currentAccordion) {
+            throw new Error(
+                "A tanári adatok nem találhatók."
+            );
+        }
+
+        // A régi accordion lecserélése.
+        currentAccordion.innerHTML = newAccordion.innerHTML;
+
+        // A korábban nyitott tanár kártyáját
+        // ismét megnyitjuk, animáció nélkül.
+        if (openTeacherId) {
+
+            const collapseElement =
+                document.getElementById(
+                    "teacher-" + openTeacherId
+                );
+
+            if (collapseElement) {
+
+                collapseElement.classList.add("show");
+
+                const headerButton =
+                    collapseElement.previousElementSibling
+                        ?.querySelector(".accordion-button");
+
+                if (headerButton) {
+
+                    headerButton.classList.remove("collapsed");
+                    headerButton.setAttribute(
+                        "aria-expanded",
+                        "true"
+                    );
+                }
+            }
+        }
+    }
+
+    // =====================================================
+    // VISSZAJELZÉS
+    // =====================================================
+
+    function showSupervisionMessage(message, type) {
+
+        const container =
+            document.getElementById("supervisionMessage");
+
+        if (!container) {
+            return;
+        }
+
+        const alert = document.createElement("div");
+
+        alert.className = "alert alert-" + type;
+        alert.textContent = message;
+
+        container.replaceChildren(alert);
+
+        // A visszajelzés nem görgeti fel az oldalt.
+        setTimeout(function () {
+
+            if (alert.isConnected) {
+                alert.remove();
+            }
+
+        }, 5000);
+    }
+</script>

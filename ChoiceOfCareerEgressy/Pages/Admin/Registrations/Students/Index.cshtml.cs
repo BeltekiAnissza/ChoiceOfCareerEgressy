@@ -4,14 +4,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations
+namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations.Students
 {
     [Authorize(Roles = "Admin")]
     public class IndexModel : PageModel
     {
-        private readonly AdminRegistrationService _service;
+        private readonly AdminRegistrationStudentService _service;
 
-        public IndexModel(AdminRegistrationService service)
+        public IndexModel(AdminRegistrationStudentService service)
         {
             _service = service;
         }
@@ -21,24 +21,30 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations
         [BindProperty]
         public AdminChangeApplicationDto Change { get; set; } = new();
 
+        [BindProperty(SupportsGet = true)]
+        public int? OpenStudentId { get; set; }
+
         public string ViewMode { get; set; } = "grades";
 
         public string? ErrorMessage { get; set; }
 
-        public async Task OnGetAsync(
-            int? eventId, int? gradeId,
-            int? planSessionId, string? viewMode)
+        public async Task OnGetAsync(int? eventId, int? gradeId, int? planSessionId, string? viewMode, int? studentId)
         {
             ViewMode = viewMode == "programs" ? "programs" : "grades";
+
+            OpenStudentId = studentId;
 
             Data = await _service.GetPageAsync(
-                eventId, gradeId, planSessionId);
+                eventId,
+                gradeId,
+                planSessionId);
         }
 
-        public async Task<IActionResult> OnPostChangeAsync(
-            int? gradeId, int? planSessionId, string? viewMode)
+        public async Task<IActionResult> OnPostChangeAsync(int? gradeId, int? planSessionId, string? viewMode, int? studentId)
         {
             ViewMode = viewMode == "programs" ? "programs" : "grades";
+
+            OpenStudentId = studentId ?? Change.StudentId;
 
             try
             {
@@ -51,7 +57,8 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations
                     eventId = Change.EventId,
                     gradeId,
                     planSessionId,
-                    viewMode = ViewMode
+                    viewMode = ViewMode,
+                    studentId = ViewMode == "grades" ? OpenStudentId : null
                 });
             }
             catch (InvalidOperationException ex)
@@ -60,35 +67,33 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations
             }
             catch (Microsoft.EntityFrameworkCore.DbUpdateException)
             {
-                ErrorMessage =
-                    "A mentés nem sikerült. Frissítsd az oldalt.";
+                ErrorMessage = "A mentés nem sikerült. Frissítsd az oldalt.";
             }
             catch (Microsoft.Data.Sqlite.SqliteException)
             {
-                ErrorMessage =
-                    "Az adatbázis foglalt. Próbáld újra.";
+                ErrorMessage = "Az adatbázis foglalt. Próbáld újra.";
             }
 
             Data = await _service.GetPageAsync(
-                Change.EventId, gradeId, planSessionId);
+                Change.EventId,
+                gradeId,
+                planSessionId);
 
             return Page();
         }
 
-        public async Task<IActionResult> OnPostDeleteAsync(
-            int studentId,
-            int applicationId,
-            int eventId,
-            int? gradeId,
-            int? planSessionId,
-            string? viewMode)
+        public async Task<IActionResult> OnPostDeleteAsync(int studentId, int applicationId, int eventId, int? gradeId, int? planSessionId, string? viewMode)
         {
             ViewMode = viewMode == "programs" ? "programs" : "grades";
+
+            OpenStudentId = studentId;
 
             try
             {
                 await _service.DeleteAsync(
-                    studentId, applicationId, eventId);
+                    studentId,
+                    applicationId,
+                    eventId);
 
                 TempData["Success"] = "A jelentkezést törölted.";
 
@@ -97,7 +102,8 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations
                     eventId,
                     gradeId,
                     planSessionId,
-                    viewMode = ViewMode
+                    viewMode = ViewMode,
+                    studentId = ViewMode == "grades" ? studentId : (int?)null
                 });
             }
             catch (InvalidOperationException ex)
@@ -110,12 +116,13 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations
             }
             catch (Microsoft.Data.Sqlite.SqliteException)
             {
-                ErrorMessage =
-                    "Az adatbázis foglalt. Próbáld újra.";
+                ErrorMessage = "Az adatbázis foglalt. Próbáld újra.";
             }
 
             Data = await _service.GetPageAsync(
-                eventId, gradeId, planSessionId);
+                eventId,
+                gradeId,
+                planSessionId);
 
             return Page();
         }

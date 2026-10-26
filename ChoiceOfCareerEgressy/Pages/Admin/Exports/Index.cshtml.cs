@@ -1,5 +1,4 @@
-
-using ChoiceOfCareerEgressy.Model;
+﻿using ChoiceOfCareerEgressy.Model;
 using ChoiceOfCareerEgressy.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +13,12 @@ public class IndexModel : PageModel
     private readonly ChoiceOfCareerPersistence _db;
     private readonly ExcelExportService _export;
 
-    public IndexModel( ChoiceOfCareerPersistence db, ExcelExportService export)
+    private const string ExcelContentType =
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+    public IndexModel(
+        ChoiceOfCareerPersistence db,
+        ExcelExportService export)
     {
         _db = db;
         _export = export;
@@ -23,12 +27,20 @@ public class IndexModel : PageModel
     public List<EventOption> Events { get; private set; } = new();
     public List<GradeOption> Grades { get; private set; } = new();
     public List<PlanOption> Plans { get; private set; } = new();
+    public List<TimeSlotOption> TimeSlots { get; private set; } = new();
 
     public string? ErrorMessage { get; private set; }
 
     public record EventOption(int Id, string Name);
     public record GradeOption(int Id, string Name);
     public record PlanOption(int Id, string Name);
+
+    public record TimeSlotOption(
+        int Id,
+        int EventId,
+        int PlanId,
+        string Name,
+        int Number);
 
     public async Task OnGetAsync()
     {
@@ -37,6 +49,8 @@ public class IndexModel : PageModel
 
     private async Task LoadOptionsAsync()
     {
+        // Események
+
         var events = await _db.Events
             .AsNoTracking()
             .Select(e => new
@@ -54,6 +68,8 @@ public class IndexModel : PageModel
                 e.EventName))
             .ToList();
 
+        // Osztályok
+
         Grades = await _db.Grades
             .AsNoTracking()
             .OrderBy(g => g.GradeName)
@@ -61,6 +77,8 @@ public class IndexModel : PageModel
                 g.GradeId,
                 g.GradeName))
             .ToListAsync();
+
+        // Programok
 
         Plans = await _db.PlanSessions
             .AsNoTracking()
@@ -75,14 +93,66 @@ public class IndexModel : PageModel
                 s.PlanId,
                 s.PlanName))
             .ToListAsync();
+
+        // Programokhoz tartozó idősávok
+
+        var sessions = await _db.PlanSessions
+            .AsNoTracking()
+            .Select(s => new
+            {
+                s.PlanId,
+                s.TimeSlotId,
+                s.TimeSlot.EventId,
+                s.TimeSlot.TimeSlotName,
+                s.TimeSlot.BeginDate
+            })
+            .Distinct()
+            .ToListAsync();
+
+        // Eseményenként számozzuk az idősávokat.
+
+        var slotNumbers = sessions
+            .GroupBy(s => s.EventId)
+            .SelectMany(group => group
+                .GroupBy(s => s.TimeSlotId)
+                .Select(g => g.First())
+                .OrderBy(s => s.BeginDate)
+                .ThenBy(s => s.TimeSlotId)
+                .Select((s, index) => new
+                {
+                    s.EventId,
+                    s.TimeSlotId,
+                    Number = index + 1
+                }))
+            .ToList();
+
+        TimeSlots = sessions
+            .Select(s => new TimeSlotOption(
+                s.TimeSlotId,
+                s.EventId,
+                s.PlanId,
+                s.TimeSlotName,
+                slotNumbers.First(n =>
+                    n.EventId == s.EventId &&
+                    n.TimeSlotId == s.TimeSlotId).Number))
+            .OrderBy(s => s.EventId)
+            .ThenBy(s => s.PlanId)
+            .ThenBy(s => s.Number)
+            .ToList();
     }
 
-    public async Task<IActionResult> OnGetGradeAsync(   int eventId, int gradeId)
+    // =====================================================
+    // OSZTÁLY EXPORT
+    // =====================================================
+
+    public async Task<IActionResult> OnGetGradeAsync(
+        int eventId,
+        int gradeId)
     {
         if (eventId <= 0 || gradeId <= 0)
         {
             return BadRequest(
-                "V�lassz ki egy esem�nyt �s egy oszt�lyt.");
+                "Válassz ki egy eseményt és egy osztályt.");
         }
 
         try
@@ -91,42 +161,62 @@ public class IndexModel : PageModel
                 eventId,
                 gradeId);
 
+            var fileName =
+                await _export.GetGradeExportFileNameAsync(
+                    eventId,
+                    gradeId);
+
             return File(
                 bytes,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"osztaly_{gradeId}_esemeny_{eventId}.xlsx");
+                ExcelContentType,
+                fileName);
         }
         catch (InvalidOperationException ex)
         {
             ErrorMessage = ex.Message;
+
             await LoadOptionsAsync();
+
             return Page();
         }
     }
 
-    public async Task<IActionResult> OnGetPlanAsync( int eventId, int planId)
+    // =====================================================
+    // PROGRAM EXPORT
+    // =====================================================
+
+    public async Task<IActionResult> OnGetPlanAsync(
+        int eventId,
+        int planId,
+        int timeSlotId)
     {
-        if (eventId <= 0 || planId <= 0)
+        if (eventId <= 0 || planId <= 0 || timeSlotId <= 0)
         {
             return BadRequest(
-                "V�lassz ki egy esem�nyt �s egy programot.");
+                "Válassz ki egy eseményt, programot és idősávot.");
         }
 
         try
         {
-            var bytes = await _export.ExportPlanAsync(
-                eventId,
-                planId);
+            var bytes = await _export.ExportPlanAsync( eventId, planId,  timeSlotId);
+
+            var fileName =
+                await _export.GetPlanExportFileNameAsync(
+                    eventId,
+                    planId,
+                    timeSlotId);
 
             return File(
                 bytes,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"program_{planId}_esemeny_{eventId}.xlsx");
+                ExcelContentType,
+                fileName);
         }
         catch (InvalidOperationException ex)
         {
             ErrorMessage = ex.Message;
+
             await LoadOptionsAsync();
+
             return Page();
         }
     }

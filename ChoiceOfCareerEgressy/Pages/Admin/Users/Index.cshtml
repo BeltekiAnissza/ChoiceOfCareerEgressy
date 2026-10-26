@@ -8,14 +8,24 @@
 
 <div class="container mt-4 mb-5">
 
+    <!-- ========================================= -->
+    <!-- FEJLÉC                                    -->
+    <!-- ========================================= -->
+
     <div class="d-flex justify-content-between align-items-center mb-4">
+
         <h2>Felhasználók kezelése</h2>
 
-        <a asp-page="./Create" class="btn btn-success">
+        <a asp-page="./Create"
+           class="btn btn-success">
             + Új felhasználó
         </a>
+
     </div>
 
+    <!-- ========================================= -->
+    <!-- VISSZAJELZÉSEK                            -->
+    <!-- ========================================= -->
     @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
     {
         <div class="alert alert-success">
@@ -23,9 +33,19 @@
         </div>
     }
 
-    <!-- KERESÉS ÉS SZŰRÉS -->
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <!-- ========================================= -->
+    <!-- KERESÉS ÉS SZŰRÉS                         -->
+    <!-- ========================================= -->
 
     <div class="card shadow-sm mb-4">
+
         <div class="card-header">
             <strong>Keresés és rendezés</strong>
         </div>
@@ -39,39 +59,65 @@
                     <!-- NÉV / E-MAIL KERESÉS -->
 
                     <div class="col-md-4">
-                        <label asp-for="Search" class="form-label">
+
+                        <label asp-for="Search"
+                               class="form-label">
                             Keresés
                         </label>
 
                         <input asp-for="Search"
                                class="form-control"
                                placeholder="Név vagy e-mail-cím..." />
+
                     </div>
 
                     <!-- SZEREPKÖR -->
 
                     <div class="col-md-2">
-                        <label asp-for="Role" class="form-label">
+
+                        <label asp-for="Role"
+                               class="form-label">
                             Szerepkör
                         </label>
 
-                        <select asp-for="Role" class="form-select">
-                            <option value="">Összes szerepkör</option>
-                            <option value="@RoleChoice.Student">Diák</option>
-                            <option value="@RoleChoice.Teacher">Tanár</option>
-                            <option value="@RoleChoice.Admin">Admin</option>
+                        <select asp-for="Role"
+                                class="form-select">
+
+                            <option value="">
+                                Összes szerepkör
+                            </option>
+
+                            <option value="@RoleChoice.Student">
+                                Diák
+                            </option>
+
+                            <option value="@RoleChoice.Teacher">
+                                Tanár
+                            </option>
+
+                            <option value="@RoleChoice.Admin">
+                                Admin
+                            </option>
+
                         </select>
+
                     </div>
 
                     <!-- OSZTÁLY -->
 
                     <div class="col-md-3">
-                        <label asp-for="GradeId" class="form-label">
+
+                        <label asp-for="GradeId"
+                               class="form-label">
                             Osztály
                         </label>
 
-                        <select asp-for="GradeId" class="form-select">
-                            <option value="">Összes osztály</option>
+                        <select asp-for="GradeId"
+                                class="form-select">
+
+                            <option value="">
+                                Összes osztály
+                            </option>
 
                             @foreach (var grade in Model.Options.Grades)
                             {
@@ -79,29 +125,49 @@
                                     @grade.Name
                                 </option>
                             }
+
                         </select>
+
                     </div>
 
                     <!-- RENDEZÉS -->
 
                     <div class="col-md-3">
-                        <label asp-for="Sort" class="form-label">
+
+                        <label asp-for="Sort"
+                               class="form-label">
                             Rendezés
                         </label>
 
-                        <select asp-for="Sort" class="form-select">
-                            <option value="">Név szerint (A–Z)</option>
-                            <option value="name_desc">Név szerint (Z–A)</option>
-                            <option value="grade_asc">Osztály szerint (A–Z)</option>
-                            <option value="grade_desc">Osztály szerint (Z–A)</option>
+                        <select asp-for="Sort"
+                                class="form-select">
+
+                            <option value="">
+                                Név szerint (A–Z)
+                            </option>
+
+                            <option value="name_desc">
+                                Név szerint (Z–A)
+                            </option>
+
+                            <option value="grade_asc">
+                                Osztály szerint (A–Z)
+                            </option>
+
+                            <option value="grade_desc">
+                                Osztály szerint (Z–A)
+                            </option>
+
                         </select>
+
                     </div>
 
                 </div>
 
                 <div class="d-flex gap-2 mt-3">
 
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit"
+                            class="btn btn-primary">
                         Keresés
                     </button>
 
@@ -115,19 +181,63 @@
             </form>
 
         </div>
+
     </div>
 
-    <!-- TALÁLATOK -->
+    <!-- ========================================= -->
+    <!-- FELHASZNÁLÓK FEJLÉCE                     -->
+    <!-- ========================================= -->
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Felhasználók</h5>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
 
-        <span class="badge bg-secondary">
-            @Model.Users.Count találat
-        </span>
+        <div>
+
+            <h5 class="mb-1">
+                Felhasználók
+            </h5>
+
+            <span class="badge bg-secondary">
+                @Model.Users.Count találat
+            </span>
+
+        </div>
+
+        <!-- TÖMEGES TÖRLÉS GOMBOK -->
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <button type="button"
+                    class="btn btn-outline-danger"
+                    data-bs-toggle="modal"
+                    data-bs-target="#deleteAllStudentsModal"
+                    disabled="@(Model.StudentCount == 0)">
+
+                <i class="bi bi-trash me-1"></i>
+                Összes diák törlése
+
+            </button>
+
+            <button type="button"
+                    class="btn btn-danger"
+                    data-bs-toggle="modal"
+                    data-bs-target="#deleteAllTeachersModal"
+                    disabled="@(Model.TeacherCount == 0)">
+
+                <i class="bi bi-trash me-1"></i>
+                Összes tanár törlése
+
+            </button>
+
+        </div>
+
     </div>
+
+    <!-- ========================================= -->
+    <!-- FELHASZNÁLÓK TÁBLÁZATA                   -->
+    <!-- ========================================= -->
 
     <div class="card shadow-sm">
+
         <div class="card-body p-0">
 
             <div class="table-responsive">
@@ -135,6 +245,7 @@
                 <table class="table table-striped table-hover mb-0">
 
                     <thead class="table-light">
+
                         <tr>
                             <th>Név</th>
                             <th>E-mail-cím</th>
@@ -144,6 +255,7 @@
                             <th>Nem</th>
                             <th>Műveletek</th>
                         </tr>
+
                     </thead>
 
                     <tbody>
@@ -151,35 +263,66 @@
                         @foreach (var user in Model.Users)
                         {
                             <tr>
-                                <td>@user.UserName</td>
-                                <td>@user.EmailAddress</td>
 
                                 <td>
+                                    @user.UserName
+                                </td>
+
+                                <td>
+                                    @user.EmailAddress
+                                </td>
+
+                                <td>
+
                                     @switch (user.Role)
                                     {
                                         case "Student":
-                                            <span class="badge bg-primary">Diák</span>
+
+                                            <span class="badge bg-primary">
+                                                Diák
+                                            </span>
+
                                             break;
 
                                         case "Teacher":
-                                            <span class="badge bg-success">Tanár</span>
+
+                                            <span class="badge bg-success">
+                                                Tanár
+                                            </span>
+
                                             break;
 
                                         case "Admin":
-                                            <span class="badge bg-danger">Admin</span>
+
+                                            <span class="badge bg-danger">
+                                                Admin
+                                            </span>
+
                                             break;
 
                                         default:
+
                                             @user.Role
+
                                             break;
                                     }
+
                                 </td>
 
-                                <td>@(user.GradeName ?? "–")</td>
-                                <td>@(user.BranchName ?? "–")</td>
-                                <td>@(user.SexName ?? "–")</td>
+                                <td>
+                                    @(user.GradeName ?? "–")
+                                </td>
 
                                 <td>
+                                    @(user.BranchName ?? "–")
+                                </td>
+
+                                <td>
+                                    @(user.SexName ?? "–")
+                                </td>
+
+                                <td>
+
                                     <div class="d-flex gap-2">
 
                                         <a asp-page="./Edit"
@@ -195,18 +338,24 @@
                                         </a>
 
                                     </div>
+
                                 </td>
+
                             </tr>
                         }
 
                         @if (!Model.Users.Any())
                         {
                             <tr>
+
                                 <td colspan="7"
                                     class="text-center text-muted py-4">
+
                                     Nem található a keresési feltételeknek
                                     megfelelő felhasználó.
+
                                 </td>
+
                             </tr>
                         }
 
@@ -217,6 +366,210 @@
             </div>
 
         </div>
+
+    </div>
+
+</div>
+
+<!-- ========================================= -->
+<!-- ÖSSZES DIÁK TÖRLÉSE                       -->
+<!-- ========================================= -->
+
+<div class="modal fade"
+     id="deleteAllStudentsModal"
+     tabindex="-1"
+     aria-labelledby="deleteAllStudentsModalLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header bg-danger text-white">
+
+                <h5 class="modal-title"
+                    id="deleteAllStudentsModalLabel">
+
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Összes diák törlése
+
+                </h5>
+
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"
+                        aria-label="Bezárás">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <p>
+                    Biztosan törölni szeretnéd
+                    <strong>az összes diákot</strong>?
+                </p>
+
+                <div class="alert alert-secondary text-center">
+
+                    <div class="text-muted">
+                        Törlendő diákok száma
+                    </div>
+
+                    <h2 class="text-danger mb-0">
+                        @Model.StudentCount
+                    </h2>
+
+                </div>
+
+                <div class="alert alert-danger mb-0">
+
+                    <strong>
+                        Figyelem! A művelet nem vonható vissza.
+                    </strong>
+
+                    <p class="mt-2 mb-0">
+                        Az összes diákfiók és a hozzájuk
+                        kapcsolódó jelentkezések is törlődnek.
+                    </p>
+
+                </div>
+
+                <p class="small text-muted mt-3 mb-0">
+                    A tanárok és az adminisztrátorok
+                    fiókjai megmaradnak.
+                </p>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Mégse
+                </button>
+
+                <form method="post"
+                      asp-page-handler="DeleteAllStudents">
+
+                    <button type="submit"
+                            class="btn btn-danger">
+
+                        Összes diák végleges törlése
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ========================================= -->
+<!-- ÖSSZES TANÁR TÖRLÉSE                      -->
+<!-- ========================================= -->
+
+<div class="modal fade"
+     id="deleteAllTeachersModal"
+     tabindex="-1"
+     aria-labelledby="deleteAllTeachersModalLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header bg-danger text-white">
+
+                <h5 class="modal-title"
+                    id="deleteAllTeachersModalLabel">
+
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Összes tanár törlése
+
+                </h5>
+
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"
+                        aria-label="Bezárás">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <p>
+                    Biztosan törölni szeretnéd
+                    <strong>az összes tanárt</strong>?
+                </p>
+
+                <div class="alert alert-secondary text-center">
+
+                    <div class="text-muted">
+                        Törlendő tanárok száma
+                    </div>
+
+                    <h2 class="text-danger mb-0">
+                        @Model.TeacherCount
+                    </h2>
+
+                </div>
+
+                <div class="alert alert-danger mb-0">
+
+                    <strong>
+                        Figyelem! A művelet nem vonható vissza.
+                    </strong>
+
+                    <p class="mt-2 mb-0">
+                        Az összes tanári fiók és a hozzájuk
+                        kapcsolódó felügyeleti beosztás törlődik.
+                    </p>
+
+                    <p class="mb-0 mt-2">
+                        Az osztályfőnöki hozzárendelések
+                        is megszűnnek.
+                    </p>
+
+                </div>
+
+                <p class="small text-muted mt-3 mb-0">
+                    A diákok és az adminisztrátorok
+                    fiókjai megmaradnak.
+                </p>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Mégse
+                </button>
+
+                <form method="post"
+                      asp-page-handler="DeleteAllTeachers">
+
+                    <button type="submit"
+                            class="btn btn-danger">
+
+                        Összes tanár végleges törlése
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
     </div>
 
 </div>

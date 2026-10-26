@@ -12,8 +12,7 @@
 
     if (isTeacher)
     {
-        var teacherIdValue = User.FindFirstValue(
-            ClaimTypes.NameIdentifier);
+        var teacherIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (int.TryParse(teacherIdValue, out int teacherId))
         {
@@ -21,10 +20,28 @@
                 await HomeroomService.IsHomeroomTeacherAsync(teacherId);
         }
     }
+
+    string currentPage =
+        ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+
+    bool IsActive(string page)
+    {
+        return currentPage.Equals(
+            page,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    bool IsSectionActive(string section)
+    {
+        return currentPage.StartsWith(
+            section,
+            StringComparison.OrdinalIgnoreCase);
+    }
 }
 
 <!DOCTYPE html>
 <html lang="hu">
+
 <head>
     <meta charset="utf-8" />
 
@@ -33,47 +50,72 @@
 
     <title>@ViewData["Title"] - ChoiceOfCareer</title>
 
+    <!-- BOOTSTRAP -->
+
     <link rel="stylesheet"
           href="~/lib/bootstrap/dist/css/bootstrap.min.css"
           asp-append-version="true" />
 
+    <!-- BOOTSTRAP ICONS -->
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <!-- ÁLTALÁNOS CSS -->
+
     <link rel="stylesheet"
           href="~/css/site.css"
           asp-append-version="true" />
-    <script>
-        (function () {
-            try {
-                const theme = localStorage.getItem(
-                    "choiceOfCareerTheme"
-                );
 
-                const allowed = [
-                    "purple", "blue", "gray", "pink", "green"
-                ];
+    <!-- NAVIGÁCIÓ ÉS LAYOUT CSS -->
 
-                document.documentElement.dataset.theme =
-                    allowed.includes(theme) ? theme : "purple";
-            } catch {
-                document.documentElement.dataset.theme = "purple";
-            }
-        })();
-    </script>
+    <link rel="stylesheet"
+          href="~/css/layout.css"
+          asp-append-version="true" />
+
+    <!-- SZÍNTÉMA BETÖLTÉSE -->
+
+    <script src="~/js/theme-init.js"
+            asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Styles", required: false)
+
 </head>
 
 <body class="d-flex flex-column min-vh-100">
 
+    <!-- ========================================= -->
+    <!-- FELSŐ NAVIGÁCIÓ                           -->
+    <!-- ========================================= -->
+
     <header>
-        <nav class="navbar navbar-expand-lg navbar-dark border-bottom shadow-sm" aria-label="Fő navigáció">
+
+        <nav class="navbar navbar-expand-lg navbar-dark border-bottom shadow-sm"
+             aria-label="Fő navigáció">
+
             <div class="container-fluid">
 
-                <!-- LOGÓ -->
+                <!-- ========================================= -->
+                <!-- LOGÓ                                      -->
+                <!-- ========================================= -->
+
                 <a class="navbar-brand fw-bold"
                    asp-page="/Index">
+
+                    <i class="bi bi-mortarboard-fill me-2"></i>
+
                     ChoiceOfCareer
+
                 </a>
+
+                <!-- ========================================= -->
+                <!-- JOBB OLDALI GOMBOK                        -->
+                <!-- ========================================= -->
+
                 <div class="d-flex align-items-center gap-2 ms-auto order-lg-3 header-actions">
 
-                    <!-- SZÍNVÁLASZTÓ -->
+                    <!-- SZÍNTÉMAVÁLASZTÓ -->
+
                     <div class="dropdown">
 
                         <button class="btn btn-outline-light btn-sm dropdown-toggle"
@@ -81,7 +123,13 @@
                                 id="themeDropdown"
                                 data-bs-toggle="dropdown"
                                 aria-expanded="false">
-                            🎨 <span class="d-none d-sm-inline">Színtéma</span>
+
+                            <i class="bi bi-palette"></i>
+
+                            <span class="d-none d-sm-inline">
+                                Színtéma
+                            </span>
+
                         </button>
 
                         <div class="dropdown-menu dropdown-menu-end p-3"
@@ -134,10 +182,38 @@
                                 </button>
 
                             </div>
+
                         </div>
+
                     </div>
+
+                    <!-- KIJELENTKEZÉS -->
+                    @if (isAuthenticated)
+                    {
+                        <form method="post"
+                              asp-page="/Account/Logout"
+                              class="mb-0">
+
+                            <button type="submit"
+                                    class="btn btn-outline-light btn-sm">
+
+                                <i class="bi bi-box-arrow-right"></i>
+
+                                <span class="d-none d-md-inline">
+                                    Kijelentkezés
+                                </span>
+
+                            </button>
+
+                        </form>
+                    }
+
                 </div>
-                <!-- MOBIL MENÜ -->
+
+                <!-- ========================================= -->
+                <!-- MOBIL MENÜGOMB                            -->
+                <!-- ========================================= -->
+
                 <button class="navbar-toggler"
                         type="button"
                         data-bs-toggle="collapse"
@@ -147,181 +223,393 @@
                         aria-label="Menü megnyitása">
 
                     <span class="navbar-toggler-icon"></span>
+
                 </button>
+
+                <!-- ========================================= -->
+                <!-- NAVIGÁCIÓS MENÜ                           -->
+                <!-- ========================================= -->
 
                 <div class="collapse navbar-collapse order-4 order-lg-2"
                      id="mainNavbar">
 
-                    <!-- BAL OLDALI MENÜ -->
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
                         @if (isAuthenticated)
                         {
-                            <!-- ADMIN MENÜ -->
                             @if (isAdmin)
                             {
+                                <!-- ========================================= -->
+                                <!-- ADMIN - KEZDŐLAP                          -->
+                                <!-- ========================================= -->
+
                                 <li class="nav-item">
-                                    <a class="nav-link"
+
+                                    <a class="nav-link @(IsActive("/Admin/Index") ? "active" : "")"
                                        asp-page="/Admin/Index">
+
+                                        <i class="bi bi-grid-1x2 me-1"></i>
+
                                         Kezdőlap
+
                                     </a>
+
                                 </li>
-                                <li class="nav-item">
-                                    <a class="nav-link"
-                                       asp-page="/Admin/Programs/Index">
-                                        Programok kezelése
-                                    </a>
-                                </li>
-                                <!-- ESEMÉNYEK -->
+
+                                <!-- ========================================= -->
+                                <!-- ADMIN - ESEMÉNYEK                         -->
+                                <!-- ========================================= -->
+
                                 <li class="nav-item dropdown">
 
-                                    <a class="nav-link dropdown-toggle"
+                                    <a class="nav-link dropdown-toggle @(IsSectionActive("/Admin/Events/") ? "active" : "")"
                                        href="#"
                                        id="adminEventsDropdown"
                                        role="button"
                                        data-bs-toggle="dropdown"
                                        aria-expanded="false">
+
+                                        <i class="bi bi-calendar-event me-1"></i>
+
                                         Események
+
                                     </a>
 
                                     <ul class="dropdown-menu"
                                         aria-labelledby="adminEventsDropdown">
 
                                         <li>
+
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Events/Index">
+
+                                                <i class="bi bi-list-ul me-2"></i>
+
+                                                Események kezelése
+
+                                            </a>
+
+                                        </li>
+
+                                        <li>
+
                                             <a class="dropdown-item"
                                                asp-page="/Admin/Events/Create">
+
+                                                <i class="bi bi-calendar-plus me-2"></i>
+
                                                 Új esemény
+
                                             </a>
+
                                         </li>
 
                                     </ul>
+
                                 </li>
 
-                                <!-- JELENTKEZÉSEK -->
+                                <!-- ========================================= -->
+                                <!-- ADMIN - PROGRAMOK                         -->
+                                <!-- ========================================= -->
+
                                 <li class="nav-item dropdown">
 
-                                    <a class="nav-link dropdown-toggle"
+                                    <a class="nav-link dropdown-toggle @(IsSectionActive("/Admin/Programs/") ? "active" : "")"
+                                       href="#"
+                                       id="adminProgramsDropdown"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+
+                                        <i class="bi bi-collection me-1"></i>
+
+                                        Programok
+
+                                    </a>
+
+                                    <ul class="dropdown-menu"
+                                        aria-labelledby="adminProgramsDropdown">
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Programs/Index">
+
+                                                <i class="bi bi-collection me-2"></i>
+
+                                                Programok kezelése
+
+                                            </a>
+
+                                        </li>
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Programs/Import">
+
+                                                <i class="bi bi-file-earmark-arrow-up me-2"></i>
+
+                                                Programok importálása
+
+                                            </a>
+
+                                        </li>
+
+                                    </ul>
+
+                                </li>
+
+                                <!-- ========================================= -->
+                                <!-- ADMIN - FELHASZNÁLÓK                      -->
+                                <!-- ========================================= -->
+
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link dropdown-toggle @(IsSectionActive("/Admin/Users/") || IsSectionActive("/Admin/Students/") || IsSectionActive("/Admin/Teachers/") || IsSectionActive("/Admin/Grades/") ? "active" : "")"
+                                       href="#"
+                                       id="adminUsersDropdown"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+
+                                        <i class="bi bi-people me-1"></i>
+
+                                        Felhasználók
+
+                                    </a>
+
+                                    <ul class="dropdown-menu"
+                                        aria-labelledby="adminUsersDropdown">
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Users/Index">
+
+                                                <i class="bi bi-people me-2"></i>
+
+                                                Felhasználók kezelése
+
+                                            </a>
+
+                                        </li>
+
+                                        <li><hr class="dropdown-divider" /></li>
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Students/Import">
+
+                                                <i class="bi bi-mortarboard me-2"></i>
+
+                                                Diákok importálása
+
+                                            </a>
+
+                                        </li>
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Teachers/Import">
+
+                                                <i class="bi bi-person-workspace me-2"></i>
+
+                                                Tanárok importálása
+
+                                            </a>
+
+                                        </li>
+
+                                        <li><hr class="dropdown-divider" /></li>
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-page="/Admin/Grades/Index">
+
+                                                <i class="bi bi-building me-2"></i>
+
+                                                Osztályok kezelése
+
+                                            </a>
+
+                                        </li>
+
+                                    </ul>
+
+                                </li>
+
+                                <!-- ========================================= -->
+                                <!-- ADMIN - JELENTKEZÉSEK                     -->
+                                <!-- ========================================= -->
+
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link dropdown-toggle @(IsSectionActive("/Admin/Registrations/") ? "active" : "")"
                                        href="#"
                                        id="adminRegistrationsDropdown"
                                        role="button"
                                        data-bs-toggle="dropdown"
                                        aria-expanded="false">
+
+                                        <i class="bi bi-clipboard-check me-1"></i>
+
                                         Jelentkezések
+
                                     </a>
 
                                     <ul class="dropdown-menu"
                                         aria-labelledby="adminRegistrationsDropdown">
 
                                         <li>
+
                                             <a class="dropdown-item"
-                                               asp-page="/Admin/Registrations/Index">
+                                               asp-page="/Admin/Registrations/Students/Index">
+
+                                                <i class="bi bi-person-check me-2"></i>
+
                                                 Diákjelentkezések
+
                                             </a>
+
                                         </li>
 
                                         <li>
+
                                             <a class="dropdown-item"
-                                               asp-page="/Admin/TeacherSupervisions/Index">
+                                               asp-page="/Admin/Registrations/Teachers/Index">
+
+                                                <i class="bi bi-shield-check me-2"></i>
+
                                                 Tanári felügyeletek
+
                                             </a>
+
                                         </li>
 
                                     </ul>
+
                                 </li>
-                                <!-- IMPORTÁLÁS -->
-                                <li class="nav-item dropdown">
 
-                                    <a class="nav-link dropdown-toggle"
-                                       href="#"
-                                       id="adminImportDropdown"
-                                       role="button"
-                                       data-bs-toggle="dropdown"
-                                       aria-expanded="false">
-                                        Importálás
-                                    </a>
+                                <!-- ========================================= -->
+                                <!-- ADMIN - EXPORTÁLÁS                        -->
+                                <!-- ========================================= -->
 
-                                    <ul class="dropdown-menu"
-                                        aria-labelledby="adminImportDropdown">
-
-                                        <li>
-                                            <a class="dropdown-item"
-                                               asp-page="/Admin/Students/Import">
-                                                Diákok importálása
-                                            </a>
-                                        </li>
-
-                                        <li>
-                                            <a class="dropdown-item"
-                                               asp-page="/Admin/Teachers/Import">
-                                                Tanárok importálása
-                                            </a>
-                                        </li>
-
-                                        <li>
-                                            <a class="dropdown-item"
-                                               asp-page="/Admin/Programs/Import">
-                                                Programok importálása
-                                            </a>
-                                        </li>
-
-                                    </ul>
-                                </li>
-                                <!-- OSZTÁLYOK KEZELÉSE -->
                                 <li class="nav-item">
-                                    <a class="nav-link"
-                                       asp-page="/Admin/Grades/Index">
-                                        Osztályok kezelése
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link"
+
+                                    <a class="nav-link @(IsSectionActive("/Admin/Exports/") ? "active" : "")"
                                        asp-page="/Admin/Exports/Index">
-                                        Excel exportálás
-                                    </a>
-                                </li>
 
+                                        <i class="bi bi-file-earmark-excel me-1"></i>
+
+                                        Excel exportálás
+
+                                    </a>
+
+                                </li>
                             }
 
-                            <!-- DIÁK MENÜ -->
+                            <!-- ========================================= -->
+                            <!-- DIÁK MENÜ                                 -->
+                            <!-- ========================================= -->
                             @if (isStudent)
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link"
+
+                                    <a class="nav-link @(IsSectionActive("/Student/") ? "active" : "")"
                                        asp-page="/Student/Index">
+
+                                        <i class="bi bi-calendar-check me-1"></i>
+
                                         Programjelentkezés
+
                                     </a>
+
                                 </li>
                             }
 
-                            <!-- TANÁR MENÜ -->
+                            <!-- ========================================= -->
+                            <!-- TANÁR MENÜ                                -->
+                            <!-- ========================================= -->
                             @if (isTeacher)
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link"
+
+                                    <a class="nav-link @(IsActive("/Teacher/Index") ? "active" : "")"
                                        asp-page="/Teacher/Index">
+
+                                        <i class="bi bi-clipboard-check me-1"></i>
+
                                         Felügyeleti jelentkezés
+
                                     </a>
+
                                 </li>
 
                                 @if (isHomeroomTeacher)
                                 {
-                                    <li class="nav-item">
-                                        <a class="nav-link"
-                                           href="/Teacher/Homeroom">
-                                            Osztályom jelentkezései
+                                    <li class="nav-item dropdown">
+
+                                        <a class="nav-link dropdown-toggle @(IsSectionActive("/Teacher/Homeroom") || IsActive("/Teacher/RenameGrade") || IsActive("/Teacher/ExportGrade") ? "active" : "")"
+                                           href="#"
+                                           id="teacherHomeroomDropdown"
+                                           role="button"
+                                           data-bs-toggle="dropdown"
+                                           aria-expanded="false">
+
+                                            <i class="bi bi-people me-1"></i>
+
+                                            Osztályom
+
                                         </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link"
-                                           asp-page="/Teacher/RenameGrade">
-                                            Osztályom átnevezése
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link"
-                                           asp-page="/Teacher/ExportGrade">
-                                            Osztályom exportálása
-                                        </a>
+
+                                        <ul class="dropdown-menu"
+                                            aria-labelledby="teacherHomeroomDropdown">
+
+                                            <li>
+
+                                                <a class="dropdown-item"
+                                                   href="/Teacher/Homeroom">
+
+                                                    <i class="bi bi-people me-2"></i>
+
+                                                    Osztályom jelentkezései
+
+                                                </a>
+
+                                            </li>
+
+                                            <li>
+
+                                                <a class="dropdown-item"
+                                                   asp-page="/Teacher/RenameGrade">
+
+                                                    <i class="bi bi-pencil-square me-2"></i>
+
+                                                    Osztályom átnevezése
+
+                                                </a>
+
+                                            </li>
+
+                                            <li>
+
+                                                <a class="dropdown-item"
+                                                   asp-page="/Teacher/ExportGrade">
+
+                                                    <i class="bi bi-file-earmark-arrow-down me-2"></i>
+
+                                                    Osztályom exportálása
+
+                                                </a>
+
+                                            </li>
+
+                                        </ul>
+
                                     </li>
                                 }
                             }
@@ -329,46 +617,54 @@
 
                     </ul>
 
-                    <!-- JOBB OLDALI FELHASZNÁLÓI MENÜ -->
+                    <!-- BEJELENTKEZETT FELHASZNÁLÓ -->
                     @if (isAuthenticated)
                     {
-                        <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2">
+                        <div class="navbar-text ms-lg-3">
 
-                            <span class="navbar-text me-lg-2">
-                                @User.Identity?.Name
-                            </span>
+                            <i class="bi bi-person-circle me-1"></i>
 
-                            <form method="post"
-                                  asp-page="/Account/Logout"
-                                  class="mb-0">
+                            @User.Identity?.Name
 
-                                <button type="submit"
-                                        class="btn btn-outline-danger btn-sm">
-                                    Kijelentkezés
-                                </button>
-
-                            </form>
                         </div>
                     }
 
                 </div>
+
             </div>
+
         </nav>
+
     </header>
 
-    <!-- OLDAL TARTALMA -->
+    <!-- ========================================= -->
+    <!-- FŐ TARTALOM                               -->
+    <!-- ========================================= -->
+
     <main class="container-fluid flex-grow-1 py-3 py-lg-4 px-3 px-lg-4 app-main">
+
         @RenderBody()
+
     </main>
 
-    <!-- LÁBLÉC -->
+    <!-- ========================================= -->
+    <!-- LÁBLÉC                                    -->
+    <!-- ========================================= -->
+
     <footer class="border-top bg-light py-3 mt-auto">
+
         <div class="container-fluid text-center text-muted">
+
             &copy; @DateTime.Now.Year - ChoiceOfCareer
+
         </div>
+
     </footer>
 
-    <!-- JAVASCRIPT -->
+    <!-- ========================================= -->
+    <!-- JAVASCRIPT                                -->
+    <!-- ========================================= -->
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
@@ -376,7 +672,9 @@
     <script src="~/js/site.js"
             asp-append-version="true"></script>
 
-    <!-- Mobil táblázatkártyák: csak a .mobile-card-table osztályú táblázatokon -->
+    <script src="~/js/layout.js"
+            asp-append-version="true"></script>
+
     <script src="~/js/responsive-tables.js"
             asp-append-version="true"></script>
 

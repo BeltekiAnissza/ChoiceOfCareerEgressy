@@ -1,8 +1,20 @@
 @page
 @model ChoiceOfCareerEgressy.Pages.Admin.Exports.IndexModel
 
+@using System.Text.Json
+
 @{
     ViewData["Title"] = "Excel exportok";
+
+    var plansJson = JsonSerializer.Serialize(
+        Model.TimeSlots.Select(t => new
+        {
+            eventId = t.EventId,
+            planId = t.PlanId,
+            timeSlotId = t.Id,
+            name = t.Name,
+            number = t.Number
+        }));
 }
 
 <h1>Excel exportok</h1>
@@ -21,8 +33,12 @@
 
 <div class="row g-3">
 
+    <!-- ========================================= -->
     <!-- OSZTÁLY EXPORT -->
+    <!-- ========================================= -->
+
     <div class="col-12 col-lg-6">
+
         <section class="card p-3 h-100">
 
             <h2 class="h5">Osztály jelentkezései</h2>
@@ -36,11 +52,12 @@
                        value="Grade" />
 
                 <div>
-                    <label class="form-label">
+                    <label class="form-label" for="gradeEventId">
                         Esemény
                     </label>
 
-                    <select name="eventId"
+                    <select id="gradeEventId"
+                            name="eventId"
                             class="form-select"
                             required>
 
@@ -54,15 +71,17 @@
                                 @ev.Name
                             </option>
                         }
+
                     </select>
                 </div>
 
                 <div>
-                    <label class="form-label">
+                    <label class="form-label" for="gradeId">
                         Osztály
                     </label>
 
-                    <select name="gradeId"
+                    <select id="gradeId"
+                            name="gradeId"
                             class="form-select"
                             required>
 
@@ -76,20 +95,31 @@
                                 @grade.Name
                             </option>
                         }
+
                     </select>
                 </div>
 
                 <button type="submit"
                         class="btn btn-primary">
+
+                    <i class="bi bi-file-earmark-excel me-1"></i>
+
                     Osztály Excel letöltése
+
                 </button>
 
             </form>
+
         </section>
+
     </div>
 
+    <!-- ========================================= -->
     <!-- PROGRAM EXPORT -->
+    <!-- ========================================= -->
+
     <div class="col-12 col-lg-6">
+
         <section class="card p-3 h-100">
 
             <h2 class="h5">Program jelentkezői</h2>
@@ -103,11 +133,12 @@
                        value="Plan" />
 
                 <div>
-                    <label class="form-label">
+                    <label class="form-label" for="planEventId">
                         Esemény
                     </label>
 
-                    <select name="eventId"
+                    <select id="planEventId"
+                            name="eventId"
                             class="form-select"
                             required>
 
@@ -121,20 +152,23 @@
                                 @ev.Name
                             </option>
                         }
+
                     </select>
                 </div>
 
                 <div>
-                    <label class="form-label">
+                    <label class="form-label" for="planId">
                         Program
                     </label>
 
-                    <select name="planId"
+                    <select id="planId"
+                            name="planId"
                             class="form-select"
-                            required>
+                            required
+                            disabled>
 
                         <option value="">
-                            Válassz programot
+                            Először válassz eseményt
                         </option>
 
                         @foreach (var plan in Model.Plans)
@@ -143,16 +177,157 @@
                                 @plan.Name
                             </option>
                         }
+
+                    </select>
+                </div>
+
+                <div>
+                    <label class="form-label" for="timeSlotId">
+                        Idősáv
+                    </label>
+
+                    <select id="timeSlotId"
+                            name="timeSlotId"
+                            class="form-select"
+                            required
+                            disabled>
+
+                        <option value="">
+                            Először válassz programot
+                        </option>
+
                     </select>
                 </div>
 
                 <button type="submit"
                         class="btn btn-primary">
+
+                    <i class="bi bi-file-earmark-excel me-1"></i>
+
                     Program Excel letöltése
+
                 </button>
 
             </form>
+
         </section>
+
     </div>
 
 </div>
+
+@section Scripts
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const sessions = @Html.Raw(plansJson);
+
+            const eventSelect =
+                document.getElementById("planEventId");
+
+            const planSelect =
+                document.getElementById("planId");
+
+            const slotSelect =
+                document.getElementById("timeSlotId");
+
+            const allPlans = Array.from(
+                planSelect.options
+            ).filter(option => option.value !== "");
+
+            // =====================================
+            // PROGRAMOK FRISSÍTÉSE
+            // =====================================
+
+            function updatePlans() {
+
+                const eventId = Number(eventSelect.value);
+
+                planSelect.innerHTML = "";
+
+                const placeholder =
+                    document.createElement("option");
+
+                placeholder.value = "";
+                placeholder.textContent = "Válassz programot";
+
+                planSelect.appendChild(placeholder);
+
+                const availablePlanIds = new Set(
+                    sessions
+                        .filter(s => s.eventId === eventId)
+                        .map(s => s.planId)
+                );
+
+                allPlans.forEach(option => {
+
+                    if (availablePlanIds.has(Number(option.value))) {
+
+                        planSelect.appendChild(
+                            option.cloneNode(true)
+                        );
+                    }
+
+                });
+
+                planSelect.disabled =
+                    availablePlanIds.size === 0;
+
+                updateSlots();
+            }
+
+            // =====================================
+            // IDŐSÁVOK FRISSÍTÉSE
+            // =====================================
+
+            function updateSlots() {
+
+                const eventId = Number(eventSelect.value);
+                const planId = Number(planSelect.value);
+
+                slotSelect.innerHTML = "";
+
+                const placeholder =
+                    document.createElement("option");
+
+                placeholder.value = "";
+                placeholder.textContent = "Válassz idősávot";
+
+                slotSelect.appendChild(placeholder);
+
+                const availableSlots = sessions
+                    .filter(s =>
+                        s.eventId === eventId &&
+                        s.planId === planId)
+                    .sort((a, b) => a.number - b.number);
+
+                availableSlots.forEach(slot => {
+
+                    const option =
+                        document.createElement("option");
+
+                    option.value = slot.timeSlotId;
+
+                    option.textContent =
+                        `${slot.number}. idősáv – ${slot.name}`;
+
+                    slotSelect.appendChild(option);
+                });
+
+                slotSelect.disabled =
+                    availableSlots.length === 0;
+            }
+
+            eventSelect.addEventListener(
+                "change",
+                updatePlans);
+
+            planSelect.addEventListener(
+                "change",
+                updateSlots);
+
+            updatePlans();
+        });
+    </script>
+}

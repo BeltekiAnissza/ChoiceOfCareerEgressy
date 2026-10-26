@@ -797,8 +797,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
         // TÖRLÉS ELŐTTI ÖSSZESÍTÉS
         // =====================================================
 
-        public async Task<AdminProgramDeleteDto?> GetDeleteInfoAsync(
-            int planSessionId)
+        public async Task<AdminProgramDeleteDto?> GetDeleteInfoAsync(int planSessionId)
         {
             var session = await _context.PlanSessions
                 .AsNoTracking()
@@ -844,9 +843,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
         // PROGRAM TÖRLÉSE
         // =====================================================
 
-        public async Task DeleteProgramAsync(
-            int planSessionId,
-            int? adminUserId = null)
+        public async Task DeleteProgramAsync(int planSessionId, int? adminUserId = null)
         {
             await using var transaction =
                 await _context.Database.BeginTransactionAsync();
@@ -913,6 +910,31 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
                 adminUserId);
 
             await transaction.CommitAsync();
+        }
+
+        public async Task<int> DeleteAllProgramsAsync(int eventId, int? adminUserId = null)
+        {
+            bool eventExists = await _context.Events
+                .AnyAsync(e => e.EventId == eventId);
+
+            if (!eventExists)
+            {
+                throw new InvalidOperationException(
+                    "A kiválasztott esemény nem található.");
+            }
+
+            var programIds = await _context.PlanSessions
+                .AsNoTracking()
+                .Where(s => s.TimeSlot.EventId == eventId)
+                .Select(s => s.PlanSessionId)
+                .ToListAsync();
+
+            foreach (var programId in programIds)
+            {
+                await DeleteProgramAsync(programId, adminUserId);
+            }
+
+            return programIds.Count;
         }
     }
 }

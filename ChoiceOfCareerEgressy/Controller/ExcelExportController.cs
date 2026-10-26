@@ -49,21 +49,32 @@ namespace ChoiceOfCareerEgressy.Controller
 
         [HttpGet("plan")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ExportPlan([FromQuery] int eventId, [FromQuery] int planId)
+        public async Task<IActionResult> ExportPlan([FromQuery] int eventId, [FromQuery] int planId, [FromQuery] int timeSlotId)
         {
-            if (eventId <= 0 || planId <= 0)
+            if (eventId <= 0 || planId <= 0 || timeSlotId <= 0)
             {
-                return BadRequest("Érvényes eseményt és programot kell választani.");
+                return BadRequest(
+                    "Érvényes eseményt, programot és idősávot kell választani.");
             }
 
             try
             {
-                var bytes = await _export.ExportPlanAsync(eventId, planId);
+                // Excel elkészítése a kiválasztott idősávhoz
+                var bytes = await _export.ExportPlanAsync(
+                    eventId,
+                    planId,
+                    timeSlotId);
+
+                // Fájlnév generálása
+                var fileName = await _export.GetPlanExportFileNameAsync(
+                    eventId,
+                    planId,
+                    timeSlotId);
 
                 return File(
                     bytes,
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    $"program_{planId}_esemeny_{eventId}.xlsx");
+                    fileName);
             }
             catch (InvalidOperationException ex)
             {

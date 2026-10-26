@@ -1,247 +1,497 @@
-﻿using ChoiceOfCareerEgressy.Model;
-using ChoiceOfCareerEgressy.Model.Admin;
-using ChoiceOfCareerEgressy.Persistence;
+﻿using ChoiceOfCareerEgressy.Persistence;
+using ChoiceOfCareerEgressy.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
-namespace ChoiceOfCareerEgressy.Pages.Events
+namespace ChoiceOfCareerEgressy.Pages.Admin
 {
     [Authorize(Roles = "Admin")]
     public class IndexModel : PageModel
     {
         private readonly ChoiceOfCareerPersistence _context;
-        private readonly AdminAllDataDeleteService _deleteService;
 
-        public IndexModel(
-            ChoiceOfCareerPersistence context,
-            AdminAllDataDeleteService deleteService)
+        public IndexModel(ChoiceOfCareerPersistence context)
         {
             _context = context;
-            _deleteService = deleteService;
         }
 
-        public List<EventOverviewDto> Events { get; set; } = new();
+        // ============================================
+        // ESEMÉNYSZŰRÉS
+        // ============================================
 
-        public int TotalProgramCount { get; set; }
+        [BindProperty(SupportsGet = true, Name = "eventId")]
+        public int? SelectedEventId { get; set; }
+
+        public List<EventDto> AvailableEvents { get; set; } = new();
+
+        // ============================================
+        // STATISZTIKAI KÁRTYÁK
+        // ============================================
+
+        public int StudentCount { get; set; }
+
+        public int TeacherCount { get; set; }
+
+        public int ProgramCount { get; set; }
+
+        public int ApplicationCount { get; set; }
+
+        public int EventCount { get; set; }
+
+        public int SupervisionCount { get; set; }
+
+        // ============================================
+        // ÁGAZATI DIAGRAM
+        // ============================================
+
+        public List<string> BranchChartLabels { get; set; } = new();
+
+        public List<int> BranchChartValues { get; set; } = new();
+
+        // ============================================
+        // KIHASZNÁLTSÁGI DIAGRAM
+        // ============================================
+
+        public List<int> CapacityChartValues { get; set; } = new();
+
+        // ============================================
+        // JELENTKEZÉSI DIAGRAM
+        // ============================================
+
+        public List<string> TrendChartLabels { get; set; } = new();
+
+        public List<int> TrendChartValues { get; set; } = new();
+
+        // ============================================
+        // RÉSZLETES STATISZTIKÁK
+        // ============================================
+
+        public List<PopularProgramDto> PopularPrograms { get; set; } = new();
+
+        public List<GradeStatisticDto> GradeStatistics { get; set; } = new();
+
+
+        // ============================================
+        // OLDAL BETÖLTÉSE
+        // ============================================
 
         public async Task OnGetAsync()
         {
             await LoadEventsAsync();
+
+            await LoadStatisticsAsync();
+
+            await LoadBranchChartAsync();
+
+            await LoadCapacityChartAsync();
+
+            await LoadApplicationTrendAsync();
+
+            await LoadPopularProgramsAsync();
+
+            await LoadGradeStatisticsAsync();
         }
 
-        // ============================================
-        // JELENTKEZÉS ENGEDÉLYEZÉSE VAGY LETILTÁSA
-        // ============================================
-
-        public async Task<IActionResult> OnPostToggleRegistrationAsync(
-            int eventId)
-        {
-            var ev = await _context.Events
-                .FirstOrDefaultAsync(e => e.EventId == eventId);
-
-            if (ev == null)
-            {
-                TempData["Error"] =
-                    "A kiválasztott esemény nem található.";
-
-                return RedirectToPage();
-            }
-
-            ev.IsRegistrationEnabled = !ev.IsRegistrationEnabled;
-
-            await _context.SaveChangesAsync();
-
-            TempData["Success"] = ev.IsRegistrationEnabled
-                ? $"A jelentkezés engedélyezve lett: {ev.EventName}"
-                : $"A jelentkezés letiltva lett: {ev.EventName}";
-
-            return RedirectToPage();
-        }
 
         // ============================================
-        // ÖSSZES PROGRAM TÖRLÉSE
-        // ============================================
-
-        public async Task<IActionResult> OnPostDeleteAllProgramsAsync()
-        {
-            try
-            {
-                string? userId = User.FindFirstValue(
-                    ClaimTypes.NameIdentifier);
-
-                if (!int.TryParse(userId, out int adminId))
-                {
-                    TempData["Error"] =
-                        "A felhasználó azonosítása sikertelen.";
-
-                    return RedirectToPage();
-                }
-
-                int deletedCount =
-                    await _deleteService.DeleteAllProgramsAsync(adminId);
-
-                TempData["Success"] =
-                    $"Sikeresen töröltünk {deletedCount} programot. " +
-                    "A programokhoz tartozó jelentkezések " +
-                    "és felügyeletek is törlődtek.";
-            }
-            catch (UnauthorizedAccessException)
-            {
-                TempData["Error"] =
-                    "Nincs jogosultságod a programok törléséhez.";
-            }
-            catch (Exception)
-            {
-                TempData["Error"] =
-                    "Hiba történt a programok törlése közben. " +
-                    "A művelet nem fejeződött be.";
-            }
-
-            return RedirectToPage();
-        }
-
-        // ============================================
-        // ESEMÉNYEK ÉS PROGRAMOK BETÖLTÉSE
+        // ESEMÉNYEK BETÖLTÉSE
         // ============================================
 
         private async Task LoadEventsAsync()
         {
-            TotalProgramCount = await _context.Plans.CountAsync();
-
             var events = await _context.Events
                 .AsNoTracking()
-                .AsSplitQuery()
-                .Include(e => e.TimeSlots)
-                    .ThenInclude(t => t.PlanSessions)
-                        .ThenInclude(s => s.Plan)
-                            .ThenInclude(p => p.Branch)
-                .Include(e => e.TimeSlots)
-                    .ThenInclude(t => t.PlanSessions)
-                        .ThenInclude(s => s.Plan)
-                            .ThenInclude(p => p.Sex)
-                .Include(e => e.TimeSlots)
-                    .ThenInclude(t => t.PlanSessions)
-                        .ThenInclude(s => s.Location)
-                .ToListAsync();
-
-            var applicationCounts = await _context.Applications
-                .AsNoTracking()
-                .Where(a => a.Status == ApplicationStatus.Active)
-                .GroupBy(a => a.PlanSessionId)
-                .Select(g => new
+                .Select(e => new
                 {
-                    PlanSessionId = g.Key,
-                    Count = g.Count()
+                    e.EventId,
+                    e.EventName,
+                    e.EventDate
                 })
                 .ToListAsync();
 
-            var counts = applicationCounts.ToDictionary(
-                x => x.PlanSessionId,
-                x => x.Count);
-
-            Events = events
+            AvailableEvents = events
                 .OrderByDescending(e => e.EventDate)
-                .Select(e => new EventOverviewDto
+                .Select(e => new EventDto
                 {
                     EventId = e.EventId,
-                    EventName = e.EventName,
-                    EventDate = e.EventDate,
-                    RegistrationStart = e.RegistrationStart,
-                    RegistrationEnd = e.RegistrationEnd,
-                    IsRegistrationEnabled = e.IsRegistrationEnabled,
+                    EventName = e.EventName
+                })
+                .ToList();
 
-                    TimeSlots = e.TimeSlots
-                        .OrderBy(t => t.BeginDate)
-                        .Select(t => new TimeSlotOverviewDto
-                        {
-                            TimeSlotName = t.TimeSlotName,
-                            BeginDate = t.BeginDate,
-                            EndDate = t.EndDate,
+            if (SelectedEventId.HasValue &&
+                !AvailableEvents.Any(e =>
+                    e.EventId == SelectedEventId.Value))
+            {
+                SelectedEventId = null;
+            }
+        }
 
-                            Programs = t.PlanSessions
-                                .OrderBy(s => s.Plan.PlanName)
-                                .ThenBy(s => s.Location.LocationName)
-                                .Select(s =>
-                                {
-                                    int registered = counts.GetValueOrDefault(
-                                        s.PlanSessionId, 0);
 
-                                    return new ProgramOverviewDto
-                                    {
-                                        PlanName = s.Plan.PlanName,
-                                        Description = s.Plan.PlanDescription,
-                                        LocationName = s.Location.LocationName,
-                                        Capacity = s.Capacity,
-                                        RegisteredCount = registered,
-                                        AvailablePlaces = Math.Max(
-                                            0, s.Capacity - registered),
+        // ============================================
+        // STATISZTIKAI KÁRTYÁK
+        // ============================================
 
-                                        SexName = s.Plan.Sex?.SexName
-                                            ?? "Unisex",
+        private async Task LoadStatisticsAsync()
+        {
+            StudentCount = await _context.Users
+                .CountAsync(u => u.Role == RoleChoice.Student);
 
-                                        BranchName = s.Plan.Branch?.BranchName
-                                            ?? "Minden ágazat"
-                                    };
-                                })
-                                .ToList()
-                        })
-                        .ToList()
+            TeacherCount = await _context.Users
+                .CountAsync(u => u.Role == RoleChoice.Teacher);
+
+            EventCount = await _context.Events.CountAsync();
+
+            var sessions = _context.PlanSessions
+                .AsNoTracking()
+                .AsQueryable();
+
+            var applications = _context.Applications
+                .AsNoTracking()
+                .Where(a => a.Status == ApplicationStatus.Active);
+
+            var supervisions = _context.Supervisions
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (SelectedEventId.HasValue)
+            {
+                int eventId = SelectedEventId.Value;
+
+                sessions = sessions.Where(s =>
+                    s.TimeSlot.EventId == eventId);
+
+                applications = applications.Where(a =>
+                    a.PlanSession.TimeSlot.EventId == eventId);
+
+                supervisions = supervisions.Where(s =>
+                    (s.PlanSessionId != null &&
+                     s.PlanSession!.TimeSlot.EventId == eventId)
+                    ||
+                    (s.SupervisionPlaceId != null &&
+                     s.SupervisionPlace!.TimeSlot.EventId == eventId));
+            }
+
+            if (SelectedEventId.HasValue)
+            {
+                ProgramCount = await sessions
+                    .Select(s => s.PlanId)
+                    .Distinct()
+                    .CountAsync();
+            }
+            else
+            {
+                ProgramCount = await _context.Plans.CountAsync();
+            }
+
+            ApplicationCount = await applications.CountAsync();
+
+            SupervisionCount = await supervisions.CountAsync();
+        }
+
+
+        // ============================================
+        // JELENTKEZÉSEK ÁGAZATONKÉNT
+        // ============================================
+
+        private async Task LoadBranchChartAsync()
+        {
+            var applications = _context.Applications
+                .AsNoTracking()
+                .Where(a =>
+                    a.Status == ApplicationStatus.Active);
+
+            if (SelectedEventId.HasValue)
+            {
+                int eventId = SelectedEventId.Value;
+
+                applications = applications.Where(a =>
+                    a.PlanSession.TimeSlot.EventId == eventId);
+            }
+
+            var result = await applications
+                .GroupBy(a => new
+                {
+                    a.User.BranchId,
+                    BranchName = a.User.Branch != null
+                        ? a.User.Branch.BranchName
+                        : "Nincs ágazat"
+                })
+                .Select(g => new
+                {
+                    Name = g.Key.BranchName,
+                    Count = g.Count()
+                })
+                .OrderByDescending(x => x.Count)
+                .ToListAsync();
+
+            BranchChartLabels = result
+                .Select(x => x.Name)
+                .ToList();
+
+            BranchChartValues = result
+                .Select(x => x.Count)
+                .ToList();
+        }
+
+
+        // ============================================
+        // PROGRAMALKALMAK KIHASZNÁLTSÁGA
+        // ============================================
+
+        private async Task LoadCapacityChartAsync()
+        {
+            var sessions = _context.PlanSessions
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (SelectedEventId.HasValue)
+            {
+                int eventId = SelectedEventId.Value;
+
+                sessions = sessions.Where(s =>
+                    s.TimeSlot.EventId == eventId);
+            }
+
+            var result = await sessions
+                .Select(s => new
+                {
+                    s.Capacity,
+
+                    ApplicationCount = s.Applications
+                        .Count(a =>
+                            a.Status == ApplicationStatus.Active)
+                })
+                .ToListAsync();
+
+            int full = 0;
+            int partial = 0;
+            int empty = 0;
+
+            foreach (var session in result)
+            {
+                if (session.ApplicationCount == 0)
+                {
+                    empty++;
+                }
+                else if (session.Capacity <= 0 ||
+                         session.ApplicationCount >= session.Capacity)
+                {
+                    full++;
+                }
+                else
+                {
+                    partial++;
+                }
+            }
+
+            CapacityChartValues = new List<int>
+            {
+                full,
+                partial,
+                empty
+            };
+        }
+
+
+        // ============================================
+        // JELENTKEZÉSEK IDŐBELI ALAKULÁSA
+        // ============================================
+
+        private async Task LoadApplicationTrendAsync()
+        {
+            var applications = _context.Applications
+                .AsNoTracking()
+                .Where(a =>
+                    a.Status == ApplicationStatus.Active);
+
+            if (SelectedEventId.HasValue)
+            {
+                int eventId = SelectedEventId.Value;
+
+                applications = applications.Where(a =>
+                    a.PlanSession.TimeSlot.EventId == eventId);
+            }
+
+            var dates = await applications
+                .Select(a => a.ApplicationDate)
+                .ToListAsync();
+
+            var result = dates
+                .GroupBy(d => d.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Count = g.Count()
+                })
+                .OrderBy(x => x.Date)
+                .ToList();
+
+            TrendChartLabels = result
+                .Select(x => x.Date.ToString("yyyy.MM.dd"))
+                .ToList();
+
+            TrendChartValues = result
+                .Select(x => x.Count)
+                .ToList();
+        }
+
+
+        // ============================================
+        // LEGNÉPSZERŰBB PROGRAMALKALMAK
+        // ============================================
+
+        private async Task LoadPopularProgramsAsync()
+        {
+            var sessions = _context.PlanSessions
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (SelectedEventId.HasValue)
+            {
+                int eventId = SelectedEventId.Value;
+
+                sessions = sessions.Where(s =>
+                    s.TimeSlot.EventId == eventId);
+            }
+
+            var result = await sessions
+                .Select(s => new
+                {
+                    Name = s.Plan.PlanName,
+                    s.Capacity,
+
+                    ApplicationCount = s.Applications
+                        .Count(a =>
+                            a.Status == ApplicationStatus.Active)
+                })
+                .OrderByDescending(s => s.ApplicationCount)
+                .ThenBy(s => s.Name)
+                .Take(10)
+                .ToListAsync();
+
+            PopularPrograms = result
+                .Select(s => new PopularProgramDto
+                {
+                    Name = s.Name,
+
+                    Capacity = s.Capacity,
+
+                    ApplicationCount = s.ApplicationCount,
+
+                    OccupancyPercent = s.Capacity > 0
+                        ? (double)s.ApplicationCount / s.Capacity * 100
+                        : 0
                 })
                 .ToList();
         }
 
+
         // ============================================
-        // DTO-K
+        // OSZTÁLYOK AKTIVITÁSA
         // ============================================
 
-        public class EventOverviewDto
+        private async Task LoadGradeStatisticsAsync()
+        {
+            var students = await _context.Users
+                .AsNoTracking()
+                .Where(u =>
+                    u.Role == RoleChoice.Student &&
+                    u.GradeId != null)
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.GradeId,
+                    GradeName = u.Grade!.GradeName
+                })
+                .ToListAsync();
+
+            var applications = _context.Applications
+                .AsNoTracking()
+                .Where(a =>
+                    a.Status == ApplicationStatus.Active &&
+                    a.User.Role == RoleChoice.Student);
+
+            if (SelectedEventId.HasValue)
+            {
+                int eventId = SelectedEventId.Value;
+
+                applications = applications.Where(a =>
+                    a.PlanSession.TimeSlot.EventId == eventId);
+            }
+
+            var activeStudentIds = await applications
+                .Select(a => a.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            var activeStudentSet = activeStudentIds.ToHashSet();
+
+            GradeStatistics = students
+                .GroupBy(s => new
+                {
+                    s.GradeId,
+                    s.GradeName
+                })
+                .Select(g =>
+                {
+                    int studentCount = g.Count();
+
+                    int activeCount = g.Count(s =>
+                        activeStudentSet.Contains(s.UserId));
+
+                    return new GradeStatisticDto
+                    {
+                        GradeName = g.Key.GradeName,
+
+                        StudentCount = studentCount,
+
+                        ActiveStudentCount = activeCount,
+
+                        ActivityPercent = studentCount > 0
+                            ? (double)activeCount / studentCount * 100
+                            : 0
+                    };
+                })
+                .OrderBy(g => g.GradeName)
+                .ToList();
+        }
+
+
+        // ============================================
+        // DTO OSZTÁLYOK
+        // ============================================
+
+        public class EventDto
         {
             public int EventId { get; set; }
 
-            public string EventName { get; set; } = "";
-
-            public DateTimeOffset EventDate { get; set; }
-
-            public DateTimeOffset RegistrationStart { get; set; }
-
-            public DateTimeOffset RegistrationEnd { get; set; }
-
-            public bool IsRegistrationEnabled { get; set; }
-
-            public List<TimeSlotOverviewDto> TimeSlots { get; set; } = new();
+            public string EventName { get; set; } = string.Empty;
         }
 
-        public class TimeSlotOverviewDto
+
+        public class PopularProgramDto
         {
-            public string TimeSlotName { get; set; } = "";
+            public string Name { get; set; } = string.Empty;
 
-            public DateTimeOffset BeginDate { get; set; }
-
-            public DateTimeOffset EndDate { get; set; }
-
-            public List<ProgramOverviewDto> Programs { get; set; } = new();
-        }
-
-        public class ProgramOverviewDto
-        {
-            public string PlanName { get; set; } = "";
-
-            public string? Description { get; set; }
-
-            public string LocationName { get; set; } = "";
+            public int ApplicationCount { get; set; }
 
             public int Capacity { get; set; }
 
-            public int RegisteredCount { get; set; }
+            public double OccupancyPercent { get; set; }
+        }
 
-            public int AvailablePlaces { get; set; }
 
-            public string SexName { get; set; } = "";
+        public class GradeStatisticDto
+        {
+            public string GradeName { get; set; } = string.Empty;
 
-            public string BranchName { get; set; } = "";
+            public int StudentCount { get; set; }
+
+            public int ActiveStudentCount { get; set; }
+
+            public double ActivityPercent { get; set; }
         }
     }
 }

@@ -1,17 +1,29 @@
 ﻿@page
 @model ChoiceOfCareerEgressy.Pages.Events.CreateModel
+
 @{
     ViewData["Title"] = "Esemény létrehozása";
 }
 
 <div class="container mt-4">
 
-    <h2>Új esemény létrehozása</h2>
+    <!-- ========================================= -->
+    <!-- FEJLÉC                                    -->
+    <!-- ========================================= -->
 
-    <p class="text-muted">
-        Add meg a pályaorientációs nap adatait,
-        a jelentkezési időszakot és a két idősávot.
-    </p>
+    <div class="mb-4">
+
+        <h2 class="fw-bold">
+            <i class="bi bi-calendar-plus me-2"></i>
+            Új esemény létrehozása
+        </h2>
+
+        <p class="text-muted">
+            Add meg a pályaorientációs nap adatait,
+            a jelentkezési időszakot és a két idősávot.
+        </p>
+
+    </div>
 
     <form method="post">
 
@@ -19,16 +31,29 @@
              class="text-danger mb-3">
         </div>
 
+        <!-- ========================================= -->
+        <!-- ESEMÉNY ADATAI                            -->
+        <!-- ========================================= -->
+
         <div class="card shadow-sm mb-4">
+
             <div class="card-header">
-                <h5 class="mb-0">Esemény adatai</h5>
+
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    Esemény adatai
+                </h5>
+
             </div>
 
             <div class="card-body">
 
+                <!-- ESEMÉNY NEVE -->
+
                 <div class="mb-3">
+
                     <label asp-for="EventInput.EventName"
-                           class="form-label">
+                           class="form-label fw-semibold">
                         Esemény neve
                     </label>
 
@@ -36,22 +61,43 @@
                            class="form-control"
                            placeholder="Pályaorientációs nap 2026"
                            required />
+
                 </div>
 
+                <!-- ESEMÉNY DÁTUMA -->
+
                 <div class="mb-3">
-                    <label asp-for="EventInput.EventDate"
-                           class="form-label">
+
+                    <label asp-for="EventDateText"
+                           class="form-label fw-semibold">
                         Esemény dátuma
                     </label>
 
-                    <input asp-for="EventInput.EventDate"
-                           type="date"
-                           asp-format="{0:yyyy-MM-dd}"
+                    <input asp-for="EventDateText"
+                           type="text"
                            class="form-control"
+                           placeholder="2026/12/17"
+                           pattern="[0-9]{4}/[0-9]{2}/[0-9]{2}"
+                           title="A dátum formátuma: ÉÉÉÉ/HH/NN"
+                           inputmode="numeric"
+                           maxlength="10"
+                           autocomplete="off"
                            required />
+
+                    <div class="form-text">
+                        Példa: 2026/12/17
+                    </div>
+
+                    <span asp-validation-for="EventDateText"
+                          class="text-danger">
+                    </span>
+
                 </div>
 
+                <!-- JELENTKEZÉS ENGEDÉLYEZÉSE -->
+
                 <div class="form-check">
+
                     <input asp-for="EventInput.IsRegistrationEnabled"
                            class="form-check-input" />
 
@@ -59,140 +105,344 @@
                            class="form-check-label">
                         Jelentkezés engedélyezése
                     </label>
+
                 </div>
 
             </div>
+
         </div>
 
+        <!-- ========================================= -->
+        <!-- JELENTKEZÉSI IDŐSZAK                      -->
+        <!-- ========================================= -->
+
         <div class="card shadow-sm mb-4">
+
             <div class="card-header">
-                <h5 class="mb-0">Jelentkezési időszak</h5>
+
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Jelentkezési időszak
+                </h5>
+
             </div>
 
             <div class="card-body">
 
+                <p class="text-muted small">
+                    A jelentkezés kezdő és záró dátumát külön add meg.
+                    Az időpontokat 24 órás formátumban kell beírni.
+                </p>
+
                 <div class="row">
+
+                    <!-- JELENTKEZÉS KEZDETE -->
+
                     <div class="col-md-6 mb-3">
-                        <label asp-for="EventInput.RegistrationStart"
-                               class="form-label">
+
+                        <label class="form-label fw-semibold">
                             Jelentkezés kezdete
                         </label>
 
-                        <input asp-for="EventInput.RegistrationStart"
-                               type="datetime-local"
-                               asp-format="{0:yyyy-MM-ddTHH:mm}"
-                               class="form-control"
-                               required />
+                        <div class="row g-2">
+
+                            <div class="col-sm-7">
+
+                                <input asp-for="RegistrationStartDateText"
+                                       type="text"
+                                       class="form-control"
+                                       placeholder="2026/12/01"
+                                       pattern="[0-9]{4}/[0-9]{2}/[0-9]{2}"
+                                       title="Dátum: ÉÉÉÉ/HH/NN"
+                                       inputmode="numeric"
+                                       maxlength="10"
+                                       autocomplete="off"
+                                       aria-label="Jelentkezés kezdő dátuma"
+                                       required />
+
+                            </div>
+
+                            <div class="col-sm-5">
+
+                                <input asp-for="RegistrationStartTime"
+                                       type="text"
+                                       class="form-control"
+                                       placeholder="08:00"
+                                       pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                                       title="24 órás időformátum, például 08:00 vagy 23:00."
+                                       inputmode="numeric"
+                                       maxlength="5"
+                                       autocomplete="off"
+                                       aria-label="Jelentkezés kezdő időpontja"
+                                       required />
+
+                            </div>
+
+                        </div>
+
+                        <span asp-validation-for="RegistrationStartDateText"
+                              class="text-danger">
+                        </span>
+
+                        <span asp-validation-for="RegistrationStartTime"
+                              class="text-danger">
+                        </span>
+
                     </div>
 
+                    <!-- JELENTKEZÉS VÉGE -->
+
                     <div class="col-md-6 mb-3">
-                        <label asp-for="EventInput.RegistrationEnd"
-                               class="form-label">
+
+                        <label class="form-label fw-semibold">
                             Jelentkezés vége
                         </label>
 
-                        <input asp-for="EventInput.RegistrationEnd"
-                               type="datetime-local"
-                               asp-format="{0:yyyy-MM-ddTHH:mm}"
-                               class="form-control"
-                               required />
+                        <div class="row g-2">
+
+                            <div class="col-sm-7">
+
+                                <input asp-for="RegistrationEndDateText"
+                                       type="text"
+                                       class="form-control"
+                                       placeholder="2026/12/16"
+                                       pattern="[0-9]{4}/[0-9]{2}/[0-9]{2}"
+                                       title="Dátum: ÉÉÉÉ/HH/NN"
+                                       inputmode="numeric"
+                                       maxlength="10"
+                                       autocomplete="off"
+                                       aria-label="Jelentkezés záró dátuma"
+                                       required />
+
+                            </div>
+
+                            <div class="col-sm-5">
+
+                                <input asp-for="RegistrationEndTime"
+                                       type="text"
+                                       class="form-control"
+                                       placeholder="16:00"
+                                       pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                                       title="24 órás időformátum, például 16:00 vagy 23:00."
+                                       inputmode="numeric"
+                                       maxlength="5"
+                                       autocomplete="off"
+                                       aria-label="Jelentkezés záró időpontja"
+                                       required />
+
+                            </div>
+
+                        </div>
+
+                        <span asp-validation-for="RegistrationEndDateText"
+                              class="text-danger">
+                        </span>
+
+                        <span asp-validation-for="RegistrationEndTime"
+                              class="text-danger">
+                        </span>
+
                     </div>
+
                 </div>
 
             </div>
+
         </div>
 
+        <!-- ========================================= -->
+        <!-- 1. IDŐSÁV                                 -->
+        <!-- ========================================= -->
+
         <div class="card shadow-sm mb-4">
+
             <div class="card-header">
-                <h5 class="mb-0">1. idősáv</h5>
+
+                <h5 class="mb-0">
+                    <i class="bi bi-clock me-2"></i>
+                    1. idősáv
+                </h5>
+
             </div>
 
             <div class="card-body">
 
+                <p class="text-muted small">
+                    Az idősáv az esemény napjára kerül.
+                    Csak az órát és a percet add meg.
+                </p>
+
                 <div class="row">
+
+                    <!-- KEZDÉS -->
+
                     <div class="col-md-6 mb-3">
-                        <label asp-for="EventInput.FirstSlotStart"
-                               class="form-label">
+
+                        <label asp-for="FirstSlotStartTime"
+                               class="form-label fw-semibold">
                             Kezdés
                         </label>
 
-                        <input asp-for="EventInput.FirstSlotStart"
-                               type="datetime-local"
-                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                        <input asp-for="FirstSlotStartTime"
+                               type="text"
                                class="form-control"
+                               placeholder="08:00"
+                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                               title="24 órás időformátum, például 08:00."
+                               inputmode="numeric"
+                               maxlength="5"
+                               autocomplete="off"
                                required />
+
+                        <span asp-validation-for="FirstSlotStartTime"
+                              class="text-danger">
+                        </span>
+
                     </div>
 
+                    <!-- BEFEJEZÉS -->
+
                     <div class="col-md-6 mb-3">
-                        <label asp-for="EventInput.FirstSlotEnd"
-                               class="form-label">
+
+                        <label asp-for="FirstSlotEndTime"
+                               class="form-label fw-semibold">
                             Befejezés
                         </label>
 
-                        <input asp-for="EventInput.FirstSlotEnd"
-                               type="datetime-local"
-                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                        <input asp-for="FirstSlotEndTime"
+                               type="text"
                                class="form-control"
+                               placeholder="10:00"
+                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                               title="24 órás időformátum, például 10:00."
+                               inputmode="numeric"
+                               maxlength="5"
+                               autocomplete="off"
                                required />
+
+                        <span asp-validation-for="FirstSlotEndTime"
+                              class="text-danger">
+                        </span>
+
                     </div>
+
                 </div>
 
             </div>
+
         </div>
 
+        <!-- ========================================= -->
+        <!-- 2. IDŐSÁV                                 -->
+        <!-- ========================================= -->
+
         <div class="card shadow-sm mb-4">
+
             <div class="card-header">
-                <h5 class="mb-0">2. idősáv</h5>
+
+                <h5 class="mb-0">
+                    <i class="bi bi-clock me-2"></i>
+                    2. idősáv
+                </h5>
+
             </div>
 
             <div class="card-body">
 
+                <p class="text-muted small">
+                    A második idősáv is az esemény napjára kerül.
+                    Csak az órát és a percet add meg.
+                </p>
+
                 <div class="row">
+
+                    <!-- KEZDÉS -->
+
                     <div class="col-md-6 mb-3">
-                        <label asp-for="EventInput.SecondSlotStart"
-                               class="form-label">
+
+                        <label asp-for="SecondSlotStartTime"
+                               class="form-label fw-semibold">
                             Kezdés
                         </label>
 
-                        <input asp-for="EventInput.SecondSlotStart"
-                               type="datetime-local"
-                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                        <input asp-for="SecondSlotStartTime"
+                               type="text"
                                class="form-control"
+                               placeholder="10:15"
+                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                               title="24 órás időformátum, például 10:15."
+                               inputmode="numeric"
+                               maxlength="5"
+                               autocomplete="off"
                                required />
+
+                        <span asp-validation-for="SecondSlotStartTime"
+                              class="text-danger">
+                        </span>
+
                     </div>
 
+                    <!-- BEFEJEZÉS -->
+
                     <div class="col-md-6 mb-3">
-                        <label asp-for="EventInput.SecondSlotEnd"
-                               class="form-label">
+
+                        <label asp-for="SecondSlotEndTime"
+                               class="form-label fw-semibold">
                             Befejezés
                         </label>
 
-                        <input asp-for="EventInput.SecondSlotEnd"
-                               type="datetime-local"
-                               asp-format="{0:yyyy-MM-ddTHH:mm}"
+                        <input asp-for="SecondSlotEndTime"
+                               type="text"
                                class="form-control"
+                               placeholder="12:15"
+                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                               title="24 órás időformátum, például 12:15."
+                               inputmode="numeric"
+                               maxlength="5"
+                               autocomplete="off"
                                required />
+
+                        <span asp-validation-for="SecondSlotEndTime"
+                              class="text-danger">
+                        </span>
+
                     </div>
+
                 </div>
 
             </div>
+
         </div>
 
-        <button type="submit"
-                class="btn btn-success">
-            Esemény létrehozása
-        </button>
+        <!-- ========================================= -->
+        <!-- GOMBOK                                   -->
+        <!-- ========================================= -->
 
-        <a asp-page="/Admin/Users/Index"
-           class="btn btn-secondary ms-2">
-            Mégse
-        </a>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+
+            <button type="submit"
+                    class="btn btn-success">
+
+                <i class="bi bi-check-circle me-1"></i>
+                Esemény létrehozása
+
+            </button>
+
+            <a asp-page="/Admin/Events/Index"
+               class="btn btn-secondary">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Mégse
+
+            </a>
+
+        </div>
 
     </form>
 
 </div>
 
-@section Scripts {
+@section Scripts
+{
     <partial name="_ValidationScriptsPartial" />
-}
 }

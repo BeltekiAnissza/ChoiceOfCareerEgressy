@@ -5,18 +5,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChoiceOfCareerEgressy.Model.Admin
 {
-    public class AdminTeacherSupervisionService
+    public class AdminRegistrationTeacherService
     {
         private readonly ChoiceOfCareerPersistence _db;
 
-        public AdminTeacherSupervisionService(
-            ChoiceOfCareerPersistence db)
+        public AdminRegistrationTeacherService(ChoiceOfCareerPersistence db)
         {
             _db = db;
         }
 
-        public async Task<AdminTeacherSupervisionPageDto> GetPageAsync(
-            int? eventId)
+        public async Task<AdminTeacherSupervisionPageDto> GetPageAsync(int? eventId)
         {
             var events = await _db.Events
                 .AsNoTracking()
@@ -26,9 +24,8 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                 .OrderByDescending(e => e.EventDate)
                 .ToList();
 
-            var selectedEvent = events
-                .FirstOrDefault(e => e.EventId == eventId)
-                ?? events.FirstOrDefault();
+            var selectedEvent = events.FirstOrDefault(e => e.EventId == eventId)
+                                ?? events.FirstOrDefault();
 
             var result = new AdminTeacherSupervisionPageDto
             {
@@ -115,31 +112,41 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                             "Általános felügyeleti hely"
                     };
 
+                    // A másik idősávban már kiválasztott programok.
+                    var registeredPlanIds = mine
+                        .Where(s =>
+                            s.PlanSessionId != null &&
+                            s.PlanSession!.TimeSlotId != slot.TimeSlotId)
+                        .Select(s => s.PlanSession!.PlanId)
+                        .ToHashSet();
+
                     foreach (var session in slot.PlanSessions
                         .OrderBy(s => s.Plan.PlanName))
                     {
+                        // Ugyanaz a program másik idősávban
+                        // nem választható újra.
+                        if (registeredPlanIds.Contains(session.PlanId))
+                            continue;
+
                         int registered = supervisions.Count(s =>
                             s.PlanSessionId == session.PlanSessionId);
 
-                        // A már kiválasztott program betelt
-                        // állapotban is maradjon látható.
+                        // Betelt programot csak akkor mutatunk,
+                        // ha ez a tanár jelenlegi választása.
                         if (registered >= session.RequiredSupervisors &&
                             current?.PlanSessionId != session.PlanSessionId)
                         {
                             continue;
                         }
 
-                        slotDto.Programs.Add(
-                            new AdminSupervisionOptionDto
-                            {
-                                PlanSessionId = session.PlanSessionId,
-                                PlanName = session.Plan.PlanName,
-                                LocationName =
-                                    session.Location.LocationName,
-                                RequiredSupervisors =
-                                    session.RequiredSupervisors,
-                                RegisteredSupervisors = registered
-                            });
+                        slotDto.Programs.Add(new AdminSupervisionOptionDto
+                        {
+                            PlanSessionId = session.PlanSessionId,
+                            PlanName = session.Plan.PlanName,
+                            LocationName = session.Location.LocationName,
+                            RequiredSupervisors = session.RequiredSupervisors,
+                            RegisteredSupervisors = registered
+                        });
                     }
 
                     teacherDto.TimeSlots.Add(slotDto);
@@ -151,8 +158,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             return result;
         }
 
-        public async Task SetAsync(
-            AdminSetTeacherSupervisionDto dto)
+        public async Task SetAsync(AdminSetTeacherSupervisionDto dto)
         {
             await using var transaction =
                 await _db.Database.BeginTransactionAsync();
@@ -162,8 +168,10 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                 u.Role == RoleChoice.Teacher);
 
             if (!teacherExists)
+            {
                 throw new InvalidOperationException(
                     "A kiválasztott tanár nem található.");
+            }
 
             var session = await _db.PlanSessions
                 .Include(s => s.TimeSlot)
@@ -178,8 +186,12 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                     "A program nem tartozik a megadott idősávhoz.");
             }
 
-            // A programhoz és az általános felügyeleti
-            // helyekhez tartozó jelentkezéseket is vizsgáljuk.
+            // A tanár összes jelentkezése az adott eseményen.
+            var eventSlotIds = await _db.TimeSlots
+                .Where(t => t.EventId == dto.EventId)
+                .Select(t => t.TimeSlotId)
+                .ToListAsync();
+
             var existing = await _db.Supervisions
                 .Include(s => s.PlanSession)
                 .Include(s => s.SupervisionPlace)
@@ -187,22 +199,43 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                     s.UserId == dto.TeacherId &&
                     (
                         (s.PlanSessionId != null &&
-                         s.PlanSession!.TimeSlotId == dto.TimeSlotId) ||
+                         eventSlotIds.Contains(s.PlanSession!.TimeSlotId)) ||
                         (s.SupervisionPlaceId != null &&
-                         s.SupervisionPlace!.TimeSlotId == dto.TimeSlotId)
+                         eventSlotIds.Contains(s.SupervisionPlace!.TimeSlotId))
                     ))
                 .ToListAsync();
 
-            if (existing.Count > 1)
+            var inSlot = existing
+                .Where(s =>
+                    s.PlanSession?.TimeSlotId == dto.TimeSlotId ||
+                    s.SupervisionPlace?.TimeSlotId == dto.TimeSlotId)
+                .ToList();
+
+            if (inSlot.Count > 1)
+            {
                 throw new InvalidOperationException(
                     "A tanárhoz több felügyelet tartozik ebben az idősávban.");
+            }
 
-            var current = existing.SingleOrDefault();
+            var current = inSlot.SingleOrDefault();
 
             if (current?.PlanSessionId == dto.PlanSessionId)
             {
                 await transaction.CommitAsync();
                 return;
+            }
+
+            // Ugyanaz a program másik idősávban
+            // nem választható.
+            bool alreadyRegistered = existing.Any(s =>
+                s.PlanSessionId != null &&
+                s.PlanSession!.TimeSlotId != dto.TimeSlotId &&
+                s.PlanSession.PlanId == session.PlanId);
+
+            if (alreadyRegistered)
+            {
+                throw new InvalidOperationException(
+                    "A tanár ugyanazt a programot nem választhatja kétszer.");
             }
 
             int registered = await _db.Supervisions.CountAsync(s =>
@@ -216,14 +249,12 @@ namespace ChoiceOfCareerEgressy.Model.Admin
 
             if (current != null)
             {
-                // Módosítás: a meglévő felügyeletet helyezzük át.
                 current.PlanSessionId = dto.PlanSessionId;
                 current.SupervisionPlaceId = null;
                 current.UpdateDate = DateTimeOffset.UtcNow;
             }
             else
             {
-                // Új felügyelet.
                 _db.Supervisions.Add(new Supervision
                 {
                     UserId = dto.TeacherId,
@@ -252,16 +283,20 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                     s.UserId == teacherId);
 
             if (supervision == null)
+            {
                 throw new InvalidOperationException(
                     "A felügyeleti jelentkezés nem található.");
+            }
 
             int? actualEventId =
                 supervision.PlanSession?.TimeSlot.EventId ??
                 supervision.SupervisionPlace?.TimeSlot.EventId;
 
             if (actualEventId != eventId)
+            {
                 throw new InvalidOperationException(
                     "A felügyelet nem tartozik a kiválasztott eseményhez.");
+            }
 
             _db.Supervisions.Remove(supervision);
 
@@ -270,3 +305,4 @@ namespace ChoiceOfCareerEgressy.Model.Admin
         }
     }
 }
+
