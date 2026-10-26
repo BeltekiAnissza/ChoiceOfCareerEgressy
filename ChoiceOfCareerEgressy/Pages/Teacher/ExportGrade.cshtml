@@ -1,0 +1,45 @@
+@page
+@model ChoiceOfCareerEgressy.Pages.Teacher.ExportGradeModel
+@{
+    ViewData["Title"] = "Osztályom Excel exportja";
+}
+<h1>Osztályom jelentkezéseinek exportálása</h1>
+<section class="card p-3">
+
+    <form method="get"
+          asp-page="/Teacher/ExportGrade"
+          class="d-grid gap-3">
+
+        <input type="hidden"
+               name="handler"
+               value="Download" />
+
+        <div>
+            <label class="form-label">
+                Esemény
+            </label>
+
+            <select name="eventId"
+                    class="form-select"
+                    required>
+
+                <option value="">
+                    Válassz eseményt
+                </option>
+
+                @foreach (var ev in Model.Events)
+                {
+                    <option value="@ev.Id">
+                        @ev.Name
+                    </option>
+                }
+            </select>
+        </div>
+
+        <button type="submit"
+                class="btn btn-success">
+            Osztályom Excel letöltése
+        </button>
+
+    </form>
+</section>

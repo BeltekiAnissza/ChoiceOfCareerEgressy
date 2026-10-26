@@ -1,0 +1,158 @@
+@page
+@model ChoiceOfCareerEgressy.Pages.Admin.Exports.IndexModel
+
+@{
+    ViewData["Title"] = "Excel exportok";
+}
+
+<h1>Excel exportok</h1>
+
+<p>
+    Az exportálás mindig egy kiválasztott esemény
+    adatait tartalmazza.
+</p>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+
+<div class="row g-3">
+
+    <!-- OSZTÁLY EXPORT -->
+    <div class="col-12 col-lg-6">
+        <section class="card p-3 h-100">
+
+            <h2 class="h5">Osztály jelentkezései</h2>
+
+            <form method="get"
+                  asp-page="/Admin/Exports/Index"
+                  class="d-grid gap-3">
+
+                <input type="hidden"
+                       name="handler"
+                       value="Grade" />
+
+                <div>
+                    <label class="form-label">
+                        Esemény
+                    </label>
+
+                    <select name="eventId"
+                            class="form-select"
+                            required>
+
+                        <option value="">
+                            Válassz eseményt
+                        </option>
+
+                        @foreach (var ev in Model.Events)
+                        {
+                            <option value="@ev.Id">
+                                @ev.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <label class="form-label">
+                        Osztály
+                    </label>
+
+                    <select name="gradeId"
+                            class="form-select"
+                            required>
+
+                        <option value="">
+                            Válassz osztályt
+                        </option>
+
+                        @foreach (var grade in Model.Grades)
+                        {
+                            <option value="@grade.Id">
+                                @grade.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Osztály Excel letöltése
+                </button>
+
+            </form>
+        </section>
+    </div>
+
+    <!-- PROGRAM EXPORT -->
+    <div class="col-12 col-lg-6">
+        <section class="card p-3 h-100">
+
+            <h2 class="h5">Program jelentkezői</h2>
+
+            <form method="get"
+                  asp-page="/Admin/Exports/Index"
+                  class="d-grid gap-3">
+
+                <input type="hidden"
+                       name="handler"
+                       value="Plan" />
+
+                <div>
+                    <label class="form-label">
+                        Esemény
+                    </label>
+
+                    <select name="eventId"
+                            class="form-select"
+                            required>
+
+                        <option value="">
+                            Válassz eseményt
+                        </option>
+
+                        @foreach (var ev in Model.Events)
+                        {
+                            <option value="@ev.Id">
+                                @ev.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <label class="form-label">
+                        Program
+                    </label>
+
+                    <select name="planId"
+                            class="form-select"
+                            required>
+
+                        <option value="">
+                            Válassz programot
+                        </option>
+
+                        @foreach (var plan in Model.Plans)
+                        {
+                            <option value="@plan.Id">
+                                @plan.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Program Excel letöltése
+                </button>
+
+            </form>
+        </section>
+    </div>
+
+</div>
