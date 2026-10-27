@@ -114,7 +114,9 @@
 
                 <div class="d-flex align-items-center gap-2 ms-auto order-lg-3 header-actions">
 
-                    <!-- SZÍNTÉMAVÁLASZTÓ -->
+                    <!-- ========================================= -->
+                    <!-- SZÍNTÉMAVÁLASZTÓ                          -->
+                    <!-- ========================================= -->
 
                     <div class="dropdown">
 
@@ -122,6 +124,7 @@
                                 type="button"
                                 id="themeDropdown"
                                 data-bs-toggle="dropdown"
+                                data-bs-auto-close="outside"
                                 aria-expanded="false">
 
                             <i class="bi bi-palette"></i>
@@ -134,6 +137,8 @@
 
                         <div class="dropdown-menu dropdown-menu-end p-3"
                              aria-labelledby="themeDropdown">
+
+                            <!-- ELŐRE BEÁLLÍTOTT TÉMÁK -->
 
                             <div class="fw-semibold mb-2">
                                 Válassz színt!
@@ -178,11 +183,92 @@
 
                             </div>
 
+                            <!-- ========================================= -->
+                            <!-- EGYÉNI FEJLÉCSZÍN                          -->
+                            <!-- ========================================= -->
+
+                            <div class="custom-theme-section">
+
+                                <label for="customHeaderColor"
+                                       class="custom-theme-title">
+
+                                    <i class="bi bi-palette-fill"></i>
+
+                                    Fejléc egyéni színe
+
+                                </label>
+
+                                <div class="custom-color-row">
+
+                                    <input type="color"
+                                           id="customHeaderColor"
+                                           class="custom-color-input"
+                                           value="#7654d4"
+                                           aria-label="Fejléc színének kiválasztása" />
+
+                                    <button type="button"
+                                            id="resetHeaderColor"
+                                            class="custom-color-reset"
+                                            title="Fejléc színének visszaállítása">
+
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+
+                                        Visszaállítás
+
+                                    </button>
+
+                                </div>
+
+
+                            </div>
+
+                            <!-- ========================================= -->
+                            <!-- EGYÉNI HÁTTÉRSZÍN                          -->
+                            <!-- ========================================= -->
+
+                            <div class="custom-theme-section">
+
+                                <label for="customBackgroundColor"
+                                       class="custom-theme-title">
+
+                                    <i class="bi bi-paint-bucket"></i>
+
+                                    Háttér egyéni színe
+
+                                </label>
+
+                                <div class="custom-color-row">
+
+                                    <input type="color"
+                                           id="customBackgroundColor"
+                                           class="custom-color-input"
+                                           value="#7654d4"
+                                           aria-label="Oldalháttér színének kiválasztása" />
+
+                                    <button type="button"
+                                            id="resetBackgroundColor"
+                                            class="custom-color-reset"
+                                            title="Háttér színének visszaállítása">
+
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+
+                                        Visszaállítás
+
+                                    </button>
+
+                                </div>
+
+                               
+
+                            </div>
+
                         </div>
 
                     </div>
 
-                    <!-- KIJELENTKEZÉS -->
+                    <!-- ========================================= -->
+                    <!-- KIJELENTKEZÉS                            -->
+                    <!-- ========================================= -->
                     @if (isAuthenticated)
                     {
                         <form method="post"
@@ -390,7 +476,9 @@
 
                                         </li>
 
-                                        <li><hr class="dropdown-divider" /></li>
+                                        <li>
+                                            <hr class="dropdown-divider" />
+                                        </li>
 
                                         <li>
 
@@ -418,7 +506,9 @@
 
                                         </li>
 
-                                        <li><hr class="dropdown-divider" /></li>
+                                        <li>
+                                            <hr class="dropdown-divider" />
+                                        </li>
 
                                         <li>
 
@@ -612,7 +702,9 @@
 
                     </ul>
 
-                    <!-- BEJELENTKEZETT FELHASZNÁLÓ -->
+                    <!-- ========================================= -->
+                    <!-- BEJELENTKEZETT FELHASZNÁLÓ               -->
+                    <!-- ========================================= -->
                     @if (isAuthenticated)
                     {
                         <div class="navbar-text ms-lg-3">

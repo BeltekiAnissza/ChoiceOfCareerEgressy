@@ -146,6 +146,145 @@ body {
     }
 
 /* =========================================
+   EGYÉNI SZÍNVÁLASZTÓ - LEGÖRDÜLŐ PANEL
+   ========================================= */
+
+#themeDropdown + .dropdown-menu {
+    width: 300px;
+    min-width: 280px;
+    max-width: calc(100vw - 24px);
+    padding: 16px !important;
+}
+
+/* =========================================
+   EGYÉNI SZÍNVÁLASZTÓ - SZEKCIÓK
+   ========================================= */
+
+.custom-theme-section {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.custom-theme-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+    .custom-theme-title i {
+        color: var(--theme-primary);
+        font-size: 17px;
+    }
+
+/* =========================================
+   EGYÉNI SZÍNVÁLASZTÓ - ELRENDEZÉS
+   ========================================= */
+
+.custom-color-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .custom-color-row .custom-color-input {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .custom-color-row .custom-color-reset {
+        flex-shrink: 0;
+    }
+
+/* =========================================
+   SZÍNPALETTA
+   ========================================= */
+
+.custom-color-input {
+    width: 100%;
+    height: 42px;
+    padding: 4px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background-color: #ffffff;
+    cursor: pointer;
+}
+
+    .custom-color-input:hover {
+        border-color: var(--theme-primary);
+    }
+
+    .custom-color-input:focus-visible {
+        outline: 2px solid var(--theme-primary);
+        outline-offset: 2px;
+    }
+
+    .custom-color-input::-webkit-color-swatch-wrapper {
+        padding: 2px;
+    }
+
+    .custom-color-input::-webkit-color-swatch {
+        border: none;
+        border-radius: 5px;
+    }
+
+    .custom-color-input::-moz-color-swatch {
+        border: none;
+        border-radius: 5px;
+    }
+
+/* =========================================
+   SZÍNEK VISSZAÁLLÍTÁSA
+   ========================================= */
+
+.custom-color-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 42px;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background-color: #f8fafc;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+    .custom-color-reset:hover {
+        background-color: #e2e8f0;
+        border-color: #94a3b8;
+    }
+
+    .custom-color-reset:focus-visible {
+        outline: 2px solid var(--theme-primary);
+        outline-offset: 2px;
+    }
+
+    .custom-color-reset i {
+        font-size: 15px;
+    }
+
+/* =========================================
+   EGYÉNI SZÍNEK - SEGÉDSZÖVEG
+   ========================================= */
+
+.custom-theme-help {
+    margin-top: 8px;
+    margin-bottom: 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* =========================================
    TABLET ÉS MOBIL
    ========================================= */
 
@@ -216,6 +355,19 @@ body {
     .header-actions {
         gap: 4px !important;
     }
+
+    #themeDropdown + .dropdown-menu {
+        width: min(300px, calc(100vw - 24px));
+        min-width: 0;
+    }
+
+    .custom-color-row {
+        gap: 8px;
+    }
+
+    .custom-color-reset {
+        padding: 8px;
+    }
 }
 
 /* =========================================
@@ -224,13 +376,15 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
 
-    .theme-choice {
+    .theme-choice,
+    .custom-color-reset {
         transition: none;
     }
 }
-/* ========================================= */
-/* SZÍNTÉMAVÁLASZTÓ - GOMBOK SZÍNEI          */
-/* ========================================= */
+
+/* =========================================
+   SZÍNTÉMAVÁLASZTÓ - GOMBOK SZÍNEI
+   ========================================= */
 
 .theme-choice[data-theme-choice="purple"] {
     --choice-color: #7654d4;
