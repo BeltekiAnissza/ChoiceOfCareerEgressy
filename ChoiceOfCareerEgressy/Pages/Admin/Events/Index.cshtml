@@ -20,7 +20,7 @@
             </h2>
 
             <p class="text-muted mb-0">
-                Események megtekintése, jelentkezések kezelése, átnevezés és törlés.
+                Események megtekintése, szerkesztése, jelentkezések kezelése és törlése.
             </p>
         </div>
 
@@ -302,6 +302,19 @@
                                                 }
 
                                             </form>
+
+                                            <!-- ========================================= -->
+                                            <!-- ESEMÉNY SZERKESZTÉSE                      -->
+                                            <!-- ========================================= -->
+
+                                            <a asp-page="/Admin/Events/Edit"
+                                               asp-route-id="@eventItem.EventId"
+                                               class="btn btn-outline-primary btn-sm">
+
+                                                <i class="bi bi-gear me-1"></i>
+                                                Szerkesztés
+
+                                            </a>
 
                                             <!-- ========================================= -->
                                             <!-- ÁTNEVEZÉS                                 -->

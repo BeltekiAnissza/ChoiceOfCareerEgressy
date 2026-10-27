@@ -20,12 +20,13 @@
 
         <p class="text-muted">
             Add meg a pályaorientációs nap adatait,
-            a jelentkezési időszakot és a két idősávot.
+            a jelentkezési időszakot és az idősávokat.
+            Legalább két idősáv megadása kötelező.
         </p>
 
     </div>
 
-    <form method="post">
+    <form method="post" id="createEventForm">
 
         <div asp-validation-summary="All"
              class="text-danger mb-3">
@@ -61,6 +62,10 @@
                            class="form-control"
                            placeholder="Pályaorientációs nap 2026"
                            required />
+
+                    <span asp-validation-for="EventInput.EventName"
+                          class="text-danger">
+                    </span>
 
                 </div>
 
@@ -169,7 +174,7 @@
                                        class="form-control"
                                        placeholder="08:00"
                                        pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
-                                       title="24 órás időformátum, például 08:00 vagy 23:00."
+                                       title="24 órás időformátum, például 08:00."
                                        inputmode="numeric"
                                        maxlength="5"
                                        autocomplete="off"
@@ -223,7 +228,7 @@
                                        class="form-control"
                                        placeholder="16:00"
                                        pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
-                                       title="24 órás időformátum, például 16:00 vagy 23:00."
+                                       title="24 órás időformátum, például 16:00."
                                        inputmode="numeric"
                                        maxlength="5"
                                        autocomplete="off"
@@ -251,163 +256,157 @@
         </div>
 
         <!-- ========================================= -->
-        <!-- 1. IDŐSÁV                                 -->
+        <!-- IDŐSÁVOK                                 -->
         <!-- ========================================= -->
 
         <div class="card shadow-sm mb-4">
 
             <div class="card-header">
 
-                <h5 class="mb-0">
-                    <i class="bi bi-clock me-2"></i>
-                    1. idősáv
-                </h5>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
 
-            </div>
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock me-2"></i>
+                        Idősávok
+                    </h5>
 
-            <div class="card-body">
-
-                <p class="text-muted small">
-                    Az idősáv az esemény napjára kerül.
-                    Csak az órát és a percet add meg.
-                </p>
-
-                <div class="row">
-
-                    <!-- KEZDÉS -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label asp-for="FirstSlotStartTime"
-                               class="form-label fw-semibold">
-                            Kezdés
-                        </label>
-
-                        <input asp-for="FirstSlotStartTime"
-                               type="text"
-                               class="form-control"
-                               placeholder="08:00"
-                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
-                               title="24 órás időformátum, például 08:00."
-                               inputmode="numeric"
-                               maxlength="5"
-                               autocomplete="off"
-                               required />
-
-                        <span asp-validation-for="FirstSlotStartTime"
-                              class="text-danger">
-                        </span>
-
-                    </div>
-
-                    <!-- BEFEJEZÉS -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label asp-for="FirstSlotEndTime"
-                               class="form-label fw-semibold">
-                            Befejezés
-                        </label>
-
-                        <input asp-for="FirstSlotEndTime"
-                               type="text"
-                               class="form-control"
-                               placeholder="10:00"
-                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
-                               title="24 órás időformátum, például 10:00."
-                               inputmode="numeric"
-                               maxlength="5"
-                               autocomplete="off"
-                               required />
-
-                        <span asp-validation-for="FirstSlotEndTime"
-                              class="text-danger">
-                        </span>
-
-                    </div>
+                    <span class="badge bg-primary"
+                          id="timeSlotCount">
+                        @Model.TimeSlots.Count idősáv
+                    </span>
 
                 </div>
 
             </div>
 
-        </div>
-
-        <!-- ========================================= -->
-        <!-- 2. IDŐSÁV                                 -->
-        <!-- ========================================= -->
-
-        <div class="card shadow-sm mb-4">
-
-            <div class="card-header">
-
-                <h5 class="mb-0">
-                    <i class="bi bi-clock me-2"></i>
-                    2. idősáv
-                </h5>
-
-            </div>
-
             <div class="card-body">
 
                 <p class="text-muted small">
-                    A második idősáv is az esemény napjára kerül.
-                    Csak az órát és a percet add meg.
+                    Legalább két idősávot kell megadni.
+                    További idősávokat korlátozás nélkül hozzáadhatsz.
+                    Az idősávok nem fedhetik egymást.
                 </p>
 
-                <div class="row">
+                <!-- IDŐSÁVOK LISTÁJA -->
 
-                    <!-- KEZDÉS -->
+                <div id="timeSlotsContainer">
 
-                    <div class="col-md-6 mb-3">
+                    @for (int i = 0; i < Model.TimeSlots.Count; i++)
+                    {
+                        <div class="card border mb-3 time-slot-card">
 
-                        <label asp-for="SecondSlotStartTime"
-                               class="form-label fw-semibold">
-                            Kezdés
-                        </label>
+                            <div class="card-header bg-light">
 
-                        <input asp-for="SecondSlotStartTime"
-                               type="text"
-                               class="form-control"
-                               placeholder="10:15"
-                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
-                               title="24 órás időformátum, például 10:15."
-                               inputmode="numeric"
-                               maxlength="5"
-                               autocomplete="off"
-                               required />
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
 
-                        <span asp-validation-for="SecondSlotStartTime"
-                              class="text-danger">
-                        </span>
+                                    <h6 class="mb-0 fw-bold time-slot-title">
+                                        @(i + 1). idősáv
+                                    </h6>
 
-                    </div>
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm remove-time-slot">
 
-                    <!-- BEFEJEZÉS -->
+                                        <i class="bi bi-trash me-1"></i>
+                                        Törlés
 
-                    <div class="col-md-6 mb-3">
+                                    </button>
 
-                        <label asp-for="SecondSlotEndTime"
-                               class="form-label fw-semibold">
-                            Befejezés
-                        </label>
+                                </div>
 
-                        <input asp-for="SecondSlotEndTime"
-                               type="text"
-                               class="form-control"
-                               placeholder="12:15"
-                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
-                               title="24 órás időformátum, például 12:15."
-                               inputmode="numeric"
-                               maxlength="5"
-                               autocomplete="off"
-                               required />
+                            </div>
 
-                        <span asp-validation-for="SecondSlotEndTime"
-                              class="text-danger">
-                        </span>
+                            <div class="card-body">
 
-                    </div>
+                                <!-- IDŐSÁV NEVE -->
 
+                                <div class="mb-3">
+
+                                    <label class="form-label fw-semibold">
+                                        Idősáv neve
+                                    </label>
+
+                                    <input type="text"
+                                           class="form-control time-slot-name"
+                                           name="TimeSlots[@i].TimeSlotName"
+                                           id="TimeSlots_@(i)__TimeSlotName"
+                                           value="@Model.TimeSlots[i].TimeSlotName"
+                                           placeholder="@(i + 1). idősáv"
+                                           maxlength="100"
+                                           required />
+
+                                </div>
+
+                                <div class="row">
+
+                                    <!-- KEZDÉS -->
+
+                                    <div class="col-md-6 mb-3">
+
+                                        <label class="form-label fw-semibold">
+                                            Kezdés
+                                        </label>
+
+                                        <input type="text"
+                                               class="form-control time-slot-start"
+                                               name="TimeSlots[@i].StartTime"
+                                               id="TimeSlots_@(i)__StartTime"
+                                               value="@Model.TimeSlots[i].StartTime"
+                                               placeholder="08:00"
+                                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                                               title="24 órás időformátum, például 08:00."
+                                               inputmode="numeric"
+                                               maxlength="5"
+                                               autocomplete="off"
+                                               required />
+
+                                    </div>
+
+                                    <!-- BEFEJEZÉS -->
+
+                                    <div class="col-md-6 mb-3">
+
+                                        <label class="form-label fw-semibold">
+                                            Befejezés
+                                        </label>
+
+                                        <input type="text"
+                                               class="form-control time-slot-end"
+                                               name="TimeSlots[@i].EndTime"
+                                               id="TimeSlots_@(i)__EndTime"
+                                               value="@Model.TimeSlots[i].EndTime"
+                                               placeholder="10:00"
+                                               pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                                               title="24 órás időformátum, például 10:00."
+                                               inputmode="numeric"
+                                               maxlength="5"
+                                               autocomplete="off"
+                                               required />
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    }
+
+                </div>
+
+                <!-- IDŐSÁV HOZZÁADÁSA -->
+
+                <button type="button"
+                        class="btn btn-outline-primary"
+                        id="addTimeSlotButton">
+
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Új idősáv hozzáadása
+
+                </button>
+
+                <div class="form-text mt-2">
+                    Az új idősáv az esemény napjára kerül.
+                    Csak a kezdési és befejezési időpontot kell megadnod.
                 </div>
 
             </div>
@@ -445,4 +444,7 @@
 @section Scripts
 {
     <partial name="_ValidationScriptsPartial" />
+
+    <script src="~/js/admin/events/create.js"
+            asp-append-version="true"></script>
 }

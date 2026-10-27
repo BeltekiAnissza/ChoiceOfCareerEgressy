@@ -54,28 +54,23 @@ namespace ChoiceOfCareerEgressy.Pages.Events
         public string RegistrationEndTime { get; set; } = "16:00";
 
         // =========================================
-        // 1. IDŐSÁV
+        // IDŐSÁVOK
         // =========================================
 
         [BindProperty]
-        [Required(ErrorMessage = "Az első idősáv kezdete kötelező.")]
-        public string FirstSlotStartTime { get; set; } = "08:00";
+        public List<CreateTimeSlotInput> TimeSlots { get; set; } = new();
 
-        [BindProperty]
-        [Required(ErrorMessage = "Az első idősáv vége kötelező.")]
-        public string FirstSlotEndTime { get; set; } = "10:00";
+        public class CreateTimeSlotInput
+        {
+            [Required(ErrorMessage = "Az idősáv neve kötelező.")]
+            public string TimeSlotName { get; set; } = string.Empty;
 
-        // =========================================
-        // 2. IDŐSÁV
-        // =========================================
+            [Required(ErrorMessage = "Az idősáv kezdete kötelező.")]
+            public string StartTime { get; set; } = string.Empty;
 
-        [BindProperty]
-        [Required(ErrorMessage = "A második idősáv kezdete kötelező.")]
-        public string SecondSlotStartTime { get; set; } = "10:15";
-
-        [BindProperty]
-        [Required(ErrorMessage = "A második idősáv vége kötelező.")]
-        public string SecondSlotEndTime { get; set; } = "12:15";
+            [Required(ErrorMessage = "Az idősáv vége kötelező.")]
+            public string EndTime { get; set; } = string.Empty;
+        }
 
         // =========================================
         // DÁTUM- ÉS IDŐFORMÁTUMOK
@@ -113,6 +108,21 @@ namespace ChoiceOfCareerEgressy.Pages.Events
 
         public void OnGet()
         {
+            TimeSlots = new List<CreateTimeSlotInput>
+            {
+                new()
+                {
+                    TimeSlotName = "1. idősáv",
+                    StartTime = "08:00",
+                    EndTime = "10:00"
+                },
+                new()
+                {
+                    TimeSlotName = "2. idősáv",
+                    StartTime = "10:15",
+                    EndTime = "12:15"
+                }
+            };
         }
 
         // =========================================
@@ -128,10 +138,7 @@ namespace ChoiceOfCareerEgressy.Pages.Events
             ModelState.Remove("EventInput.EventDate");
             ModelState.Remove("EventInput.RegistrationStart");
             ModelState.Remove("EventInput.RegistrationEnd");
-            ModelState.Remove("EventInput.FirstSlotStart");
-            ModelState.Remove("EventInput.FirstSlotEnd");
-            ModelState.Remove("EventInput.SecondSlotStart");
-            ModelState.Remove("EventInput.SecondSlotEnd");
+            ModelState.Remove("EventInput.TimeSlots");
 
             // =====================================
             // DÁTUMOK ELLENŐRZÉSE
@@ -172,7 +179,7 @@ namespace ChoiceOfCareerEgressy.Pages.Events
             }
 
             // =====================================
-            // IDŐPONTOK ELLENŐRZÉSE
+            // JELENTKEZÉSI IDŐPONTOK ELLENŐRZÉSE
             // =====================================
 
             bool registrationStartTimeValid =
@@ -184,26 +191,6 @@ namespace ChoiceOfCareerEgressy.Pages.Events
                 TryParseTime(
                     RegistrationEndTime,
                     out var registrationEndTime);
-
-            bool firstSlotStartValid =
-                TryParseTime(
-                    FirstSlotStartTime,
-                    out var firstSlotStartTime);
-
-            bool firstSlotEndValid =
-                TryParseTime(
-                    FirstSlotEndTime,
-                    out var firstSlotEndTime);
-
-            bool secondSlotStartValid =
-                TryParseTime(
-                    SecondSlotStartTime,
-                    out var secondSlotStartTime);
-
-            bool secondSlotEndValid =
-                TryParseTime(
-                    SecondSlotEndTime,
-                    out var secondSlotEndTime);
 
             if (!registrationStartTimeValid)
             {
@@ -219,33 +206,88 @@ namespace ChoiceOfCareerEgressy.Pages.Events
                     "A jelentkezés záró időpontját ÓÓ:PP formátumban add meg.");
             }
 
-            if (!firstSlotStartValid)
+            // =====================================
+            // IDŐSÁVOK SZÁMÁNAK ELLENŐRZÉSE
+            // =====================================
+
+            if (TimeSlots == null || TimeSlots.Count < 2)
             {
                 ModelState.AddModelError(
-                    nameof(FirstSlotStartTime),
-                    "Az első idősáv kezdete például 08:00 lehet.");
+                    nameof(TimeSlots),
+                    "Legalább 2 idősávot meg kell adni.");
             }
 
-            if (!firstSlotEndValid)
+            // =====================================
+            // IDŐSÁVOK FELDOLGOZÁSA
+            // =====================================
+
+            var parsedSlots = new List<CreateTimeSlotDto>();
+
+            if (TimeSlots != null)
             {
-                ModelState.AddModelError(
-                    nameof(FirstSlotEndTime),
-                    "Az első idősáv vége például 10:00 lehet.");
+                for (int i = 0; i < TimeSlots.Count; i++)
+                {
+                    var slot = TimeSlots[i];
+
+                    if (slot == null)
+                    {
+                        ModelState.AddModelError(
+                            nameof(TimeSlots),
+                            $"A(z) {i + 1}. idősáv adatai hiányoznak.");
+
+                        continue;
+                    }
+
+                    // IDŐSÁV NEVE
+
+                    if (string.IsNullOrWhiteSpace(slot.TimeSlotName))
+                    {
+                        ModelState.AddModelError(
+                            $"TimeSlots[{i}].TimeSlotName",
+                            $"A(z) {i + 1}. idősáv neve kötelező.");
+                    }
+
+                    // KEZDÉS
+
+                    bool startValid =
+                        TryParseTime(slot.StartTime, out var startTime);
+
+                    if (!startValid)
+                    {
+                        ModelState.AddModelError(
+                            $"TimeSlots[{i}].StartTime",
+                            $"A(z) {i + 1}. idősáv kezdete hibás. Példa: 08:00.");
+                    }
+
+                    // BEFEJEZÉS
+
+                    bool endValid =
+                        TryParseTime(slot.EndTime, out var endTime);
+
+                    if (!endValid)
+                    {
+                        ModelState.AddModelError(
+                            $"TimeSlots[{i}].EndTime",
+                            $"A(z) {i + 1}. idősáv vége hibás. Példa: 10:00.");
+                    }
+
+                    if (!eventDateValid || !startValid || !endValid)
+                    {
+                        continue;
+                    }
+
+                    parsedSlots.Add(new CreateTimeSlotDto
+                    {
+                        TimeSlotName = slot.TimeSlotName?.Trim() ?? string.Empty,
+                        BeginDate = eventDate.Add(startTime),
+                        EndDate = eventDate.Add(endTime)
+                    });
+                }
             }
 
-            if (!secondSlotStartValid)
-            {
-                ModelState.AddModelError(
-                    nameof(SecondSlotStartTime),
-                    "A második idősáv kezdete például 10:15 lehet.");
-            }
-
-            if (!secondSlotEndValid)
-            {
-                ModelState.AddModelError(
-                    nameof(SecondSlotEndTime),
-                    "A második idősáv vége például 12:15 lehet.");
-            }
+            // =====================================
+            // HIBÁK ELLENŐRZÉSE
+            // =====================================
 
             if (!ModelState.IsValid)
             {
@@ -269,24 +311,10 @@ namespace ChoiceOfCareerEgressy.Pages.Events
                 registrationEndDate.Add(registrationEndTime);
 
             // =====================================
-            // 1. IDŐSÁV
+            // IDŐSÁVOK
             // =====================================
 
-            EventInput.FirstSlotStart =
-                eventDate.Add(firstSlotStartTime);
-
-            EventInput.FirstSlotEnd =
-                eventDate.Add(firstSlotEndTime);
-
-            // =====================================
-            // 2. IDŐSÁV
-            // =====================================
-
-            EventInput.SecondSlotStart =
-                eventDate.Add(secondSlotStartTime);
-
-            EventInput.SecondSlotEnd =
-                eventDate.Add(secondSlotEndTime);
+            EventInput.TimeSlots = parsedSlots;
 
             // =====================================
             // ESEMÉNY MENTÉSE

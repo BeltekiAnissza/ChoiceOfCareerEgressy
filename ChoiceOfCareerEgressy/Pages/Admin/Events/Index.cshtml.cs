@@ -13,9 +13,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
         private readonly ChoiceOfCareerPersistence _context;
         private readonly EventService _eventService;
 
-        public IndexModel(
-            ChoiceOfCareerPersistence context,
-            EventService eventService)
+        public IndexModel(ChoiceOfCareerPersistence context, EventService eventService)
         {
             _context = context;
             _eventService = eventService;
@@ -123,9 +121,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
         // JELENTKEZÉS INDÍTÁSA / LEÁLLÍTÁSA
         // =========================================
 
-        public async Task<IActionResult> OnPostToggleRegistrationAsync(
-            int eventId,
-            bool isEnabled)
+        public async Task<IActionResult> OnPostToggleRegistrationAsync(int eventId, bool isEnabled)
         {
             try
             {
