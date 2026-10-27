@@ -200,6 +200,8 @@ document.addEventListener("DOMContentLoaded", function () {
         root.style.removeProperty("--header-dark");
         root.style.removeProperty("--header-mid");
 
+        root.style.removeProperty("--header-text-color");
+
         removeValue(headerColorKey);
     }
 
@@ -209,7 +211,51 @@ document.addEventListener("DOMContentLoaded", function () {
         root.style.removeProperty("--background-dark");
         root.style.removeProperty("--background-light");
 
+        root.style.removeProperty("--page-text-color");
+        root.style.removeProperty("--page-muted-color");
+
         removeValue(backgroundColorKey);
+    }
+    function isDarkColor(hex) {
+        const color = hex.replace("#", "");
+
+        const r = parseInt(color.substring(0, 2), 16);
+        const g = parseInt(color.substring(2, 4), 16);
+        const b = parseInt(color.substring(4, 6), 16);
+
+        // Relatív fényesség számítása
+
+        const brightness =
+            (r * 299 + g * 587 + b * 114) / 1000;
+
+        return brightness < 150;
+    }
+
+    function updateHeaderTextColor(headerColor) {
+
+        const dark = isDarkColor(headerColor);
+
+        document.documentElement.style.setProperty(
+            "--header-text-color",
+            dark ? "#FFF4DC" : "#292929"
+        );
+    }
+    function updatePageTextColor(color) {
+
+        const dark = isDarkColor(color);
+
+        const textColor = dark ? "#FFF4DC" : "#292929";
+        const mutedColor = dark ? "#E6DCCB" : "#404040";
+
+        root.style.setProperty(
+            "--page-text-color",
+            textColor
+        );
+
+        root.style.setProperty(
+            "--page-muted-color",
+            mutedColor
+        );
     }
 
     // =====================================
@@ -265,6 +311,7 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
         saveValue(headerColorKey, color);
+        updateHeaderTextColor(color);
 
         updateThemeButtons();
     }
@@ -299,7 +346,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
         saveValue(backgroundColorKey, color);
 
+        updatePageTextColor(color);
+
+
         updateThemeButtons();
+
+        root.style.setProperty(
+            "--page-heading-color",
+            isDarkColor(color) ? "#FFF4DC" : "#292929"
+        );
     }
 
     // =====================================

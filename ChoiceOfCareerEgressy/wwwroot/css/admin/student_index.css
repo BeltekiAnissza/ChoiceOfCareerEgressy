@@ -1,0 +1,237 @@
+﻿/* =========================================
+   ADMIN - DIÁKJELENTKEZÉSEK
+   ========================================= */
+
+.student-grades-table {
+    width: 100%;
+}
+
+.student-grades-table .grade-students-row > td {
+    min-width: 0;
+}
+
+.student-grades-table .accordion,
+.student-grades-table .accordion-item,
+.student-grades-table .accordion-body {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.student-grades-table .accordion-body p,
+.student-grades-table .accordion-body strong {
+    overflow-wrap: anywhere;
+}
+
+/* =========================================
+ELENTKEZTETÉSI ŰRLAPOK
+======================================== */
+
+.student-grades-table .registration-form-row {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.student-grades-table .registration-form-row .form-select {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.student-grades-table .registration-form-row .btn {
+    flex-shrink: 0;
+}
+
+/* =========================================
+   MOBILOS MEGJELENÉS
+   ========================================= */
+
+@media (max-width: 767.98px) {
+
+    /* A táblázat mobilon kártyás lesz. */
+
+    .student-grades-table {
+        display: block;
+        width: 100%;
+        table-layout: auto;
+        border: 0;
+    }
+
+    .student-grades-table > thead {
+        display: none;
+    }
+
+    .student-grades-table > tbody {
+        display: block;
+        width: 100%;
+    }
+
+    /* Osztályok külön kártyákban */
+
+    .student-grades-table .grade-summary-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        width: 100%;
+        margin-bottom: 12px;
+        padding: 14px;
+        background: #ffffff;
+        border: 1px solid #dce3ec;
+        border-radius: 12px;
+    }
+
+    .student-grades-table .grade-summary-row > td {
+        display: block;
+        width: auto;
+        min-width: 0;
+        padding: 6px !important;
+        border: 0;
+        overflow-wrap: normal;
+    }
+
+        /* Osztály neve */
+
+    .student-grades-table .grade-summary-row > td:nth-child(1) {
+        grid-column: 1 / -1;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #292929;
+    }
+
+    /* Statisztikák */
+
+    .student-grades-table .grade-summary-row > td:nth-child(2)::before {
+        content: "Létszám";
+    }
+
+    .student-grades-table .grade-summary-row > td:nth-child(3)::before {
+        content: "Legalább 1 jelentkezés";
+    }
+
+    .student-grades-table .grade-summary-row > td:nth-child(4)::before {
+        content: "Mindkét program megvan";
+    }
+
+    .student-grades-table .grade-summary-row > td:nth-child(2)::before,
+    .student-grades-table .grade-summary-row > td:nth-child(3)::before,
+    .student-grades-table .grade-summary-row > td:nth-child(4)::before {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    /* Gomb teljes szélességben */
+
+    .student-grades-table .grade-summary-row > td:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .student-grades-table .grade-summary-row .grade-toggle {
+        width: 100%;
+        min-height: 44px;
+        white-space: normal;
+        overflow-wrap: normal;
+    }
+
+    /* =====================================
+    IBONTOTT DIÁKOK
+    ==================================== */
+
+    .student-grades-table .grade-students-row {
+        display: block;
+        width: 100%;
+        margin-bottom: 16px;
+    }
+
+    .student-grades-table .grade-students-row > td {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        padding: 8px !important;
+        border: 0;
+    }
+
+    .student-grades-table .grade-students-row .accordion {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .student-grades-table .accordion-item {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .student-grades-table .accordion-button {
+        min-width: 0;
+        padding: 12px;
+    }
+
+    .student-grades-table .accordion-button span:first-child {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .student-grades-table .accordion-body {
+        width: 100%;
+        min-width: 0;
+        padding: 12px;
+    }
+
+    /* =====================================
+    DŐSÁVOK
+    ==================================== */
+
+    .student-grades-table .student-slot-card {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        padding: 12px !important;
+    }
+
+    /* =====================================
+    ROGRAMVÁLASZTÁS
+    ==================================== */
+
+    .student-grades-table .registration-form-row {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .student-grades-table .registration-form-row .form-select {
+        display: block;
+        flex: 0 1 auto;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .student-grades-table .registration-form-row .btn {
+        display: block;
+        flex: 0 0 auto;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    /* =====================================
+    ÖRLÉS GOMB
+    ==================================== */
+
+    .student-grades-table .student-slot-card form {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .student-grades-table .student-slot-card .btn-outline-danger {
+        max-width: 100%;
+        white-space: normal;
+    }
+}

@@ -145,13 +145,13 @@ public class ExcelExportService
     // PROGRAMONKÉNTI EXCEL EXPORTÁLÁS
     // =====================================================
 
-    public async Task<byte[]> ExportPlanAsync(int eventId, int planId, int timeSlotId)
+    public async Task<byte[]> ExportPlanAsync(int eventId, int planId, int timeSlotId, bool includeSupervisors = false)
     {
         var ev = await _db.Events
-         .AsNoTracking()
-         .FirstOrDefaultAsync(e => e.EventId == eventId)
-         ?? throw new InvalidOperationException(
-             "Az esemény nem található.");
+        .AsNoTracking()
+        .FirstOrDefaultAsync(e => e.EventId == eventId)
+        ?? throw new InvalidOperationException(
+            "Az esemény nem található.");
 
         var plan = await _db.Plans
             .AsNoTracking()
@@ -167,8 +167,6 @@ public class ExcelExportService
             ?? throw new InvalidOperationException(
                 "Az idősáv nem található.");
 
-        // Ellenőrizzük, hogy a program szerepel-e az idősávban.
-
         bool sessionExists = await _db.PlanSessions
             .AsNoTracking()
             .AnyAsync(s =>
@@ -181,7 +179,9 @@ public class ExcelExportService
                 "A program nem érhető el a kiválasztott idősávban.");
         }
 
-        // Csak a kiválasztott program és idősáv jelentkezései.
+        // =====================================================
+        // DIÁKJELENTKEZÉSEK
+        // =====================================================
 
         var data = await _db.Applications
             .AsNoTracking()
@@ -205,8 +205,6 @@ public class ExcelExportService
             })
             .ToListAsync();
 
-        // Rendezés memóriában.
-
         var rows = data
             .OrderBy(a => a.UserName)
             .Select(a => new[]
@@ -221,11 +219,62 @@ public class ExcelExportService
             })
             .ToList();
 
+        // =====================================================
+        // FELÜGYELŐ TANÁROK
+        // =====================================================
+
+        int supervisorCount = 0;
+
+        if (includeSupervisors)
+        {
+            var supervisors = await _db.Supervisions
+                .AsNoTracking()
+                .Where(s =>
+                    s.PlanSessionId != null &&
+                    s.PlanSession!.PlanId == planId &&
+                    s.PlanSession.TimeSlotId == timeSlotId &&
+                    s.PlanSession.TimeSlot.EventId == eventId &&
+                    s.User.Role == RoleChoice.Teacher)
+                .Select(s => new
+                {
+                    s.User.UserName,
+                    s.PlanSession!.TimeSlot.TimeSlotName,
+                    s.PlanSession.TimeSlot.BeginDate,
+                    s.PlanSession.TimeSlot.EndDate,
+                    s.PlanSession.Location.LocationName
+                })
+                .ToListAsync();
+
+            var supervisorRows = supervisors
+                .OrderBy(s => s.UserName)
+                .Select(s => new[]
+                {
+                s.UserName,
+                "Tanár",
+                plan.PlanName,
+                s.TimeSlotName,
+                $"{s.BeginDate:yyyy.MM.dd HH:mm} – {s.EndDate:HH:mm}",
+                s.LocationName,
+                "Felügyelő"
+                })
+                .ToList();
+
+            supervisorCount = supervisorRows.Count;
+
+            // A tanárok a diákok elé kerülnek.
+
+            rows.InsertRange(0, supervisorRows);
+        }
+
+        // =====================================================
+        // EXCEL ELKÉSZÍTÉSE
+        // =====================================================
+
         return BuildWorkbook(
             $"{plan.PlanName} – {slot.TimeSlotName} – {ev.EventName}",
             new[]
             {
-            "Diák neve",
+            "Diák / tanár neve",
             "Osztály",
             "Program",
             "Idősáv",
@@ -233,9 +282,136 @@ public class ExcelExportService
             "Helyszín",
             "Jelentkezés állapota"
             },
-            rows);
+            rows,
+            supervisorCount);
     }
     
+    // =====================================================
+    // TANÁRI FELÜGYELETI JELENTKEZÉSEK EXCEL EXPORTÁLÁSA
+    // =====================================================
+
+    public async Task<byte[]> ExportTeachersAsync(int eventId)
+    {
+        var ev = await _db.Events
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.EventId == eventId)
+            ?? throw new InvalidOperationException(
+                "Az esemény nem található.");
+
+        // Összes tanár lekérdezése
+
+        var teachers = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.Role == RoleChoice.Teacher)
+            .OrderBy(u => u.UserName)
+            .Select(u => new
+            {
+                u.UserId,
+                u.UserName
+            })
+            .ToListAsync();
+
+        // Programokhoz és külön felügyeleti helyekhez
+        // tartozó tanári jelentkezések lekérdezése
+
+        var supervisions = await _db.Supervisions
+            .AsNoTracking()
+            .Where(s =>
+                (s.PlanSession != null &&
+                 s.PlanSession.TimeSlot.EventId == eventId)
+                ||
+                (s.SupervisionPlace != null &&
+                 s.SupervisionPlace.TimeSlot.EventId == eventId))
+            .Select(s => new
+            {
+                s.UserId,
+
+                ProgramName = s.PlanSession != null
+                    ? s.PlanSession.Plan.PlanName
+                    : s.SupervisionPlace!.Name,
+
+                TimeSlotName = s.PlanSession != null
+                    ? s.PlanSession.TimeSlot.TimeSlotName
+                    : s.SupervisionPlace!.TimeSlot.TimeSlotName,
+
+                BeginDate = s.PlanSession != null
+                    ? s.PlanSession.TimeSlot.BeginDate
+                    : s.SupervisionPlace!.TimeSlot.BeginDate,
+
+                EndDate = s.PlanSession != null
+                    ? s.PlanSession.TimeSlot.EndDate
+                    : s.SupervisionPlace!.TimeSlot.EndDate,
+
+                LocationName = s.PlanSession != null
+                    ? s.PlanSession.Location.LocationName
+                    : "–",
+
+                Type = s.PlanSessionId != null
+                    ? "Programfelügyelet"
+                    : "Egyéb felügyelet"
+            })
+            .ToListAsync();
+
+        // Excel sorainak összeállítása
+
+        var rows = new List<string[]>();
+
+        foreach (var teacher in teachers)
+        {
+            var own = supervisions
+                .Where(s => s.UserId == teacher.UserId)
+                .OrderBy(s => s.BeginDate)
+                .ThenBy(s => s.ProgramName)
+                .ToList();
+
+            // Ha a tanár nem jelentkezett felügyeletre
+
+            if (own.Count == 0)
+            {
+                rows.Add(new[]
+                {
+                teacher.UserName,
+                "Nincs jelentkezés",
+                "",
+                "",
+                "",
+                ""
+            });
+
+                continue;
+            }
+
+            // Tanár jelentkezéseinek hozzáadása
+
+            foreach (var supervision in own)
+            {
+                rows.Add(new[]
+                {
+                teacher.UserName,
+                supervision.ProgramName,
+                supervision.Type,
+                supervision.TimeSlotName,
+                $"{supervision.BeginDate:yyyy.MM.dd HH:mm} – {supervision.EndDate:HH:mm}",
+                supervision.LocationName
+            });
+            }
+        }
+
+        // Excel munkafüzet létrehozása
+
+        return BuildWorkbook(
+            $"Tanári felügyeletek – {ev.EventName}",
+            new[]
+            {
+            "Tanár neve",
+            "Program / Felügyeleti hely",
+            "Felügyelet típusa",
+            "Idősáv",
+            "Időpont",
+            "Helyszín"
+            },
+            rows);
+    }
 
     // =====================================================
     // OSZTÁLYONKÉNTI EXPORT FÁJLNEVE
@@ -325,7 +501,25 @@ public class ExcelExportService
 
         return $"{year}_{planName}_{slotNumber}_idosav.xlsx";
     }
+    // =====================================================
+    // TANÁRI EXPORT FÁJLNEVE
+    //
+    // Példa:
+    // 2026_tanari_jelentkezesek.xlsx
+    // =====================================================
 
+    public async Task<string> GetTeachersExportFileNameAsync(int eventId)
+    {
+        var ev = await _db.Events
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.EventId == eventId)
+            ?? throw new InvalidOperationException(
+                "Az esemény nem található.");
+
+        int year = ev.EventDate.Year;
+
+        return $"{year}_tanari_jelentkezesek.xlsx";
+    }
     // =====================================================
     // OSZTÁLYNÉV NORMALIZÁLÁSA
     //
@@ -408,7 +602,7 @@ public class ExcelExportService
     // EXCEL MUNKAFÜZET LÉTREHOZÁSA
     // =====================================================
 
-    private static byte[] BuildWorkbook(string title, string[] headers, List<string[]> rows)
+    private static byte[] BuildWorkbook(string title, string[] headers, List<string[]> rows, int highlightedRows = 0)
     {
         using var workbook = new XLWorkbook();
 
@@ -448,6 +642,22 @@ public class ExcelExportService
         }
 
         // Fejléc formázása
+        if (highlightedRows > 0)
+        {
+            // Az adatok a 4. sorban kezdődnek.
+            // Csak a tanárok sorait színezzük.
+
+            var supervisorRange = ws.Range(
+                4,
+                1,
+                3 + highlightedRows,
+                headers.Length);
+
+            supervisorRange.Style.Fill.BackgroundColor =
+                XLColor.FromHtml("#E2E3E5");
+
+            supervisorRange.Style.Font.Bold = true;
+        }
 
         var header = ws.Range(
             3,

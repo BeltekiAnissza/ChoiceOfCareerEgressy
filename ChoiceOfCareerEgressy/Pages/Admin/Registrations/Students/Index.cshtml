@@ -85,7 +85,7 @@
 
             <div class="table-responsive mb-4">
 
-                <table class="table table-striped align-middle">
+              <table class="table table-striped align-middle student-grades-table">
 
                     <thead>
                         <tr>
@@ -101,7 +101,7 @@
 
                         @foreach (var grade in Model.Data.Grades)
                         {
-                            <tr id="grade-summary-@grade.GradeId">
+                            <tr id="grade-summary-@grade.GradeId" class="grade-summary-row">
 
                                 <td>@grade.GradeName</td>
 
@@ -191,7 +191,7 @@
                                                                     .FirstOrDefault(a =>
                                                                         a.ApplicationId == slot.ApplicationId);
 
-                                                                <div class="border rounded p-3 mb-3">
+                                                                <div class="border rounded p-3 mb-3 student-slot-card">
 
                                                                     <h5>@slot.TimeSlotName</h5>
 
@@ -494,4 +494,9 @@
 {
     <script src="~/js/admin/registrations/student_index.js"
             asp-append-version="true"></script>
+}
+
+@section Styles
+{
+    <link rel="stylesheet" href="~/css/admin/student_index.css" asp-append-version="true" />
 }

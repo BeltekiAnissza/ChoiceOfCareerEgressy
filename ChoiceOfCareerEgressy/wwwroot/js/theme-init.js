@@ -83,6 +83,32 @@
     }
 
     // =====================================
+    // SZÍN VILÁGOSSÁGÁNAK MEGHATÁROZÁSA
+    // =====================================
+
+    function isDarkColor(hex) {
+
+        const { r, g, b } = hexToRgb(hex);
+
+        const brightness =
+            (r * 299 + g * 587 + b * 114) / 1000;
+
+        return brightness < 150;
+    }
+
+    // =====================================
+    // FEJLÉC SZÖVEGSZÍNÉNEK BEÁLLÍTÁSA
+    // =====================================
+
+    function updateHeaderTextColor(color) {
+
+        root.style.setProperty(
+            "--header-text-color",
+            isDarkColor(color) ? "#FFF4DC" : "#292929"
+        );
+    }
+
+    // =====================================
     // EGYÉNI FEJLÉCSZÍN BEÁLLÍTÁSA
     // =====================================
 
@@ -95,20 +121,11 @@
         const dark = mixColors(color, "#000000", 0.35);
         const middle = mixColors(color, "#ffffff", 0.25);
 
-        root.style.setProperty(
-            "--header-primary",
-            color
-        );
+        root.style.setProperty("--header-primary", color);
+        root.style.setProperty("--header-dark", dark);
+        root.style.setProperty("--header-mid", middle);
 
-        root.style.setProperty(
-            "--header-dark",
-            dark
-        );
-
-        root.style.setProperty(
-            "--header-mid",
-            middle
-        );
+        updateHeaderTextColor(color);
     }
 
     // =====================================
@@ -124,19 +141,30 @@
         const dark = mixColors(color, "#000000", 0.35);
         const light = mixColors(color, "#ffffff", 0.85);
 
+        root.style.setProperty("--background-primary", color);
+        root.style.setProperty("--background-dark", dark);
+        root.style.setProperty("--background-light", light);
+
         root.style.setProperty(
-            "--background-primary",
-            color
+            "--page-heading-color",
+            isDarkColor(color) ? "#FFF4DC" : "#292929"
+        );
+
+        const brightness =
+            (hexToRgb(color).r * 299 +
+                hexToRgb(color).g * 587 +
+                hexToRgb(color).b * 114) / 1000;
+
+        const isDark = brightness < 150;
+
+        root.style.setProperty(
+            "--page-text-color",
+            isDark ? "#FFF4DC" : "#292929"
         );
 
         root.style.setProperty(
-            "--background-dark",
-            dark
-        );
-
-        root.style.setProperty(
-            "--background-light",
-            light
+            "--page-muted-color",
+            isDark ? "#E6DCCB" : "#404040"
         );
     }
 

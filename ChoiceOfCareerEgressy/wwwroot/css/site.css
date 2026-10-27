@@ -44,7 +44,7 @@ html[data-theme="green"] {
 }
 
 /* =========================================
-   BOOTSTRAP SZÍNEK
+   GLOBÁLIS SZÍNVÁLTOZÓK
    ========================================= */
 
 :root {
@@ -52,23 +52,33 @@ html[data-theme="green"] {
     --bs-primary-rgb: var(--theme-rgb);
     --bs-link-color: var(--theme-dark);
     --bs-link-hover-color: var(--theme-primary);
+    --page-text-color: #292929;
+    --page-muted-color: #404040;
 }
 
 /* =========================================
-   OLDALHÁTTÉR
+   ALAPBEÁLLÍTÁSOK
    ========================================= */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
 
 html {
     min-height: 100%;
+    max-width: 100%;
 }
 
 body {
     min-height: 100vh;
     min-width: 320px;
+    max-width: 100%;
     background: linear-gradient( 135deg, var(--background-dark, var(--theme-dark)) 0%, var(--background-primary, var(--theme-primary)) 45%, var(--background-light, var(--theme-light)) 100% );
     background-attachment: fixed;
     background-repeat: no-repeat;
-    color: #253047;
+    color: var(--page-text-color);
 }
 
 /* =========================================
@@ -79,7 +89,7 @@ body {
     position: relative;
     z-index: 1030;
     background-image: linear-gradient( 90deg, var(--header-dark, var(--theme-dark)) 0%, var(--header-primary, var(--theme-primary)) 20%, var(--header-mid, var(--theme-header-mid)) 40%, var(--header-primary, var(--theme-primary)) 60%, var(--header-dark, var(--theme-dark)) 80%, var(--header-primary, var(--theme-primary)) 100% ) !important;
-    background-color: var(--header-dark, var(--theme-dark)) !important;
+    background-color: var( --header-dark, var(--theme-dark) ) !important;
     background-size: 400% 100% !important;
     background-repeat: no-repeat !important;
     animation: navbarGradient 8s linear infinite;
@@ -106,13 +116,14 @@ body {
 }
 
 /* =========================================
-   NAVIGÁCIÓ SZÖVEGEK
+   NAVIGÁCIÓ SZÖVEGSZÍNE
    ========================================= */
 
 .navbar .navbar-brand,
 .navbar .nav-link,
-.navbar .navbar-text {
-    color: #ffffff !important;
+.navbar .navbar-text,
+.navbar .dropdown-toggle {
+    color: var( --header-text-color, #FFF4DC ) !important;
 }
 
 .navbar .navbar-brand {
@@ -128,8 +139,24 @@ body {
 
     .navbar .nav-link:hover,
     .navbar .nav-link:focus {
-        color: #ffffff !important;
-        background-color: rgba(255, 255, 255, 0.15);
+        color: var( --header-text-color, #FFF4DC ) !important;
+        background-color: rgba( 128, 128, 128, 0.15 );
+    }
+
+    .navbar .nav-link.active {
+        background-color: rgba( 128, 128, 128, 0.18 );
+        color: var( --header-text-color, #FFF4DC ) !important;
+        font-weight: 600;
+    }
+
+    /* =========================================
+   NAVIGÁCIÓ IKONJAI
+   ========================================= */
+
+    .navbar .navbar-brand i,
+    .navbar .nav-link i,
+    .navbar .dropdown-toggle i {
+        color: inherit;
     }
 
 /* =========================================
@@ -137,11 +164,17 @@ body {
    ========================================= */
 
 .navbar-toggler {
-    border-color: rgba(255, 255, 255, 0.45);
+    border-color: currentColor;
+    color: var( --header-text-color, #FFF4DC );
 }
 
 .navbar-toggler-icon {
     filter: brightness(0) invert(1);
+}
+
+html[style*="--header-text-color: rgb(41, 41, 41)"]
+.navbar-toggler-icon {
+    filter: none;
 }
 
 /* =========================================
@@ -150,10 +183,11 @@ body {
 
 .navbar .dropdown-menu {
     z-index: 1050;
-    background: rgba(255, 255, 255, 0.98);
-    border: 1px solid rgba(var(--theme-rgb), 0.12);
+    background: rgba( 255, 255, 255, 0.98 );
+    border: 1px solid rgba( var(--theme-rgb), 0.12 );
     border-radius: 12px;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+    color: #292929;
 }
 
 .navbar .dropdown-item {
@@ -173,15 +207,16 @@ body {
    ========================================= */
 
 .card {
-    background: rgba(255, 255, 255, 0.94);
-    border: 1px solid rgba(var(--theme-rgb), 0.13);
+    background: rgba( 255, 255, 255, 0.94 );
+    border: 1px solid rgba( var(--theme-rgb), 0.13 );
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(30, 41, 59, 0.08);
+    color: #292929;
 }
 
 .card-header {
     background: var(--theme-light);
-    border-bottom: 1px solid rgba(var(--theme-rgb), 0.12);
+    border-bottom: 1px solid rgba( var(--theme-rgb), 0.12 );
     font-weight: 600;
 }
 
@@ -223,6 +258,7 @@ body {
 .form-select {
     min-height: 42px;
     border-radius: 9px;
+    color: #292929;
 }
 
 .form-label {
@@ -232,7 +268,7 @@ body {
 .form-control:focus,
 .form-select:focus {
     border-color: var(--theme-primary);
-    box-shadow: 0 0 0 0.2rem rgba(var(--theme-rgb), 0.16);
+    box-shadow: 0 0 0 0.2rem rgba( var(--theme-rgb), 0.16 );
 }
 
 /* =========================================
@@ -249,7 +285,7 @@ body {
     }
 
     .accordion-button:focus {
-        box-shadow: 0 0 0 0.2rem rgba(var(--theme-rgb), 0.16);
+        box-shadow: 0 0 0 0.2rem rgba( var(--theme-rgb), 0.16 );
     }
 
 /* =========================================
@@ -341,12 +377,198 @@ body {
     }
 
 /* =========================================
+   GLOBÁLIS OLDALSZÖVEGEK
+   ========================================= */
+
+/*
+   Az oldal háttérszínéhez igazodó
+   szövegszínek.
+
+   A JavaScript állítja be:
+
+   --page-text-color
+   --page-muted-color
+*/
+
+.app-main {
+    min-width: 0;
+    color: var( --page-text-color, #292929 );
+}
+
+    /* =========================================
+   OLDALAK CÍMEI
+   ========================================= */
+
+    /*
+   Csak a kártyákon kívüli címeket
+   színezzük át.
+*/
+
+    .app-main h1:not(.card h1),
+    .app-main h2:not(.card h2),
+    .app-main h3:not(.card h3),
+    .app-main h4:not(.card h4),
+    .app-main h5:not(.card h5) {
+        color: var( --page-text-color, #292929 );
+    }
+
+    /* =========================================
+   OLDALAK ALCÍMEI
+   ========================================= */
+
+    /*
+   A Bootstrap text-muted osztályát
+   a háttérhez igazítjuk.
+
+   A kártyákon belüli szövegek
+   külön színt kapnak.
+*/
+
+    .app-main .text-muted {
+        color: var( --page-muted-color, #404040 ) !important;
+    }
+
+    /* =========================================
+   KÁRTYÁK SZÖVEGSZÍNEI
+   ========================================= */
+
+    .app-main .card {
+        color: #292929;
+    }
+
+        .app-main .card h1,
+        .app-main .card h2,
+        .app-main .card h3,
+        .app-main .card h4,
+        .app-main .card h5,
+        .app-main .card h6 {
+            color: #292929;
+        }
+
+        .app-main .card .text-muted {
+            color: #64748B !important;
+        }
+
+    /* =========================================
+   EGYÉB VILÁGOS FELÜLETEK
+   ========================================= */
+
+    .app-main .modal-content,
+    .app-main .dropdown-menu,
+    .app-main .offcanvas,
+    .app-main .list-group-item {
+        color: #292929;
+    }
+
+        .app-main .modal-content .text-muted,
+        .app-main .dropdown-menu .text-muted,
+        .app-main .offcanvas .text-muted,
+        .app-main .list-group-item .text-muted {
+            color: #64748B !important;
+        }
+
+    /* =========================================
+   ŰRLAPMEZŐK SZÖVEGSZÍNE
+   ========================================= */
+
+    .app-main .form-control,
+    .app-main .form-select,
+    .app-main textarea {
+        color: #292929;
+    }
+
+    /* =========================================
+   MOBILOS FELÜLET - ALAPOK
+   ========================================= */
+
+    .app-main > * {
+        max-width: 100%;
+    }
+
+    .app-main .row > [class*="col-"] {
+        min-width: 0;
+    }
+
+    .app-main h1,
+    .app-main h2,
+    .app-main h3 {
+        overflow-wrap: anywhere;
+    }
+
+    .app-main .card,
+    .app-main .accordion,
+    .app-main .alert {
+        min-width: 0;
+    }
+
+    .app-main input,
+    .app-main select,
+    .app-main textarea {
+        max-width: 100%;
+    }
+
+    .app-main .d-flex {
+        min-width: 0;
+    }
+
+    .app-main .table-responsive {
+        border-radius: 12px;
+    }
+
+/* =========================================
+   NAVIGÁCIÓ MOBILON
+   ========================================= */
+
+.header-actions {
+    flex-shrink: 0;
+}
+
+.navbar .navbar-toggler {
+    margin-left: 0.5rem;
+}
+
+.navbar .dropdown-menu {
+    max-width: min(92vw, 360px);
+}
+
+.navbar .navbar-collapse,
+.navbar .navbar-nav {
+    min-width: 0;
+}
+
+/* =========================================
+   KÁRTYÁS TÁBLÁZATOK
+   ========================================= */
+
+.mobile-card-table {
+    width: 100%;
+}
+
+    .mobile-card-table td form,
+    .mobile-card-table td input,
+    .mobile-card-table td select {
+        min-width: 0;
+    }
+
+/* =========================================
    TABLET ÉS MOBIL
    ========================================= */
 
 @media (max-width: 991.98px) {
 
+    .navbar .container-fluid {
+        flex-wrap: wrap;
+    }
+
+    .navbar-brand {
+        max-width: calc(100% - 160px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     .navbar-collapse {
+        flex-basis: 100%;
+        width: 100%;
         padding-top: 12px;
         padding-bottom: 12px;
     }
@@ -356,19 +578,29 @@ body {
     }
 
     .navbar .nav-link {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
         padding: 12px;
     }
 
     .navbar .dropdown-menu {
+        position: static !important;
+        transform: none !important;
+        max-width: 100%;
         border: none;
         box-shadow: none;
         padding-left: 12px;
-        background: rgba(255, 255, 255, 0.98);
+        background: rgba( 255, 255, 255, 0.98 );
     }
 
     .navbar .dropdown-item {
         padding: 12px 16px;
         white-space: normal;
+    }
+
+    .navbar .navbar-text {
+        overflow-wrap: anywhere;
     }
 }
 
@@ -380,6 +612,10 @@ body {
 
     main {
         min-width: 0;
+        padding: 12px !important;
+    }
+
+    .app-main {
         padding: 12px !important;
     }
 
@@ -442,286 +678,30 @@ body {
         .nav-tabs .nav-link {
             white-space: nowrap;
         }
-}
 
-/* =========================================
-   KIS MOBIL
-   ========================================= */
-
-@media (max-width: 575.98px) {
-
-    .navbar-brand {
-        font-size: 1rem !important;
+    .app-main .card {
+        border-radius: 14px;
     }
 
-    #themeDropdown {
-        padding: 8px 10px;
-    }
-}
-
-/* =========================================
-   AKADÁLYMENTESSÉG
-   ========================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-    .navbar {
-        animation: none;
+    .app-main .btn {
+        white-space: normal;
     }
 
-    .theme-choice {
-        transition: none;
-    }
-}
-
-/* =========================================
-   MOBILOS FELÜLET - KIEGÉSZÍTÉSEK
-   Az eredeti színtémákat és stílusokat megtartjuk.
-   ========================================= */
-
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-}
-
-html,
-body {
-    max-width: 100%;
-}
-
-.app-main {
-    min-width: 0;
-}
-
-    .app-main > * {
-        max-width: 100%;
-    }
-
-    .app-main .row > [class*="col-"] {
-        min-width: 0;
-    }
-
-    .app-main h1,
-    .app-main h2,
-    .app-main h3 {
-        overflow-wrap: anywhere;
-    }
-
-    .app-main .card,
-    .app-main .accordion,
-    .app-main .alert {
-        min-width: 0;
-    }
-
-    .app-main input,
-    .app-main select,
-    .app-main textarea {
-        max-width: 100%;
-    }
-
-    .app-main .d-flex {
-        min-width: 0;
-    }
-
-    .app-main .table-responsive {
-        border-radius: 12px;
-    }
-
-/* =========================================
-   NAVIGÁCIÓ MOBILON
-   ========================================= */
-
-.header-actions {
-    flex-shrink: 0;
-}
-
-.navbar .navbar-toggler {
-    margin-left: .5rem;
-}
-
-.navbar .dropdown-menu {
-    max-width: min(92vw, 360px);
-}
-
-.navbar .navbar-collapse {
-    min-width: 0;
-}
-
-.navbar .navbar-nav {
-    min-width: 0;
-}
-
-/* =========================================
-   KÁRTYÁS TÁBLÁZATOK
-   ========================================= */
-
-.mobile-card-table {
-    width: 100%;
-}
-
-    .mobile-card-table td form {
-        min-width: 0;
-    }
-
-    .mobile-card-table td input,
-    .mobile-card-table td select {
-        min-width: 0;
-    }
-
-@media (max-width: 991.98px) {
-
-    .navbar .container-fluid {
+    .app-main .d-flex.gap-2:not(.navbar-nav):not(.header-actions) {
         flex-wrap: wrap;
     }
 
-    .navbar-brand {
-        max-width: calc(100% - 160px);
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .app-main .d-flex.gap-2 > .form-control {
+        flex: 1 1 160px;
     }
 
-    .navbar-collapse {
-        flex-basis: 100%;
-        width: 100%;
-    }
-
-    .navbar-nav .nav-link {
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-    }
-
-    .navbar .dropdown-menu {
-        position: static !important;
-        transform: none !important;
-        max-width: 100%;
-    }
-
-    .navbar .navbar-text {
-        overflow-wrap: anywhere;
-    }
-}
-
-@media (max-width: 767.98px) {
-
-    .app-main {
-        padding: 12px !important;
-    }
-
-        .app-main .card {
-            border-radius: 14px;
-        }
-
-        .app-main .btn {
-            white-space: normal;
-        }
-
-        .app-main .d-flex.gap-2:not(.navbar-nav):not(.header-actions) {
-            flex-wrap: wrap;
-        }
-
-        .app-main .d-flex.gap-2 > .form-control {
-            flex: 1 1 160px;
-        }
-
-        .app-main .d-flex.gap-2 > .btn {
-            flex: 1 1 auto;
-        }
-
-    /* Csak opt-in táblázatok alakulnak kártyává. */
-
-    .mobile-card-table.is-card-ready,
-    .mobile-card-table.is-card-ready tbody,
-    .mobile-card-table.is-card-ready tr,
-    .mobile-card-table.is-card-ready td {
-        display: block;
-        width: 100%;
-    }
-
-        .mobile-card-table.is-card-ready thead {
-            display: none;
-        }
-
-        .mobile-card-table.is-card-ready tbody {
-            display: grid;
-            gap: 12px;
-        }
-
-            .mobile-card-table.is-card-ready tbody tr {
-                padding: 12px;
-                border: 1px solid rgba(var(--theme-rgb), .18);
-                border-radius: 14px;
-                background: rgba(255, 255, 255, .97);
-                box-shadow: 0 5px 15px rgba(15, 23, 42, .08);
-            }
-
-            .mobile-card-table.is-card-ready tbody td {
-                border: 0;
-                border-bottom: 1px solid #e9edf3;
-                padding: 10px 2px;
-                min-width: 0;
-                overflow-wrap: anywhere;
-            }
-
-                .mobile-card-table.is-card-ready tbody td:last-child {
-                    border-bottom: 0;
-                }
-
-                .mobile-card-table.is-card-ready tbody td::before {
-                    content: attr(data-label);
-                    display: block;
-                    font-weight: 700;
-                    color: var(--theme-dark);
-                    font-size: .82rem;
-                    margin-bottom: 6px;
-                }
-
-                .mobile-card-table.is-card-ready tbody td[data-label=""]::before {
-                    display: none;
-                }
-
-                .mobile-card-table.is-card-ready tbody td:first-child {
-                    font-weight: 700;
-                    font-size: 1.05rem;
-                }
-
-                .mobile-card-table.is-card-ready tbody td form {
-                    display: flex !important;
-                    flex-direction: column;
-                    align-items: stretch;
-                    gap: 8px;
-                    width: 100%;
-                }
-
-                    .mobile-card-table.is-card-ready tbody td form .btn,
-                    .mobile-card-table.is-card-ready tbody td form .form-control,
-                    .mobile-card-table.is-card-ready tbody td form .form-select {
-                        width: 100%;
-                    }
-
-                    .mobile-card-table.is-card-ready tbody td form input[type="hidden"] {
-                        display: none;
-                    }
-}
-
-@media (max-width: 390px) {
-
-    .navbar-brand {
-        font-size: .94rem !important;
-    }
-
-    #themeDropdown {
-        padding: 7px 8px;
-    }
-
-    .header-actions {
-        gap: 4px !important;
+    .app-main .d-flex.gap-2 > .btn {
+        flex: 1 1 auto;
     }
 }
 
 /* =========================================
-   MOBILOS TÁBLÁZAT JAVÍTÁS V2
+   MOBILOS TÁBLÁZATOK - KÁRTYÁS NÉZET
    ========================================= */
 
 @media (max-width: 767.98px) {
@@ -755,10 +735,10 @@ body {
                 display: block !important;
                 min-width: 0;
                 padding: 14px;
-                background: #fff;
-                border: 1px solid rgba(var(--theme-rgb), .18);
+                background: #ffffff;
+                border: 1px solid rgba( var(--theme-rgb), 0.18 );
                 border-radius: 15px;
-                box-shadow: 0 6px 18px rgba(0, 0, 0, .07);
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
             }
 
                 table.mobile-card-table.is-card-ready > tbody > tr > td,
@@ -774,6 +754,7 @@ body {
                     white-space: normal !important;
                     overflow-wrap: anywhere;
                     text-align: left !important;
+                    color: #292929;
                 }
 
                 table.mobile-card-table.is-card-ready > tbody > tr > :last-child {
@@ -790,9 +771,9 @@ body {
                     content: attr(data-label);
                     display: block;
                     margin-bottom: 5px;
-                    font-size: .76rem;
+                    font-size: 0.76rem;
                     font-weight: 700;
-                    letter-spacing: .02em;
+                    letter-spacing: 0.02em;
                     color: #59677a;
                 }
 
@@ -817,11 +798,60 @@ body {
             width: 100%;
         }
 
-        table.mobile-card-table.is-card-ready :is(button, .btn) {
+        table.mobile-card-table.is-card-ready :is( button, .btn ) {
             min-height: 44px;
         }
 
         table.mobile-card-table.is-card-ready input[type="hidden"] {
             display: none;
         }
+}
+
+/* =========================================
+   KIS MOBIL
+   ========================================= */
+
+@media (max-width: 575.98px) {
+
+    .navbar-brand {
+        font-size: 1rem !important;
+    }
+
+    #themeDropdown {
+        padding: 8px 10px;
+    }
+}
+
+/* =========================================
+   NAGYON KIS MOBIL
+   ========================================= */
+
+@media (max-width: 390px) {
+
+    .navbar-brand {
+        font-size: 0.94rem !important;
+    }
+
+    #themeDropdown {
+        padding: 7px 8px;
+    }
+
+    .header-actions {
+        gap: 4px !important;
+    }
+}
+
+/* =========================================
+   AKADÁLYMENTESSÉG
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .navbar {
+        animation: none;
+    }
+
+    .theme-choice {
+        transition: none;
+    }
 }

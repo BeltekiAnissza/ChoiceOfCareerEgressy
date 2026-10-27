@@ -16,9 +16,7 @@ public class IndexModel : PageModel
     private const string ExcelContentType =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-    public IndexModel(
-        ChoiceOfCareerPersistence db,
-        ExcelExportService export)
+    public IndexModel(ChoiceOfCareerPersistence db, ExcelExportService export)
     {
         _db = db;
         _export = export;
@@ -35,12 +33,7 @@ public class IndexModel : PageModel
     public record GradeOption(int Id, string Name);
     public record PlanOption(int Id, string Name);
 
-    public record TimeSlotOption(
-        int Id,
-        int EventId,
-        int PlanId,
-        string Name,
-        int Number);
+    public record TimeSlotOption(int Id, int EventId, int PlanId, string Name, int Number);
 
     public async Task OnGetAsync()
     {
@@ -49,7 +42,9 @@ public class IndexModel : PageModel
 
     private async Task LoadOptionsAsync()
     {
-        // Események
+        // =====================================================
+        // ESEMÉNYEK
+        // =====================================================
 
         var events = await _db.Events
             .AsNoTracking()
@@ -68,7 +63,9 @@ public class IndexModel : PageModel
                 e.EventName))
             .ToList();
 
-        // Osztályok
+        // =====================================================
+        // OSZTÁLYOK
+        // =====================================================
 
         Grades = await _db.Grades
             .AsNoTracking()
@@ -78,7 +75,9 @@ public class IndexModel : PageModel
                 g.GradeName))
             .ToListAsync();
 
-        // Programok
+        // =====================================================
+        // PROGRAMOK
+        // =====================================================
 
         Plans = await _db.PlanSessions
             .AsNoTracking()
@@ -94,7 +93,9 @@ public class IndexModel : PageModel
                 s.PlanName))
             .ToListAsync();
 
-        // Programokhoz tartozó idősávok
+        // =====================================================
+        // PROGRAMOKHOZ TARTOZÓ IDŐSÁVOK
+        // =====================================================
 
         var sessions = await _db.PlanSessions
             .AsNoTracking()
@@ -110,6 +111,7 @@ public class IndexModel : PageModel
             .ToListAsync();
 
         // Eseményenként számozzuk az idősávokat.
+        // SQLite DateTimeOffset rendezési probléma elkerülése.
 
         var slotNumbers = sessions
             .GroupBy(s => s.EventId)
@@ -145,9 +147,7 @@ public class IndexModel : PageModel
     // OSZTÁLY EXPORT
     // =====================================================
 
-    public async Task<IActionResult> OnGetGradeAsync(
-        int eventId,
-        int gradeId)
+    public async Task<IActionResult> OnGetGradeAsync(int eventId, int gradeId)
     {
         if (eventId <= 0 || gradeId <= 0)
         {
@@ -185,10 +185,7 @@ public class IndexModel : PageModel
     // PROGRAM EXPORT
     // =====================================================
 
-    public async Task<IActionResult> OnGetPlanAsync(
-        int eventId,
-        int planId,
-        int timeSlotId)
+    public async Task<IActionResult> OnGetPlanAsync(int eventId, int planId, int timeSlotId, bool includeSupervisors = false)
     {
         if (eventId <= 0 || planId <= 0 || timeSlotId <= 0)
         {
@@ -198,13 +195,57 @@ public class IndexModel : PageModel
 
         try
         {
-            var bytes = await _export.ExportPlanAsync( eventId, planId,  timeSlotId);
+            var bytes = await _export.ExportPlanAsync(
+                eventId,
+                planId,
+                timeSlotId,
+                includeSupervisors);
 
             var fileName =
                 await _export.GetPlanExportFileNameAsync(
                     eventId,
                     planId,
                     timeSlotId);
+
+            return File(
+                bytes,
+                ExcelContentType,
+                fileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ErrorMessage = ex.Message;
+
+            await LoadOptionsAsync();
+
+            return Page();
+        }
+    }
+
+    // =====================================================
+    // TANÁRI FELÜGYELETI JELENTKEZÉSEK EXPORTÁLÁSA
+    // =====================================================
+
+    public async Task<IActionResult> OnGetTeachersAsync(int eventId)
+    {
+        if (eventId <= 0)
+        {
+            return BadRequest(
+                "Válassz ki egy eseményt.");
+        }
+
+        try
+        {
+            // Excel elkészítése
+
+            var bytes = await _export.ExportTeachersAsync(eventId);
+
+            // Fájlnév elkészítése
+
+            var fileName =
+                await _export.GetTeachersExportFileNameAsync(eventId);
+
+            // Excel letöltése
 
             return File(
                 bytes,

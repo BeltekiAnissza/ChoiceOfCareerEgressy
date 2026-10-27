@@ -198,13 +198,97 @@
 
                     </select>
                 </div>
+                <div class="form-check">
 
+                    <input class="form-check-input"
+                           type="checkbox"
+                           id="includeSupervisors"
+                           name="includeSupervisors"
+                           value="true" />
+
+                    <label class="form-check-label"
+                           for="includeSupervisors">
+
+                        Felügyelő tanárok megjelenítése az Excelben
+
+                    </label>
+
+                    <div class="form-text">
+                        A felügyelő tanárok a diákok előtt,
+                        szürke háttérrel kiemelve jelennek meg.
+                    </div>
+
+                </div>
                 <button type="submit"
                         class="btn btn-primary">
 
                     <i class="bi bi-file-earmark-excel me-1"></i>
 
                     Program Excel letöltése
+
+                </button>
+
+            </form>
+
+        </section>
+
+    </div>
+
+    <!-- ========================================= -->
+    <!-- TANÁRI JELENTKEZÉSEK EXPORTÁLÁSA         -->
+    <!-- ========================================= -->
+
+    <div class="col-12 col-lg-6">
+
+        <section class="card p-3 h-100">
+
+            <h2 class="h5">Tanári felügyeleti jelentkezések</h2>
+
+            <p class="text-muted">
+                Az összes tanár felügyeleti jelentkezésének
+                exportálása a kiválasztott eseményhez.
+                A jelentkezés nélküli tanárok is szerepelnek
+                az Excelben.
+            </p>
+
+            <form method="get"
+                  asp-page="/Admin/Exports/Index"
+                  class="d-grid gap-3">
+
+                <input type="hidden"
+                       name="handler"
+                       value="Teachers" />
+
+                <div>
+                    <label class="form-label" for="teacherEventId">
+                        Esemény
+                    </label>
+
+                    <select id="teacherEventId"
+                            name="eventId"
+                            class="form-select"
+                            required>
+
+                        <option value="">
+                            Válassz eseményt
+                        </option>
+
+                        @foreach (var ev in Model.Events)
+                        {
+                            <option value="@ev.Id">
+                                @ev.Name
+                            </option>
+                        }
+
+                    </select>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary">
+
+                    <i class="bi bi-file-earmark-excel me-1"></i>
+
+                    Tanári Excel letöltése
 
                 </button>
 

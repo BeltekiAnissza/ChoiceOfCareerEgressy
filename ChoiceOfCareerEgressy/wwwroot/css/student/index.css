@@ -1,0 +1,74 @@
+﻿/* =========================================
+   DIÁK PROGRAMVÁLASZTÁS
+   ========================================= */
+
+.student-registration-form .accordion-item {
+    border: 1px solid #dce3ec;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.student-registration-form .accordion-button {
+    padding: 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    background-color: #f4f6fa;
+    color: #292929;
+}
+
+.student-registration-form .accordion-button:not(.collapsed) {
+        background-color: var(--theme-light);
+        color: var(--theme-dark);
+        box-shadow: none;
+}
+
+.student-registration-form .accordion-button:focus {
+        box-shadow: none;
+}
+
+.student-registration-form .accordion-body {
+    padding: 16px;
+}
+
+.student-registration-form .student-program-card {
+    background: #ffffff;
+    transition: background-color 0.2s ease;
+}
+
+.student-registration-form .student-program-card:has( .student-program-radio:checked ) {
+        background-color: var(--theme-light);
+        border-color: var(--theme-primary) !important;
+    }
+
+/* =========================================
+   MOBILOS MEGJELENÉS
+   ========================================= */
+
+@media (max-width: 767.98px) {
+
+    .student-registration-form .accordion-button {
+        padding: 14px;
+        font-size: 0.95rem;
+    }
+
+    .student-registration-form .accordion-body {
+        padding: 10px;
+    }
+
+    .student-registration-form .student-program-card {
+        padding: 12px !important;
+        margin-top: 10px !important;
+    }
+
+    .student-registration-form .form-check-label {
+        display: block;
+        cursor: pointer;
+    }
+
+    .student-registration-form .student-program-card small {
+        display: block;
+        line-height: 1.6;
+        margin-top: 8px;
+    }
+}
