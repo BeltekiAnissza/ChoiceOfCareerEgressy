@@ -1,10 +1,8 @@
 using ChoiceOfCareerEgressy.Dto.ProgramDto.ImportPrograms;
 using ChoiceOfCareerEgressy.Model.Admin.Imports;
-using ChoiceOfCareerEgressy.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
 namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
 {
@@ -12,12 +10,10 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
     public class ImportModel : PageModel
     {
         private readonly ProgramImportService _importService;
-        private readonly ChoiceOfCareerPersistence _context;
 
-        public ImportModel(ProgramImportService importService, ChoiceOfCareerPersistence context)
+        public ImportModel(ProgramImportService importService)
         {
             _importService = importService;
-            _context = context;
         }
 
         [BindProperty]
@@ -32,10 +28,18 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
 
         public string? ErrorMessage { get; set; }
 
+        // =========================================
+        // OLDAL BETÖLTÉSE
+        // =========================================
+
         public async Task OnGetAsync()
         {
             await LoadEventsAsync();
         }
+
+        // =========================================
+        // EXCEL IMPORTÁLÁSA
+        // =========================================
 
         public async Task<IActionResult> OnPostAsync()
         {
@@ -50,7 +54,8 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
             try
             {
                 Result = await _importService.ImportAsync(
-                    ExcelFile, EventId);
+                    ExcelFile,
+                    EventId);
             }
             catch (InvalidDataException ex)
             {
@@ -66,23 +71,13 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
             return Page();
         }
 
+        // =========================================
+        // ESEMÉNYEK BETÖLTÉSE
+        // =========================================
+
         private async Task LoadEventsAsync()
         {
-            Events = await _context.Events
-                .AsNoTracking()
-                .OrderByDescending(e => e.EventId)
-                .Select(e => new EventOptionDto
-                {
-                    EventId = e.EventId,
-                    EventName = e.EventName
-                })
-                .ToListAsync();
+            Events = await _importService.GetAvailableEventsAsync();
         }
-    }
-
-    public class EventOptionDto
-    {
-        public int EventId { get; set; }
-        public string EventName { get; set; } = "";
     }
 }

@@ -8,8 +8,7 @@ namespace ChoiceOfCareerEgressy.Model
     {
         private readonly ChoiceOfCareerPersistence _context;
 
-        public TeacherSupervisionService(
-            ChoiceOfCareerPersistence context)
+        public TeacherSupervisionService(  ChoiceOfCareerPersistence context)
         {
             _context = context;
         }

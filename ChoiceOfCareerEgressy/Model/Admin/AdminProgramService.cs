@@ -21,9 +21,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
         // PROGRAMOK LISTÁZÁSA
         // =====================================================
 
-        public async Task<List<AdminProgramListDto>> GetProgramsAsync(
-            int? eventId = null,
-            string? search = null)
+        public async Task<List<AdminProgramListDto>> GetProgramsAsync(int? eventId = null, string? search = null, int? timeSlotId = null)
         {
             var query = _context.PlanSessions
                 .AsNoTracking()
@@ -39,11 +37,29 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
                 .Include(s => s.Supervisions)
                 .AsQueryable();
 
+            // =========================================
+            // ESEMÉNY SZERINTI SZŰRÉS
+            // =========================================
+
             if (eventId.HasValue)
             {
                 query = query.Where(s =>
                     s.TimeSlot.EventId == eventId.Value);
             }
+
+            // =========================================
+            // IDŐSÁV SZERINTI SZŰRÉS
+            // =========================================
+
+            if (timeSlotId.HasValue)
+            {
+                query = query.Where(s =>
+                    s.TimeSlotId == timeSlotId.Value);
+            }
+
+            // =========================================
+            // PROGRAM KERESÉSE
+            // =========================================
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -54,6 +70,10 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
                     s.Plan.PlanDescription.Contains(text) ||
                     s.Location.LocationName.Contains(text));
             }
+
+            // =========================================
+            // ADATOK LEKÉRDEZÉSE
+            // =========================================
 
             var sessions = await query.ToListAsync();
 
@@ -101,8 +121,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
         // EGY PROGRAM ADATAINAK LEKÉRDEZÉSE
         // =====================================================
 
-        public async Task<AdminProgramDto?> GetProgramAsync(
-            int planSessionId)
+        public async Task<AdminProgramDto?> GetProgramAsync(int planSessionId)
         {
             var session = await _context.PlanSessions
                 .AsNoTracking()
@@ -235,8 +254,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
                    secondStart < firstEnd;
         }
 
-        private async Task<TimeSlot> ValidateTimeSlotAsync(
-            AdminProgramDto dto)
+        private async Task<TimeSlot> ValidateTimeSlotAsync(AdminProgramDto dto)
         {
             var slot = await _context.TimeSlots
                 .Include(t => t.Event)
@@ -258,8 +276,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
             return slot;
         }
 
-        private async Task<Location> ResolveLocationAsync(
-            AdminProgramDto dto)
+        private async Task<Location> ResolveLocationAsync(AdminProgramDto dto)
         {
             if (!string.IsNullOrWhiteSpace(dto.NewLocationName))
             {
@@ -295,8 +312,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
                 "A kiválasztott terem nem található.");
         }
 
-        private async Task ValidateReferencesAsync(
-            AdminProgramDto dto)
+        private async Task ValidateReferencesAsync(AdminProgramDto dto)
         {
             if (dto.BranchId.HasValue &&
                 !await _context.Branches.AnyAsync(b =>
@@ -315,10 +331,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
             }
         }
 
-        private async Task ValidateRoomAvailabilityAsync(
-            int locationId,
-            TimeSlot slot,
-            int? excludedPlanSessionId = null)
+        private async Task ValidateRoomAvailabilityAsync(int locationId, TimeSlot slot, int? excludedPlanSessionId = null)
         {
             var otherSessions = await _context.PlanSessions
                 .AsNoTracking()
@@ -388,9 +401,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
         // ÚJ PROGRAM LÉTREHOZÁSA
         // =====================================================
 
-        public async Task<int> CreateProgramAsync(
-            AdminProgramDto dto,
-            int? adminUserId = null)
+        public async Task<int> CreateProgramAsync(AdminProgramDto dto, int? adminUserId = null)
         {
             await using var transaction =
                 await _context.Database.BeginTransactionAsync();
@@ -489,9 +500,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Programs
         // PROGRAM MÓDOSÍTÁSA
         // =====================================================
 
-        public async Task UpdateProgramAsync(
-            AdminProgramDto dto,
-            int? adminUserId = null)
+        public async Task UpdateProgramAsync(AdminProgramDto dto, int? adminUserId = null)
         {
             await using var transaction =
                 await _context.Database.BeginTransactionAsync();

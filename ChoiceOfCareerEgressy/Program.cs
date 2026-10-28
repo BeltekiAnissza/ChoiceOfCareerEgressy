@@ -53,6 +53,7 @@ builder.Services.AddScoped<GradeManagementService>();
 builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddScoped<SchoolYearService>();
 builder.Services.AddScoped<AdminAllDataDeleteService>();
+builder.Services.AddScoped<AdminDashboardService>();
 
 builder.Services.AddAuthentication(
     CookieAuthenticationDefaults.AuthenticationScheme

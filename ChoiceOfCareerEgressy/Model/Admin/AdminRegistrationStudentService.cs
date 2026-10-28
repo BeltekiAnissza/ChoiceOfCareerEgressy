@@ -80,11 +80,11 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                     GradeName = grade.GradeName,
                     StudentCount = students.Count,
                     StartedCount = students.Count(s => CountFor(s.UserId) > 0),
-                    CompletedCount = students.Count(s =>
-                        slots.Count == 2 &&
-                        slots.All(t => applications.Any(a =>
-                            a.UserId == s.UserId &&
-                            a.PlanSession.TimeSlotId == t.TimeSlotId)))
+                    CompletedCount = students.Count(s => applications
+                        .Where(a => a.UserId == s.UserId)
+                        .Select(a => a.PlanSession.TimeSlotId)
+                        .Distinct()
+                        .Count() >= 2)
                 });
             }
 

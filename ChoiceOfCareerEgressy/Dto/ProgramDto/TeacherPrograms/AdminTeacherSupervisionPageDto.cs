@@ -9,6 +9,10 @@ namespace ChoiceOfCareerEgressy.Dto.ProgramDto.TeacherPrograms
         public List<HomeroomEventDto> Events { get; set; } = new();
 
         public List<AdminTeacherDto> Teachers { get; set; } = new();
+
+        public List<AdminTeacherProgramSummaryDto> Programs { get; set; } = new();
+
+        public AdminTeacherProgramDetailDto? SelectedProgram { get; set; }
     }
 }
 

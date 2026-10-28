@@ -120,8 +120,7 @@ namespace ChoiceOfCareerEgressy.Model
         // FELHASZNÁLÓ ADATAINAK LEKÉRDEZÉSE SZERKESZTÉSHEZ
         // =====================================================
 
-        public async Task<AdminUserEditDto?> GetUserForEditAsync(
-            int userId)
+        public async Task<AdminUserEditDto?> GetUserForEditAsync(int userId)
         {
             return await _context.Users
                 .AsNoTracking()
@@ -186,7 +185,7 @@ namespace ChoiceOfCareerEgressy.Model
         }
 
 
-        public async Task UpdateUserAsync( AdminUserEditDto dto, int? adminUserId = null)
+        public async Task UpdateUserAsync(AdminUserEditDto dto, int? adminUserId = null)
         {
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.UserId == dto.UserId);
@@ -445,7 +444,7 @@ namespace ChoiceOfCareerEgressy.Model
             return user.UserId;
         }
 
-        public async Task<AdminUserDeleteDto?> GetUserDeleteInfoAsync( int userId)
+        public async Task<AdminUserDeleteDto?> GetUserDeleteInfoAsync(int userId)
         {
             return await _context.Users
                 .AsNoTracking()
@@ -463,7 +462,7 @@ namespace ChoiceOfCareerEgressy.Model
         }
 
 
-        public async Task DeleteUserAsync( int userId,  int? adminUserId = null)
+        public async Task DeleteUserAsync(int userId, int? adminUserId = null)
         {
             if (adminUserId == userId)
             {
@@ -533,14 +532,20 @@ namespace ChoiceOfCareerEgressy.Model
             await transaction.CommitAsync();
         }
 
+        // =========================================
+        // FELHASZNÁLÓK KERESÉSE ÉS SZŰRÉSE
+        // =========================================
 
-        public async Task<List<UserDto>> GetAllUsersAsync(string? search = null,  int? gradeId = null,string? sort = null, RoleChoice? role = null)
+        public async Task<List<UserDto>> GetAllUsersAsync(string? search = null, int? gradeId = null, string? sort = null, RoleChoice? role = null, int? branchId = null, bool homeroomOnly = false)
         {
             var query = _context.Users
                 .AsNoTracking()
                 .AsQueryable();
 
-            // Keresés név vagy e-mail-cím alapján
+            // =========================================
+            // 1. KERESÉS NÉV VAGY E-MAIL ALAPJÁN
+            // =========================================
+
             if (!string.IsNullOrWhiteSpace(search))
             {
                 string searchText = search.Trim();
@@ -550,21 +555,50 @@ namespace ChoiceOfCareerEgressy.Model
                     u.EmailAddress.Contains(searchText));
             }
 
-            // Szűrés osztály szerint
+            // =========================================
+            // 2. OSZTÁLY SZERINTI SZŰRÉS
+            // =========================================
+
             if (gradeId.HasValue)
             {
                 query = query.Where(u =>
                     u.GradeId == gradeId.Value);
             }
 
-            // Szűrés szerepkör szerint
-            if (role.HasValue)
+            // =========================================
+            // 3. ÁGAZAT SZERINTI SZŰRÉS
+            // =========================================
+
+            if (branchId.HasValue)
             {
+                query = query.Where(u =>
+                    u.BranchId == branchId.Value);
+            }
+
+            // =========================================
+            // 4. SZEREPKÖR SZERINTI SZŰRÉS
+            // =========================================
+
+            if (homeroomOnly)
+            {
+                // Csak osztályfőnökök
+
+                query = query.Where(u =>
+                    u.Role == RoleChoice.Teacher &&
+                    u.GradeId != null);
+            }
+            else if (role.HasValue)
+            {
+                // Diák, tanár vagy admin
+
                 query = query.Where(u =>
                     u.Role == role.Value);
             }
 
-            // Rendezés
+            // =========================================
+            // 5. RENDEZÉS
+            // =========================================
+
             query = sort switch
             {
                 "grade_asc" => query
@@ -582,6 +616,10 @@ namespace ChoiceOfCareerEgressy.Model
 
                 _ => query.OrderBy(u => u.UserName)
             };
+
+            // =========================================
+            // 6. FELHASZNÁLÓK LEKÉRDEZÉSE
+            // =========================================
 
             return await query
                 .Select(u => new UserDto
@@ -604,5 +642,91 @@ namespace ChoiceOfCareerEgressy.Model
         }
 
 
+        // =========================================
+        // FELHASZNÁLÓK SZÁMÁNAK LEKÉRDEZÉSE
+        // =========================================
+
+        public async Task<UserCountDto> GetUserCountsAsync()
+        {
+            var counts = await _context.Users
+                .AsNoTracking()
+                .GroupBy(u => u.Role)
+                .Select(g => new
+                {
+                    Role = g.Key,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            return new UserCountDto
+            {
+                StudentCount = counts
+                    .Where(x => x.Role == RoleChoice.Student)
+                    .Sum(x => x.Count),
+
+                TeacherCount = counts
+                    .Where(x => x.Role == RoleChoice.Teacher)
+                    .Sum(x => x.Count)
+            };
+        }
+
+        // =========================================
+        // OSZTÁLYFŐNÖKÖK LEKÉRDEZÉSE
+        // =========================================
+
+        public async Task<List<UserDto>> GetHomeroomTeachersAsync()
+        {
+            return await _context.Users
+                .AsNoTracking()
+                .Where(u =>
+                    u.Role == RoleChoice.Teacher &&
+                    u.GradeId != null)
+                .OrderBy(u => u.UserName)
+                .Select(u => new UserDto
+                {
+                    UserId = u.UserId,
+                    UserName = u.UserName,
+                    EmailAddress = u.EmailAddress,
+                    Role = u.Role.ToString(),
+
+                    GradeName = u.Grade != null
+                        ? u.Grade.GradeName : null,
+
+                    BranchName = u.Branch != null
+                        ? u.Branch.BranchName : null,
+
+                    SexName = u.Sex != null
+                        ? u.Sex.SexName : null
+                })
+                .ToListAsync();
+        }
+        // =========================================
+        // FELHASZNÁLÓK LEKÉRDEZÉSE ÁGAZAT SZERINT
+        // =========================================
+
+        public async Task<List<UserDto>> GetUsersByBranchAsync(int branchId)
+        {
+            return await _context.Users
+                .AsNoTracking()
+                .Where(u => u.BranchId == branchId)
+                .OrderBy(u => u.UserName)
+                .Select(u => new UserDto
+                {
+                    UserId = u.UserId,
+                    UserName = u.UserName,
+                    EmailAddress = u.EmailAddress,
+                    Role = u.Role.ToString(),
+
+                    GradeName = u.Grade != null
+                        ? u.Grade.GradeName : null,
+
+                    BranchName = u.Branch != null
+                        ? u.Branch.BranchName : null,
+
+                    SexName = u.Sex != null
+                        ? u.Sex.SexName : null
+                })
+                .ToListAsync();
+        }
     }
 }

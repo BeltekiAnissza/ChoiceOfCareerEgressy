@@ -39,7 +39,6 @@
             @Model.ErrorMessage
         </div>
     }
-
     <!-- ========================================= -->
     <!-- KERESÉS ÉS SZŰRÉS                         -->
     <!-- ========================================= -->
@@ -75,37 +74,53 @@
 
                     <div class="col-md-2">
 
-                        <label asp-for="Role"
-                               class="form-label">
+                        <label class="form-label">
                             Szerepkör
                         </label>
 
-                        <select asp-for="Role"
+                        <select id="roleFilter"
                                 class="form-select">
 
-                            <option value="">
+                            <option value=""
+                                    selected="@(Model.Role == null && !Model.HomeroomOnly)">
                                 Összes szerepkör
                             </option>
 
-                            <option value="@RoleChoice.Student">
+                            <option value="@RoleChoice.Student"
+                                    selected="@(Model.Role == RoleChoice.Student && !Model.HomeroomOnly)">
                                 Diák
                             </option>
 
-                            <option value="@RoleChoice.Teacher">
+                            <option value="@RoleChoice.Teacher"
+                                    selected="@(Model.Role == RoleChoice.Teacher && !Model.HomeroomOnly)">
                                 Tanár
                             </option>
 
-                            <option value="@RoleChoice.Admin">
+                            <option value="@RoleChoice.Admin"
+                                    selected="@(Model.Role == RoleChoice.Admin && !Model.HomeroomOnly)">
                                 Admin
                             </option>
 
+                            <option value="Homeroom"
+                                    selected="@Model.HomeroomOnly">
+                                Osztályfőnök
+                            </option>
+
                         </select>
+
+                        <input type="hidden"
+                               asp-for="Role"
+                               id="roleValue" />
+
+                        <input type="hidden"
+                               asp-for="HomeroomOnly"
+                               id="homeroomValue" />
 
                     </div>
 
                     <!-- OSZTÁLY -->
 
-                    <div class="col-md-3">
+                    <div class="col-md-2">
 
                         <label asp-for="GradeId"
                                class="form-label">
@@ -130,9 +145,36 @@
 
                     </div>
 
+                    <!-- ÁGAZAT -->
+
+                    <div class="col-md-2">
+
+                        <label asp-for="BranchId"
+                               class="form-label">
+                            Ágazat
+                        </label>
+
+                        <select asp-for="BranchId"
+                                class="form-select">
+
+                            <option value="">
+                                Összes ágazat
+                            </option>
+
+                            @foreach (var branch in Model.Options.Branches)
+                            {
+                                <option value="@branch.Id">
+                                    @branch.Name
+                                </option>
+                            }
+
+                        </select>
+
+                    </div>
+
                     <!-- RENDEZÉS -->
 
-                    <div class="col-md-3">
+                    <div class="col-md-2">
 
                         <label asp-for="Sort"
                                class="form-label">
@@ -164,7 +206,9 @@
 
                 </div>
 
-                <div class="d-flex gap-2 mt-3">
+                <!-- GOMBOK -->
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
 
                     <button type="submit"
                             class="btn btn-primary">
@@ -573,3 +617,7 @@
     </div>
 
 </div>
+
+@section Scripts {
+    <script src="~/js/admin/users.js"  asp-append-version="true"></script>
+}

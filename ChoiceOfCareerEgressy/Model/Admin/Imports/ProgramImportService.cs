@@ -636,5 +636,22 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
 
             return result;
         }
+
+        // =========================================
+        // IMPORTÁLÁSHOZ VÁLASZTHATÓ ESEMÉNYEK
+        // =========================================
+
+        public async Task<List<EventOptionDto>> GetAvailableEventsAsync()
+        {
+            return await _context.Events
+                .AsNoTracking()
+                .OrderByDescending(e => e.EventId)
+                .Select(e => new EventOptionDto
+                {
+                    EventId = e.EventId,
+                    EventName = e.EventName
+                })
+                .ToListAsync();
+        }
     }
 }

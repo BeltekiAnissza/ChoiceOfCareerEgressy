@@ -1,4 +1,4 @@
-using ChoiceOfCareerEgressy.Dto.UserDto;
+Ôªøusing ChoiceOfCareerEgressy.Dto.UserDto;
 using ChoiceOfCareerEgressy.Dto.UserDto.Admin;
 using ChoiceOfCareerEgressy.Model;
 using ChoiceOfCareerEgressy.Model.Admin;
@@ -16,20 +16,15 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
     {
         private readonly UserService _userService;
         private readonly AdminAllDataDeleteService _deleteService;
-        private readonly ChoiceOfCareerPersistence _context;
 
-        public IndexModel(
-            UserService userService,
-            AdminAllDataDeleteService deleteService,
-            ChoiceOfCareerPersistence context)
+        public IndexModel(UserService userService, AdminAllDataDeleteService deleteService)
         {
             _userService = userService;
             _deleteService = deleteService;
-            _context = context;
         }
 
         // =========================================
-        // FELHASZN¡L”K
+        // FELHASZN√ÅL√ìK
         // =========================================
 
         public List<UserDto> Users { get; set; } = new();
@@ -37,7 +32,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
         public AdminUserOptionsDto Options { get; set; } = new();
 
         // =========================================
-        // KERES…SI FELT…TELEK
+        // KERES√âSI FELT√âTELEK
         // =========================================
 
         [BindProperty(SupportsGet = true)]
@@ -52,8 +47,13 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
         [BindProperty(SupportsGet = true)]
         public RoleChoice? Role { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public int? BranchId { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool HomeroomOnly { get; set; }
         // =========================================
-        // ÷SSZESÕT…SEK
+        // √ñSSZES√çT√âSEK
         // =========================================
 
         public int StudentCount { get; set; }
@@ -61,7 +61,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
         public int TeacherCount { get; set; }
 
         // =========================================
-        // VISSZAJELZ…SEK
+        // VISSZAJELZ√âSEK
         // =========================================
 
         public string? SuccessMessage { get; set; }
@@ -69,7 +69,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
         public string? ErrorMessage { get; set; }
 
         // =========================================
-        // OLDAL BET÷LT…SE
+        // OLDAL BET√ñLT√âSE
         // =========================================
 
         public async Task OnGetAsync()
@@ -80,26 +80,32 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
             ErrorMessage =
                 TempData["ErrorMessage"] as string;
 
+            // Sz≈±r√©shez sz√ºks√©ges adatok
+
             Options = await _userService.GetUserOptionsAsync();
 
+            // Felhaszn√°l√≥k lek√©rdez√©se
+
             Users = await _userService.GetAllUsersAsync(
-                Search,
-                GradeId,
-                Sort,
-                Role);
+                search: Search,
+                gradeId: GradeId,
+                sort: Sort,
+                role: Role,
+                branchId: BranchId,
+                homeroomOnly: HomeroomOnly);
 
-            // Az ˆsszes felhaszn·lÛt sz·moljuk,
-            // nem csak a keresÈsi tal·latokat.
+            // √ñsszes felhaszn√°l√≥ sz√°ma
 
-            StudentCount = await _context.Users
-                .CountAsync(u => u.Role == RoleChoice.Student);
+            UserCountDto counts =
+                await _userService.GetUserCountsAsync();
 
-            TeacherCount = await _context.Users
-                .CountAsync(u => u.Role == RoleChoice.Teacher);
+            StudentCount = counts.StudentCount;
+
+            TeacherCount = counts.TeacherCount;
         }
 
         // =========================================
-        // ÷SSZES DI¡K T÷RL…SE
+        // √ñSSZES DI√ÅK T√ñRL√âSE
         // =========================================
 
         public async Task<IActionResult> OnPostDeleteAllStudentsAsync()
@@ -109,7 +115,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
             if (!adminId.HasValue)
             {
                 TempData["ErrorMessage"] =
-                    "Nem siker¸lt azonosÌtani az adminisztr·tort.";
+                    "Nem siker√ºlt azonos√≠tani az adminisztr√°tort.";
 
                 return RedirectToPage();
             }
@@ -121,7 +127,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
                         adminId.Value);
 
                 TempData["SuccessMessage"] =
-                    $"Sikeresen tˆrˆlt¸nk {deletedCount} di·kot.";
+                    $"Sikeresen t√∂r√∂lt√ºnk {deletedCount} di√°kot.";
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -134,14 +140,14 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
             catch (DbUpdateException)
             {
                 TempData["ErrorMessage"] =
-                    "Adatb·zishiba tˆrtÈnt a di·kok tˆrlÈse sor·n.";
+                    "Adatb√°zishiba t√∂rt√©nt a di√°kok t√∂rl√©se sor√°n.";
             }
 
             return RedirectToPage();
         }
 
         // =========================================
-        // ÷SSZES TAN¡R T÷RL…SE
+        // √ñSSZES TAN√ÅR T√ñRL√âSE
         // =========================================
 
         public async Task<IActionResult> OnPostDeleteAllTeachersAsync()
@@ -151,7 +157,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
             if (!adminId.HasValue)
             {
                 TempData["ErrorMessage"] =
-                    "Nem siker¸lt azonosÌtani az adminisztr·tort.";
+                    "Nem siker√ºlt azonos√≠tani az adminisztr√°tort.";
 
                 return RedirectToPage();
             }
@@ -163,7 +169,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
                         adminId.Value);
 
                 TempData["SuccessMessage"] =
-                    $"Sikeresen tˆrˆlt¸nk {deletedCount} tan·rt.";
+                    $"Sikeresen t√∂r√∂lt√ºnk {deletedCount} tan√°rt.";
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -176,14 +182,14 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Users
             catch (DbUpdateException)
             {
                 TempData["ErrorMessage"] =
-                    "Adatb·zishiba tˆrtÈnt a tan·rok tˆrlÈse sor·n.";
+                    "Adatb√°zishiba t√∂rt√©nt a tan√°rok t√∂rl√©se sor√°n.";
             }
 
             return RedirectToPage();
         }
 
         // =========================================
-        // ADMIN AZONOSÕT” LEK…R…SE
+        // ADMIN AZONOS√çT√ì LEK√âR√âSE
         // =========================================
 
         private int? GetAdminUserId()

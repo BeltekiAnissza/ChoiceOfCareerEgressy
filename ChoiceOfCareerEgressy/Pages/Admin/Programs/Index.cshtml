@@ -50,7 +50,7 @@
     }
 
     <!-- ========================================= -->
-    <!-- ESEMÉNY KIVÁLASZTÁSA                      -->
+    <!-- ESEMÉNY ÉS SZŰRŐK                         -->
     <!-- ========================================= -->
 
     <div class="card shadow-sm mb-4">
@@ -59,7 +59,11 @@
 
             <div class="row g-3 align-items-end">
 
-                <div class="col-md-5">
+                <!-- ========================================= -->
+                <!-- ESEMÉNY KIVÁLASZTÁSA                      -->
+                <!-- ========================================= -->
+
+                <div class="col-lg-4">
 
                     <form method="get" id="eventForm">
 
@@ -85,7 +89,11 @@
 
                 </div>
 
-                <div class="col-md-7">
+                <!-- ========================================= -->
+                <!-- PROGRAMOK SZŰRÉSE                         -->
+                <!-- ========================================= -->
+
+                <div class="col-lg-8">
 
                     <form method="get"
                           class="row g-2 align-items-end">
@@ -94,7 +102,9 @@
                                name="EventId"
                                value="@Model.EventId" />
 
-                        <div class="col-md-8">
+                        <!-- PROGRAM KERESÉSE -->
+
+                        <div class="col-md-5">
 
                             <label asp-for="Search"
                                    class="form-label">
@@ -103,22 +113,57 @@
 
                             <input asp-for="Search"
                                    class="form-control"
-                                   placeholder="Név, leírás vagy terem..." />
+                                   placeholder="Program neve..." />
 
                         </div>
 
+                        <!-- IDŐSÁV KIVÁLASZTÁSA -->
+
                         <div class="col-md-4">
 
-                            <button type="submit"
-                                    class="btn btn-primary">
-                                Keresés
-                            </button>
+                            <label asp-for="TimeSlotId"
+                                   class="form-label">
+                                Idősáv
+                            </label>
 
-                            <a asp-page="./Index"
-                               asp-route-EventId="@Model.EventId"
-                               class="btn btn-outline-secondary">
-                                Törlés
-                            </a>
+                            <select asp-for="TimeSlotId"
+                                    class="form-select">
+
+                                <option value="">
+                                    Összes idősáv
+                                </option>
+
+                                @foreach (var slot in Model.TimeSlots)
+                                {
+                                    <option value="@slot.TimeSlotId">
+                                        @slot.TimeSlotName
+                                        (@slot.BeginDate.ToString("HH:mm") -
+                                        @slot.EndDate.ToString("HH:mm"))
+                                    </option>
+                                }
+
+                            </select>
+
+                        </div>
+
+                        <!-- GOMBOK -->
+
+                        <div class="col-md-3">
+
+                            <div class="d-flex gap-2">
+
+                                <button type="submit"
+                                        class="btn btn-primary">
+                                    Keresés
+                                </button>
+
+                                <a asp-page="./Index"
+                                   asp-route-EventId="@Model.EventId"
+                                   class="btn btn-outline-secondary">
+                                    Törlés
+                                </a>
+
+                            </div>
 
                         </div>
 

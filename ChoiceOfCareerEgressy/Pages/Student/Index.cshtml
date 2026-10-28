@@ -131,7 +131,9 @@
                                             {
                                                 bool isFull = program.AvailablePlaces <= 0;
 
-                                                <div class="border rounded p-3 mt-2 student-program-card">
+                                                <label for="program-@ev.EventId-@program.PlanSessionId"
+                                                       class="border rounded p-3 mt-2 student-program-card d-block"
+                                                       style="cursor: @(isFull && !program.IsSelected ? "not-allowed" : "pointer");">
 
                                                     <div class="form-check">
 
@@ -146,12 +148,9 @@
                                                                checked="@program.IsSelected"
                                                                disabled="@(isFull && !program.IsSelected)" />
 
-                                                        <label class="form-check-label"
-                                                               for="program-@ev.EventId-@program.PlanSessionId">
-
+                                                        <span class="form-check-label">
                                                             <strong>@program.PlanName</strong>
-
-                                                        </label>
+                                                        </span>
 
                                                     </div>
 
@@ -195,7 +194,7 @@
                                                         </div>
                                                     }
 
-                                                </div>
+                                                </label>
                                             }
 
                                         </div>

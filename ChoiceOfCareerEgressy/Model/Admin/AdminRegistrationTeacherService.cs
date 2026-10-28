@@ -14,7 +14,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             _db = db;
         }
 
-        public async Task<AdminTeacherSupervisionPageDto> GetPageAsync(int? eventId)
+        public async Task<AdminTeacherSupervisionPageDto> GetPageAsync(int? eventId, int? planSessionId = null)
         {
             var events = await _db.Events
                 .AsNoTracking()
@@ -77,6 +77,28 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                     (s.SupervisionPlaceId != null &&
                      slotIds.Contains(s.SupervisionPlace!.TimeSlotId)))
                 .ToListAsync();
+
+            // =========================================
+            // PROGRAMOK ÖSSZESÍTÉSE
+            // =========================================
+
+            foreach (var slot in slots)
+            {
+                foreach (var session in slot.PlanSessions
+                    .OrderBy(s => s.Plan.PlanName))
+                {
+                    result.Programs.Add(new AdminTeacherProgramSummaryDto
+                    {
+                        PlanSessionId = session.PlanSessionId,
+                        PlanName = session.Plan.PlanName,
+                        TimeSlotName = slot.TimeSlotName,
+                        LocationName = session.Location.LocationName,
+                        RequiredSupervisors = session.RequiredSupervisors,
+                        RegisteredSupervisors = supervisions.Count(s =>
+                            s.PlanSessionId == session.PlanSessionId)
+                    });
+                }
+            }
 
             foreach (var teacher in teachers)
             {
@@ -153,6 +175,66 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                 }
 
                 result.Teachers.Add(teacherDto);
+            }
+            // =========================================
+            // PROGRAM SZERINTI RÉSZLETES NÉZET
+            // =========================================
+
+            var selectedSession = slots
+                .SelectMany(t => t.PlanSessions)
+                .FirstOrDefault(s => s.PlanSessionId == planSessionId);
+
+            if (selectedSession != null)
+            {
+                var selectedSlot = slots.First(t =>
+                    t.TimeSlotId == selectedSession.TimeSlotId);
+
+                var detail = new AdminTeacherProgramDetailDto
+                {
+                    PlanSessionId = selectedSession.PlanSessionId,
+                    TimeSlotId = selectedSlot.TimeSlotId,
+                    PlanName = selectedSession.Plan.PlanName,
+                    TimeSlotName = selectedSlot.TimeSlotName,
+                    LocationName = selectedSession.Location.LocationName,
+                    RequiredSupervisors = selectedSession.RequiredSupervisors
+                };
+
+                var programSupervisions = supervisions
+                    .Where(s => s.PlanSessionId == selectedSession.PlanSessionId)
+                    .ToList();
+
+                foreach (var supervision in programSupervisions)
+                {
+                    var teacher = teachers.FirstOrDefault(t =>
+                        t.UserId == supervision.UserId);
+
+                    if (teacher == null)
+                        continue;
+
+                    var teacherDto = result.Teachers.First(t =>
+                        t.UserId == teacher.UserId);
+
+                    var teacherSlot = teacherDto.TimeSlots.First(t =>
+                        t.TimeSlotId == selectedSlot.TimeSlotId);
+
+                    detail.Supervisors.Add(new AdminTeacherProgramSupervisorDto
+                    {
+                        TeacherId = teacher.UserId,
+                        TeacherName = teacher.UserName,
+                        EmailAddress = teacher.EmailAddress,
+                        SupervisionId = supervision.SupervisionId,
+
+                        // Ugyanazokat a választható programokat használjuk,
+                        // amelyeket a tanár szerinti nézetben is.
+                        AvailablePrograms = teacherSlot.Programs.ToList()
+                    });
+                }
+
+                detail.Supervisors = detail.Supervisors
+                    .OrderBy(t => t.TeacherName)
+                    .ToList();
+
+                result.SelectedProgram = detail;
             }
 
             return result;

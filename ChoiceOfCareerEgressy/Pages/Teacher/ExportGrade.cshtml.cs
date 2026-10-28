@@ -1,123 +1,109 @@
-using System.Security.Claims;
+using ChoiceOfCareerEgressy.Dto;
+using ChoiceOfCareerEgressy.Dto.UserDto;
 using ChoiceOfCareerEgressy.Model;
-using ChoiceOfCareerEgressy.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
-namespace ChoiceOfCareerEgressy.Pages.Teacher;
-
-[Authorize(Roles = "Teacher")]
-public class ExportGradeModel : PageModel
+namespace ChoiceOfCareerEgressy.Pages.Teacher
 {
-    private readonly ChoiceOfCareerPersistence _db;
-    private readonly ExcelExportService _export;
-
-    public ExportGradeModel(
-        ChoiceOfCareerPersistence db,
-        ExcelExportService export)
+    [Authorize(Roles = "Teacher")]
+    public class ExportGradeModel : PageModel
     {
-        _db = db;
-        _export = export;
-    }
+        private readonly ExcelExportService _exportService;
 
-    public List<EventOption> Events { get; private set; } = new();
-
-    public record EventOption(int Id, string Name);
-
-    // =====================================================
-    // OLDAL BETÖLTÉSE
-    // =====================================================
-
-    public async Task<IActionResult> OnGetAsync()
-    {
-        if (!int.TryParse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier),
-            out int actorId))
+        public ExportGradeModel(ExcelExportService exportService)
         {
-            return Challenge();
+            _exportService = exportService;
         }
 
-        try
-        {
-            await _export.GetOwnGradeIdAsync(actorId);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        // =========================================
+        // ESEMÉNYEK
+        // =========================================
 
-        var events = await _db.Events
-            .AsNoTracking()
-            .Select(e => new
+        public List<ExportEventOptionDto> Events { get; set; } = new();
+
+        // =========================================
+        // OLDAL BETÖLTÉSE
+        // =========================================
+
+        public async Task<IActionResult> OnGetAsync()
+        {
+            if (!int.TryParse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out int teacherId))
             {
-                e.EventId,
-                e.EventName,
-                e.EventDate
-            })
-            .ToListAsync();
+                return Challenge();
+            }
 
-        Events = events
-            .OrderByDescending(e => e.EventDate)
-            .Select(e => new EventOption(
-                e.EventId,
-                e.EventName))
-            .ToList();
+            try
+            {
+                Events = await _exportService
+                    .GetMyGradeExportOptionsAsync(teacherId);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
 
-        return Page();
-    }
-
-    // =====================================================
-    // OSZTÁLY EXCEL EXPORTÁLÁSA
-    // =====================================================
-
-    public async Task<IActionResult> OnGetDownloadAsync(int eventId)
-    {
-        if (!int.TryParse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier),
-            out int actorId))
-        {
-            return Challenge();
+            return Page();
         }
 
-        if (eventId <= 0)
-        {
-            return BadRequest("Válassz ki egy eseményt.");
-        }
+        // =========================================
+        // OSZTÁLY EXCEL EXPORTÁLÁSA
+        // =========================================
 
-        int gradeId;
-
-        try
+        public async Task<IActionResult> OnGetDownloadAsync(int eventId)
         {
-            gradeId = await _export.GetOwnGradeIdAsync(actorId);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+            if (!int.TryParse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out int teacherId))
+            {
+                return Challenge();
+            }
 
-        try
-        {
-            // Excel elkészítése
-            var bytes = await _export.ExportGradeAsync(
-                eventId,
-                gradeId);
+            if (eventId <= 0)
+            {
+                return BadRequest("Válassz ki egy eseményt.");
+            }
 
-            // Fájlnév lekérése az Admin felületen
-            // is használt közös metódussal
-            var fileName = await _export.GetGradeExportFileNameAsync(
-                eventId,
-                gradeId);
+            int gradeId;
 
-            return File(
-                bytes,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                fileName);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
+            try
+            {
+                gradeId = await _exportService
+                    .GetOwnGradeIdAsync(teacherId);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                // Excel elkészítése
+
+                var bytes = await _exportService.ExportGradeAsync(
+                    eventId,
+                    gradeId);
+
+                // Excel fájlnevének lekérdezése
+
+                var fileName = await _exportService
+                    .GetGradeExportFileNameAsync(
+                        eventId,
+                        gradeId);
+
+                return File(
+                    bytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    fileName);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

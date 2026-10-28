@@ -128,9 +128,9 @@
           class="d-flex gap-2">
 
         <input asp-for="Create.GradeName"
-               class="form-control"
+               class="form-control grade-name-validation"
                placeholder="Például: 9.K"
-               maxlength="100"
+               maxlength="5"
                required />
 
         <button type="submit" class="btn btn-primary">
@@ -191,8 +191,8 @@
                                 <input type="text"
                                        name="Rename.NewGradeName"
                                        value="@grade.GradeName"
-                                       class="form-control"
-                                       maxlength="100"
+                                       class="form-control grade-name-validation"
+                                       maxlength="5"
                                        required />
 
                                 <button type="submit"
@@ -306,3 +306,9 @@
         </li>
     </ul>
 </div>
+
+
+@section Scripts {
+    <script src="~/js/grade-validation.js"
+            asp-append-version="true"></script>
+}

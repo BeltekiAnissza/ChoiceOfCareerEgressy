@@ -3,6 +3,9 @@
 
 @{
     ViewData["Title"] = "Tanári felügyeletek kezelése";
+
+    var eventId = Model.Data.EventId;
+    var planSessionId = Model.Data.SelectedProgram?.PlanSessionId;
 }
 
 <div class="container mt-4">
@@ -48,6 +51,10 @@
 
             <label class="form-label">Esemény</label>
 
+            <input type="hidden"
+                   name="viewMode"
+                   value="@Model.ViewMode" />
+
             <select name="eventId"
                     class="form-select"
                     data-auto-submit="true">
@@ -55,7 +62,7 @@
                 @foreach (var ev in Model.Data.Events)
                 {
                     <option value="@ev.EventId"
-                            selected="@(ev.EventId == Model.Data.EventId)">
+                            selected="@(ev.EventId == eventId)">
 
                         @ev.EventName
                         (@ev.EventDate.ToString("yyyy.MM.dd."))
@@ -68,209 +75,469 @@
         </form>
 
         <!-- ========================================= -->
-        <!-- TANÁROK                                 -->
+        <!-- NÉZET KIVÁLASZTÁSA                       -->
         <!-- ========================================= -->
 
-        <div class="card shadow-sm">
+        <ul class="nav nav-tabs mb-4">
 
-            <div class="card-header d-flex justify-content-between">
+            <li class="nav-item">
+                <a class="nav-link @(Model.ViewMode == "teachers" ? "active" : "")"
+                   asp-page="./Index"
+                   asp-route-eventId="@eventId"
+                   asp-route-viewMode="teachers">
 
-                <strong>Tanárok</strong>
+                    Tanárok szerint
 
-                <span>
-                    @Model.Data.Teachers.Count fő
-                </span>
+                </a>
+            </li>
 
-            </div>
+            <li class="nav-item">
+                <a class="nav-link @(Model.ViewMode == "programs" ? "active" : "")"
+                   asp-page="./Index"
+                   asp-route-eventId="@eventId"
+                   asp-route-viewMode="programs">
 
-            <div class="card-body">
+                    Programok szerint
 
-                <div class="accordion" id="teachersAccordion">
+                </a>
+            </li>
 
-                    @foreach (var teacher in Model.Data.Teachers)
-                    {
-                        <!-- ========================================= -->
-                        <!-- TANÁR KÁRTYÁJA                           -->
-                        <!-- ========================================= -->
+        </ul>
 
-                        <div class="accordion-item"
-                             id="teacher-card-@teacher.UserId">
+        @if (Model.ViewMode == "teachers")
+        {
+            <!-- ========================================= -->
+            <!-- TANÁROK SZERINTI NÉZET                   -->
+            <!-- ========================================= -->
 
-                            <h2 class="accordion-header">
+            <div class="card shadow-sm">
 
-                                <button class="accordion-button collapsed"
-                                        type="button"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#teacher-@teacher.UserId"
-                                        aria-expanded="false"
-                                        aria-controls="teacher-@teacher.UserId">
+                <div class="card-header d-flex justify-content-between">
 
-                                    <span class="me-3">
-                                        @teacher.UserName
-                                    </span>
+                    <strong>Tanárok</strong>
 
-                                    <span class="badge @(teacher.SupervisionCount == teacher.TimeSlots.Count ? "bg-success" : "bg-warning text-dark")">
-                                        @teacher.SupervisionCount / @teacher.TimeSlots.Count
-                                    </span>
+                    <span>
+                        @Model.Data.Teachers.Count fő
+                    </span>
 
-                                </button>
+                </div>
 
-                            </h2>
+                <div class="card-body">
 
-                            <!-- ========================================= -->
-                            <!-- TANÁR FELÜGYELETEI                       -->
-                            <!-- ========================================= -->
+                    <div class="accordion" id="teachersAccordion">
 
-                            <div id="teacher-@teacher.UserId"
-                                 class="accordion-collapse collapse"
-                                 data-bs-parent="#teachersAccordion">
+                        @foreach (var teacher in Model.Data.Teachers)
+                        {
+                            <div class="accordion-item"
+                                 id="teacher-card-@teacher.UserId">
 
-                                <div class="accordion-body">
+                                <h2 class="accordion-header">
 
-                                    <p class="text-muted">
-                                        @teacher.EmailAddress
-                                    </p>
+                                    <button class="accordion-button collapsed"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#teacher-@teacher.UserId"
+                                            aria-expanded="false"
+                                            aria-controls="teacher-@teacher.UserId">
 
-                                    @foreach (var slot in teacher.TimeSlots)
-                                    {
-                                        <!-- ========================================= -->
-                                        <!-- IDŐSÁV                                   -->
-                                        <!-- ========================================= -->
+                                        <span class="me-3">
+                                            @teacher.UserName
+                                        </span>
 
-                                        <div class="border rounded p-3 mb-3">
+                                        <span class="badge @(teacher.SupervisionCount == teacher.TimeSlots.Count ? "bg-success" : "bg-warning text-dark")">
+                                            @teacher.SupervisionCount / @teacher.TimeSlots.Count
+                                        </span>
 
-                                            <h5>@slot.TimeSlotName</h5>
+                                    </button>
 
-                                            <!-- ========================================= -->
-                                            <!-- AKTUÁLIS FELÜGYELET                        -->
-                                            <!-- ========================================= -->
-                                            @if (slot.SupervisionId != null)
-                                            {
-                                                <div class="alert alert-success py-2">
+                                </h2>
 
-                                                    <strong>
-                                                        @slot.CurrentProgramName
-                                                    </strong>
+                                <div id="teacher-@teacher.UserId"
+                                     class="accordion-collapse collapse"
+                                     data-bs-parent="#teachersAccordion">
 
-                                                    <div class="small">
-                                                        @slot.CurrentLocationName
+                                    <div class="accordion-body">
+
+                                        <p class="text-muted">
+                                            @teacher.EmailAddress
+                                        </p>
+
+                                        @foreach (var slot in teacher.TimeSlots)
+                                        {
+                                            <div class="border rounded p-3 mb-3">
+
+                                                <h5>@slot.TimeSlotName</h5>
+
+                                                <!-- AKTUÁLIS FELÜGYELET -->
+                                                @if (slot.SupervisionId != null)
+                                                {
+                                                    <div class="alert alert-success py-2">
+
+                                                        <strong>
+                                                            @slot.CurrentProgramName
+                                                        </strong>
+
+                                                        <div class="small">
+                                                            @slot.CurrentLocationName
+                                                        </div>
+
                                                     </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="alert alert-warning py-2">
+                                                        Nincs felügyeleti jelentkezés.
+                                                    </div>
+                                                }
 
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <div class="alert alert-warning py-2">
-                                                    Nincs felügyeleti jelentkezés.
-                                                </div>
-                                            }
+                                                <!-- FELÜGYELET MENTÉSE -->
 
-                                            <!-- ========================================= -->
-                                            <!-- FELÜGYELET MENTÉSE                        -->
-                                            <!-- ========================================= -->
-
-                                            <form method="post"
-                                                  asp-page-handler="Save"
-                                                  class="mb-2 supervision-ajax-form">
-
-                                                @Html.AntiForgeryToken()
-
-                                                <input type="hidden"
-                                                       name="Change.TeacherId"
-                                                       value="@teacher.UserId" />
-
-                                                <input type="hidden"
-                                                       name="Change.EventId"
-                                                       value="@Model.Data.EventId" />
-
-                                                <input type="hidden"
-                                                       name="Change.TimeSlotId"
-                                                       value="@slot.TimeSlotId" />
-
-                                                <label class="form-label">
-                                                    Program kiválasztása
-                                                </label>
-
-                                                <div class="registration-form-row">
-
-                                                    <select name="Change.PlanSessionId"
-                                                            class="form-select"
-                                                            required>
-
-                                                        <option value="">
-                                                            Válassz programot!
-                                                        </option>
-
-                                                        @foreach (var program in slot.Programs)
-                                                        {
-                                                            <option value="@program.PlanSessionId"
-                                                                    selected="@(program.PlanSessionId == slot.SelectedPlanSessionId)">
-
-                                                                @program.PlanName
-                                                                – @program.LocationName
-                                                                (szabad felügyelői hely:
-                                                                @program.AvailablePlaces)
-
-                                                            </option>
-                                                        }
-
-                                                    </select>
-
-                                                    <button type="submit"
-                                                            class="btn btn-primary">
-                                                        Mentés
-                                                    </button>
-
-                                                </div>
-
-                                            </form>
-
-                                            <!-- ========================================= -->
-                                            <!-- FELÜGYELET TÖRLÉSE                       -->
-                                            <!-- ========================================= -->
-                                            @if (slot.SupervisionId != null)
-                                            {
                                                 <form method="post"
-                                                      asp-page-handler="Delete"
-                                                      class="supervision-ajax-form supervision-delete-form">
+                                                      asp-page-handler="Save"
+                                                      asp-route-viewMode="teachers"
+                                                      class="mb-2 supervision-ajax-form">
 
                                                     @Html.AntiForgeryToken()
 
                                                     <input type="hidden"
-                                                           name="teacherId"
+                                                           name="Change.TeacherId"
                                                            value="@teacher.UserId" />
 
                                                     <input type="hidden"
-                                                           name="supervisionId"
-                                                           value="@slot.SupervisionId" />
+                                                           name="Change.EventId"
+                                                           value="@eventId" />
 
                                                     <input type="hidden"
-                                                           name="eventId"
-                                                           value="@Model.Data.EventId" />
+                                                           name="Change.TimeSlotId"
+                                                           value="@slot.TimeSlotId" />
 
-                                                    <button type="submit"
-                                                            class="btn btn-outline-danger btn-sm">
-                                                        Felügyelet törlése
-                                                    </button>
+                                                    <label class="form-label">
+                                                        Program kiválasztása
+                                                    </label>
+
+                                                    <div class="registration-form-row">
+
+                                                        <select name="Change.PlanSessionId"
+                                                                class="form-select"
+                                                                required>
+
+                                                            <option value="">
+                                                                Válassz programot!
+                                                            </option>
+
+                                                            @foreach (var program in slot.Programs)
+                                                            {
+                                                                <option value="@program.PlanSessionId"
+                                                                        selected="@(program.PlanSessionId == slot.SelectedPlanSessionId)">
+
+                                                                    @program.PlanName
+                                                                    – @program.LocationName
+                                                                    (szabad felügyelői hely:
+                                                                    @program.AvailablePlaces)
+
+                                                                </option>
+                                                            }
+
+                                                        </select>
+
+                                                        <button type="submit"
+                                                                class="btn btn-primary">
+                                                            Mentés
+                                                        </button>
+
+                                                    </div>
 
                                                 </form>
-                                            }
 
-                                        </div>
-                                    }
+                                                <!-- FELÜGYELET TÖRLÉSE -->
+                                                @if (slot.SupervisionId != null)
+                                                {
+                                                    <form method="post"
+                                                          asp-page-handler="Delete"
+                                                          asp-route-viewMode="teachers"
+                                                          class="supervision-ajax-form supervision-delete-form">
+
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden"
+                                                               name="teacherId"
+                                                               value="@teacher.UserId" />
+
+                                                        <input type="hidden"
+                                                               name="supervisionId"
+                                                               value="@slot.SupervisionId" />
+
+                                                        <input type="hidden"
+                                                               name="eventId"
+                                                               value="@eventId" />
+
+                                                        <button type="submit"
+                                                                class="btn btn-outline-danger btn-sm">
+                                                            Felügyelet törlése
+                                                        </button>
+
+                                                    </form>
+                                                }
+
+                                            </div>
+                                        }
+
+                                    </div>
 
                                 </div>
 
                             </div>
+                        }
 
-                        </div>
-                    }
+                    </div>
 
                 </div>
 
             </div>
+        }
+        else
+        {
+            <!-- ========================================= -->
+            <!-- PROGRAMOK SZERINTI NÉZET                 -->
+            <!-- ========================================= -->
 
-        </div>
+            <h4>Program kiválasztása</h4>
+
+            <form method="get" class="mb-4">
+
+                <input type="hidden"
+                       name="eventId"
+                       value="@eventId" />
+
+                <input type="hidden"
+                       name="viewMode"
+                       value="programs" />
+
+                <select name="planSessionId"
+                        class="form-select"
+                        data-auto-submit="true">
+
+                    <option value="">
+                        Válassz programot!
+                    </option>
+
+                    @foreach (var program in Model.Data.Programs)
+                    {
+                        <option value="@program.PlanSessionId"
+                                selected="@(program.PlanSessionId == planSessionId)">
+
+                            @program.TimeSlotName –
+                            @program.PlanName –
+                            @program.LocationName
+                            (@program.RegisteredSupervisors/@program.RequiredSupervisors)
+
+                        </option>
+                    }
+
+                </select>
+
+            </form>
+
+            @if (Model.Data.SelectedProgram is { } selectedProgram)
+            {
+                <!-- ========================================= -->
+                <!-- KIVÁLASZTOTT PROGRAM ADATAI               -->
+                <!-- ========================================= -->
+
+                <div class="card shadow-sm mb-4">
+
+                    <div class="card-header">
+
+                        <h4 class="mb-0">
+                            @selectedProgram.PlanName
+                        </h4>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <p>
+                            <strong>Idősáv:</strong>
+                            @selectedProgram.TimeSlotName
+                        </p>
+
+                        <p>
+                            <strong>Helyszín:</strong>
+                            @selectedProgram.LocationName
+                        </p>
+
+                        <p>
+                            <strong>Felügyelők:</strong>
+
+                            <span class="badge @(selectedProgram.Supervisors.Count >= selectedProgram.RequiredSupervisors ? "bg-success" : "bg-warning text-dark")">
+
+                                @selectedProgram.Supervisors.Count
+                                /
+                                @selectedProgram.RequiredSupervisors
+
+                            </span>
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <!-- ========================================= -->
+                <!-- PROGRAM FELÜGYELŐINEK LISTÁJA            -->
+                <!-- ========================================= -->
+
+                <div class="card shadow-sm">
+
+                    <div class="card-header d-flex justify-content-between">
+
+                        <strong>Beosztott tanárok</strong>
+
+                        <span>
+                            @selectedProgram.Supervisors.Count fő
+                        </span>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        @if (!selectedProgram.Supervisors.Any())
+                        {
+                            <div class="alert alert-info">
+                                Ehhez a programhoz még nincs beosztott tanár.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+
+                                <table class="table table-striped align-middle">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Tanár</th>
+                                            <th>E-mail</th>
+                                            <th>Másik program</th>
+                                            <th>Törlés</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                        @foreach (var supervisor in selectedProgram.Supervisors)
+                                        {
+                                            <tr>
+
+                                                <td>
+                                                    @supervisor.TeacherName
+                                                </td>
+
+                                                <td>
+                                                    @supervisor.EmailAddress
+                                                </td>
+
+                                                <td>
+
+                                                    <!-- FELÜGYELET MÓDOSÍTÁSA -->
+
+                                                    <form method="post"
+                                                          asp-page-handler="Save"
+                                                          asp-route-planSessionId="@selectedProgram.PlanSessionId"
+                                                          asp-route-viewMode="programs"
+                                                          class="supervision-ajax-form">
+
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden"
+                                                               name="Change.TeacherId"
+                                                               value="@supervisor.TeacherId" />
+
+                                                        <input type="hidden"
+                                                               name="Change.EventId"
+                                                               value="@eventId" />
+
+                                                        <input type="hidden"
+                                                               name="Change.TimeSlotId"
+                                                               value="@selectedProgram.TimeSlotId" />
+
+                                                        <div class="registration-form-row">
+
+                                                            <select name="Change.PlanSessionId"
+                                                                    class="form-select"
+                                                                    required>
+
+                                                                @foreach (var program in supervisor.AvailablePrograms)
+                                                                {
+                                                                    <option value="@program.PlanSessionId"
+                                                                            selected="@(program.PlanSessionId == selectedProgram.PlanSessionId)">
+
+                                                                        @program.PlanName
+                                                                        – @program.LocationName
+                                                                        (szabad: @program.AvailablePlaces)
+
+                                                                    </option>
+                                                                }
+
+                                                            </select>
+
+                                                            <button type="submit"
+                                                                    class="btn btn-primary btn-sm">
+                                                                Mentés
+                                                            </button>
+
+                                                        </div>
+
+                                                    </form>
+
+                                                </td>
+
+                                                <td>
+
+                                                    <!-- FELÜGYELET TÖRLÉSE -->
+
+                                                    <form method="post"
+                                                          asp-page-handler="Delete"
+                                                          asp-route-planSessionId="@selectedProgram.PlanSessionId"
+                                                          asp-route-viewMode="programs"
+                                                          class="supervision-ajax-form supervision-delete-form">
+
+                                                        @Html.AntiForgeryToken()
+
+                                                        <input type="hidden"
+                                                               name="teacherId"
+                                                               value="@supervisor.TeacherId" />
+
+                                                        <input type="hidden"
+                                                               name="supervisionId"
+                                                               value="@supervisor.SupervisionId" />
+
+                                                        <input type="hidden"
+                                                               name="eventId"
+                                                               value="@eventId" />
+
+                                                        <button type="submit"
+                                                                class="btn btn-outline-danger btn-sm">
+                                                            Törlés
+                                                        </button>
+
+                                                    </form>
+
+                                                </td>
+
+                                            </tr>
+                                        }
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+                        }
+
+                    </div>
+
+                </div>
+            }
+        }
     }
 
 </div>

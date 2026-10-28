@@ -178,29 +178,7 @@ namespace ChoiceOfCareerEgressy.Model
                         .ThenInclude(s => s.Location)
                 .ToListAsync();
 
-            foreach (var ev in events)
-            {
-                foreach (var slot in ev.TimeSlots)
-                {
-                    foreach (var session in slot.PlanSessions)
-                    {
-                        if (session.Plan.PlanName.Contains(
-                            "jóga",
-                            StringComparison.OrdinalIgnoreCase))
-                        {
-                            Console.WriteLine("=== JÓGA ELLENŐRZÉS ===");
-                            Console.WriteLine($"Program: {session.Plan.PlanName}");
-                            Console.WriteLine($"Idősáv: {slot.TimeSlotName}");
-                            Console.WriteLine($"Nemi korlátozás: {session.Plan.Sex?.SexName}");
-                            Console.WriteLine($"Ágazati korlátozás: {session.Plan.Branch?.BranchName}");
-                            Console.WriteLine($"Diák neme: {studentSex}");
-                            Console.WriteLine($"Diák ágazata: {studentBranch}");
-                            Console.WriteLine(
-                                $"Megjelenhet: {IsProgramAllowed(session.Plan, studentBranch, studentSex)}");
-                        }
-                    }
-                }
-            }
+            
 
             var applicationCounts = await _context.Applications
                 .AsNoTracking()

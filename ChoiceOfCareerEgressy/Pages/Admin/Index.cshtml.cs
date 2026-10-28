@@ -1,34 +1,35 @@
-﻿using ChoiceOfCareerEgressy.Persistence;
-using ChoiceOfCareerEgressy.Model;
+﻿
+using ChoiceOfCareerEgressy.Dto.UserDto.Admin.AdminDashboard;
+using ChoiceOfCareerEgressy.Model.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
 namespace ChoiceOfCareerEgressy.Pages.Admin
 {
     [Authorize(Roles = "Admin")]
     public class IndexModel : PageModel
     {
-        private readonly ChoiceOfCareerPersistence _context;
+        private readonly AdminDashboardService _dashboardService;
 
-        public IndexModel(ChoiceOfCareerPersistence context)
+        public IndexModel(AdminDashboardService dashboardService)
         {
-            _context = context;
+            _dashboardService = dashboardService;
         }
 
-        // ============================================
+        // =========================================
         // ESEMÉNYSZŰRÉS
-        // ============================================
+        // =========================================
 
         [BindProperty(SupportsGet = true, Name = "eventId")]
         public int? SelectedEventId { get; set; }
 
-        public List<EventDto> AvailableEvents { get; set; } = new();
+        public List<DashboardEventDto> AvailableEvents { get; set; }
+            = new();
 
-        // ============================================
+        // =========================================
         // STATISZTIKAI KÁRTYÁK
-        // ============================================
+        // =========================================
 
         public int StudentCount { get; set; }
 
@@ -42,40 +43,50 @@ namespace ChoiceOfCareerEgressy.Pages.Admin
 
         public int SupervisionCount { get; set; }
 
-        // ============================================
+        // =========================================
         // ÁGAZATI DIAGRAM
-        // ============================================
+        // =========================================
 
-        public List<string> BranchChartLabels { get; set; } = new();
+        public List<string> BranchChartLabels { get; set; }
+            = new();
 
-        public List<int> BranchChartValues { get; set; } = new();
+        public List<int> BranchChartValues { get; set; }
+            = new();
 
-        // ============================================
+        // =========================================
         // KIHASZNÁLTSÁGI DIAGRAM
-        // ============================================
+        // =========================================
 
-        public List<int> CapacityChartValues { get; set; } = new();
+        public List<int> CapacityChartValues { get; set; }
+            = new();
 
-        // ============================================
+        // =========================================
         // JELENTKEZÉSI DIAGRAM
-        // ============================================
+        // =========================================
 
-        public List<string> TrendChartLabels { get; set; } = new();
+        public List<string> TrendChartLabels { get; set; }
+            = new();
 
-        public List<int> TrendChartValues { get; set; } = new();
+        public List<int> TrendChartValues { get; set; }
+            = new();
 
-        // ============================================
-        // RÉSZLETES STATISZTIKÁK
-        // ============================================
+        // =========================================
+        // NÉPSZERŰ PROGRAMOK
+        // =========================================
 
-        public List<PopularProgramDto> PopularPrograms { get; set; } = new();
+        public List<PopularProgramDto> PopularPrograms { get; set; }
+            = new();
 
-        public List<GradeStatisticDto> GradeStatistics { get; set; } = new();
+        // =========================================
+        // OSZTÁLYOK AKTIVITÁSA
+        // =========================================
 
+        public List<GradeStatisticDto> GradeStatistics { get; set; }
+            = new();
 
-        // ============================================
+        // =========================================
         // OLDAL BETÖLTÉSE
-        // ============================================
+        // =========================================
 
         public async Task OnGetAsync()
         {
@@ -91,34 +102,19 @@ namespace ChoiceOfCareerEgressy.Pages.Admin
 
             await LoadPopularProgramsAsync();
 
-            await LoadGradeStatisticsAsync();
+            await LoadGradeActivityAsync();
         }
 
-
-        // ============================================
-        // ESEMÉNYEK BETÖLTÉSE
-        // ============================================
+        // =========================================
+        // 1. ESEMÉNYEK BETÖLTÉSE
+        // =========================================
 
         private async Task LoadEventsAsync()
         {
-            var events = await _context.Events
-                .AsNoTracking()
-                .Select(e => new
-                {
-                    e.EventId,
-                    e.EventName,
-                    e.EventDate
-                })
-                .ToListAsync();
+            AvailableEvents =
+                await _dashboardService.GetAvailableEventsAsync();
 
-            AvailableEvents = events
-                .OrderByDescending(e => e.EventDate)
-                .Select(e => new EventDto
-                {
-                    EventId = e.EventId,
-                    EventName = e.EventName
-                })
-                .ToList();
+            // Nem létező esemény kiválasztásának kezelése
 
             if (SelectedEventId.HasValue &&
                 !AvailableEvents.Any(e =>
@@ -128,370 +124,189 @@ namespace ChoiceOfCareerEgressy.Pages.Admin
             }
         }
 
-
-        // ============================================
-        // STATISZTIKAI KÁRTYÁK
-        // ============================================
+        // =========================================
+        // 2. STATISZTIKAI KÁRTYÁK BETÖLTÉSE
+        // =========================================
 
         private async Task LoadStatisticsAsync()
         {
-            StudentCount = await _context.Users
-                .CountAsync(u => u.Role == RoleChoice.Student);
+            DashboardStatisticsDto statistics =
+                await _dashboardService.GetStatisticsAsync(
+                    SelectedEventId);
 
-            TeacherCount = await _context.Users
-                .CountAsync(u => u.Role == RoleChoice.Teacher);
+            StudentCount = statistics.StudentCount;
 
-            EventCount = await _context.Events.CountAsync();
+            TeacherCount = statistics.TeacherCount;
 
-            var sessions = _context.PlanSessions
-                .AsNoTracking()
-                .AsQueryable();
+            ProgramCount = statistics.ProgramCount;
 
-            var applications = _context.Applications
-                .AsNoTracking()
-                .Where(a => a.Status == ApplicationStatus.Active);
+            ApplicationCount = statistics.ApplicationCount;
 
-            var supervisions = _context.Supervisions
-                .AsNoTracking()
-                .AsQueryable();
+            EventCount = statistics.EventCount;
 
-            if (SelectedEventId.HasValue)
-            {
-                int eventId = SelectedEventId.Value;
-
-                sessions = sessions.Where(s =>
-                    s.TimeSlot.EventId == eventId);
-
-                applications = applications.Where(a =>
-                    a.PlanSession.TimeSlot.EventId == eventId);
-
-                supervisions = supervisions.Where(s =>
-                    (s.PlanSessionId != null &&
-                     s.PlanSession!.TimeSlot.EventId == eventId)
-                    ||
-                    (s.SupervisionPlaceId != null &&
-                     s.SupervisionPlace!.TimeSlot.EventId == eventId));
-            }
-
-            if (SelectedEventId.HasValue)
-            {
-                ProgramCount = await sessions
-                    .Select(s => s.PlanId)
-                    .Distinct()
-                    .CountAsync();
-            }
-            else
-            {
-                ProgramCount = await _context.Plans.CountAsync();
-            }
-
-            ApplicationCount = await applications.CountAsync();
-
-            SupervisionCount = await supervisions.CountAsync();
+            SupervisionCount = statistics.SupervisionCount;
         }
 
-
-        // ============================================
-        // JELENTKEZÉSEK ÁGAZATONKÉNT
-        // ============================================
+        // =========================================
+        // 3. ÁGAZATI DIAGRAM BETÖLTÉSE
+        // =========================================
 
         private async Task LoadBranchChartAsync()
         {
-            var applications = _context.Applications
-                .AsNoTracking()
-                .Where(a =>
-                    a.Status == ApplicationStatus.Active);
+            BranchChartDto chart =
+                await _dashboardService.GetBranchChartAsync(
+                    SelectedEventId);
 
-            if (SelectedEventId.HasValue)
-            {
-                int eventId = SelectedEventId.Value;
+            BranchChartLabels = chart.Labels;
 
-                applications = applications.Where(a =>
-                    a.PlanSession.TimeSlot.EventId == eventId);
-            }
-
-            var result = await applications
-                .GroupBy(a => new
-                {
-                    a.User.BranchId,
-                    BranchName = a.User.Branch != null
-                        ? a.User.Branch.BranchName
-                        : "Nincs ágazat"
-                })
-                .Select(g => new
-                {
-                    Name = g.Key.BranchName,
-                    Count = g.Count()
-                })
-                .OrderByDescending(x => x.Count)
-                .ToListAsync();
-
-            BranchChartLabels = result
-                .Select(x => x.Name)
-                .ToList();
-
-            BranchChartValues = result
-                .Select(x => x.Count)
-                .ToList();
+            BranchChartValues = chart.Values;
         }
 
-
-        // ============================================
-        // PROGRAMALKALMAK KIHASZNÁLTSÁGA
-        // ============================================
+        // =========================================
+        // 4. KIHASZNÁLTSÁGI DIAGRAM BETÖLTÉSE
+        // =========================================
 
         private async Task LoadCapacityChartAsync()
         {
-            var sessions = _context.PlanSessions
-                .AsNoTracking()
-                .AsQueryable();
-
-            if (SelectedEventId.HasValue)
-            {
-                int eventId = SelectedEventId.Value;
-
-                sessions = sessions.Where(s =>
-                    s.TimeSlot.EventId == eventId);
-            }
-
-            var result = await sessions
-                .Select(s => new
-                {
-                    s.Capacity,
-
-                    ApplicationCount = s.Applications
-                        .Count(a =>
-                            a.Status == ApplicationStatus.Active)
-                })
-                .ToListAsync();
-
-            int full = 0;
-            int partial = 0;
-            int empty = 0;
-
-            foreach (var session in result)
-            {
-                if (session.ApplicationCount == 0)
-                {
-                    empty++;
-                }
-                else if (session.Capacity <= 0 ||
-                         session.ApplicationCount >= session.Capacity)
-                {
-                    full++;
-                }
-                else
-                {
-                    partial++;
-                }
-            }
+            CapacityChartDto chart =
+                await _dashboardService.GetCapacityChartAsync(
+                    SelectedEventId);
 
             CapacityChartValues = new List<int>
             {
-                full,
-                partial,
-                empty
+                chart.Full,
+                chart.Partial,
+                chart.Empty
             };
         }
 
-
-        // ============================================
-        // JELENTKEZÉSEK IDŐBELI ALAKULÁSA
-        // ============================================
+        // =========================================
+        // 5. JELENTKEZÉSEK IDŐBELI ALAKULÁSA
+        // =========================================
 
         private async Task LoadApplicationTrendAsync()
         {
-            var applications = _context.Applications
-                .AsNoTracking()
-                .Where(a =>
-                    a.Status == ApplicationStatus.Active);
+            ApplicationTrendChartDto chart =
+                await _dashboardService.GetApplicationTrendAsync(
+                    SelectedEventId);
 
-            if (SelectedEventId.HasValue)
-            {
-                int eventId = SelectedEventId.Value;
+            TrendChartLabels = chart.Labels;
 
-                applications = applications.Where(a =>
-                    a.PlanSession.TimeSlot.EventId == eventId);
-            }
-
-            var dates = await applications
-                .Select(a => a.ApplicationDate)
-                .ToListAsync();
-
-            var result = dates
-                .GroupBy(d => d.Date)
-                .Select(g => new
-                {
-                    Date = g.Key,
-                    Count = g.Count()
-                })
-                .OrderBy(x => x.Date)
-                .ToList();
-
-            TrendChartLabels = result
-                .Select(x => x.Date.ToString("yyyy.MM.dd"))
-                .ToList();
-
-            TrendChartValues = result
-                .Select(x => x.Count)
-                .ToList();
+            TrendChartValues = chart.Values;
         }
 
-
-        // ============================================
-        // LEGNÉPSZERŰBB PROGRAMALKALMAK
-        // ============================================
+        // =========================================
+        // 6. LEGNÉPSZERŰBB PROGRAMOK
+        // =========================================
 
         private async Task LoadPopularProgramsAsync()
         {
-            var sessions = _context.PlanSessions
-                .AsNoTracking()
-                .AsQueryable();
+            PopularProgramsChartDto chart =
+                await _dashboardService.GetPopularProgramsAsync(
+                    SelectedEventId);
 
-            if (SelectedEventId.HasValue)
-            {
-                int eventId = SelectedEventId.Value;
-
-                sessions = sessions.Where(s =>
-                    s.TimeSlot.EventId == eventId);
-            }
-
-            var result = await sessions
-                .Select(s => new
-                {
-                    Name = s.Plan.PlanName,
-                    s.Capacity,
-
-                    ApplicationCount = s.Applications
-                        .Count(a =>
-                            a.Status == ApplicationStatus.Active)
-                })
-                .OrderByDescending(s => s.ApplicationCount)
-                .ThenBy(s => s.Name)
-                .Take(10)
-                .ToListAsync();
-
-            PopularPrograms = result
-                .Select(s => new PopularProgramDto
-                {
-                    Name = s.Name,
-
-                    Capacity = s.Capacity,
-
-                    ApplicationCount = s.ApplicationCount,
-
-                    OccupancyPercent = s.Capacity > 0
-                        ? (double)s.ApplicationCount / s.Capacity * 100
-                        : 0
-                })
-                .ToList();
+            PopularPrograms = chart.Programs;
         }
 
+        // =========================================
+        // 7. OSZTÁLYOK AKTIVITÁSA
+        // =========================================
 
-        // ============================================
+        private async Task LoadGradeActivityAsync()
+        {
+            GradeActivityChartDto chart =
+                await _dashboardService.GetGradeActivityAsync(
+                    SelectedEventId);
+
+            GradeStatistics = chart.Grades;
+        }
+
+        // =========================================
+        // KÜLÖN LEKÉRDEZÉSEK DIAGRAMONKÉNT
+        // =========================================
+
+        // -----------------------------------------
+        // STATISZTIKAI KÁRTYÁK
+        // GET: /Admin?handler=Statistics
+        // -----------------------------------------
+
+        public async Task<IActionResult> OnGetStatisticsAsync()
+        {
+            var result =
+                await _dashboardService.GetStatisticsAsync(
+                    SelectedEventId);
+
+            return new JsonResult(result);
+        }
+
+        // -----------------------------------------
+        // ÁGAZATI DIAGRAM
+        // GET: /Admin?handler=BranchChart
+        // -----------------------------------------
+
+        public async Task<IActionResult> OnGetBranchChartAsync()
+        {
+            var result =
+                await _dashboardService.GetBranchChartAsync(
+                    SelectedEventId);
+
+            return new JsonResult(result);
+        }
+
+        // -----------------------------------------
+        // KIHASZNÁLTSÁGI DIAGRAM
+        // GET: /Admin?handler=CapacityChart
+        // -----------------------------------------
+
+        public async Task<IActionResult> OnGetCapacityChartAsync()
+        {
+            var result =
+                await _dashboardService.GetCapacityChartAsync(
+                    SelectedEventId);
+
+            return new JsonResult(result);
+        }
+
+        // -----------------------------------------
+        // JELENTKEZÉSI DIAGRAM
+        // GET: /Admin?handler=ApplicationTrend
+        // -----------------------------------------
+
+        public async Task<IActionResult> OnGetApplicationTrendAsync()
+        {
+            var result =
+                await _dashboardService.GetApplicationTrendAsync(
+                    SelectedEventId);
+
+            return new JsonResult(result);
+        }
+
+        // -----------------------------------------
+        // LEGNÉPSZERŰBB PROGRAMOK
+        // GET: /Admin?handler=PopularPrograms
+        // -----------------------------------------
+
+        public async Task<IActionResult> OnGetPopularProgramsAsync()
+        {
+            var result =
+                await _dashboardService.GetPopularProgramsAsync(
+                    SelectedEventId);
+
+            return new JsonResult(result);
+        }
+
+        // -----------------------------------------
         // OSZTÁLYOK AKTIVITÁSA
-        // ============================================
+        // GET: /Admin?handler=GradeActivity
+        // -----------------------------------------
 
-        private async Task LoadGradeStatisticsAsync()
+        public async Task<IActionResult> OnGetGradeActivityAsync()
         {
-            var students = await _context.Users
-                .AsNoTracking()
-                .Where(u =>
-                    u.Role == RoleChoice.Student &&
-                    u.GradeId != null)
-                .Select(u => new
-                {
-                    u.UserId,
-                    u.GradeId,
-                    GradeName = u.Grade!.GradeName
-                })
-                .ToListAsync();
+            var result =
+                await _dashboardService.GetGradeActivityAsync(
+                    SelectedEventId);
 
-            var applications = _context.Applications
-                .AsNoTracking()
-                .Where(a =>
-                    a.Status == ApplicationStatus.Active &&
-                    a.User.Role == RoleChoice.Student);
-
-            if (SelectedEventId.HasValue)
-            {
-                int eventId = SelectedEventId.Value;
-
-                applications = applications.Where(a =>
-                    a.PlanSession.TimeSlot.EventId == eventId);
-            }
-
-            var activeStudentIds = await applications
-                .Select(a => a.UserId)
-                .Distinct()
-                .ToListAsync();
-
-            var activeStudentSet = activeStudentIds.ToHashSet();
-
-            GradeStatistics = students
-                .GroupBy(s => new
-                {
-                    s.GradeId,
-                    s.GradeName
-                })
-                .Select(g =>
-                {
-                    int studentCount = g.Count();
-
-                    int activeCount = g.Count(s =>
-                        activeStudentSet.Contains(s.UserId));
-
-                    return new GradeStatisticDto
-                    {
-                        GradeName = g.Key.GradeName,
-
-                        StudentCount = studentCount,
-
-                        ActiveStudentCount = activeCount,
-
-                        ActivityPercent = studentCount > 0
-                            ? (double)activeCount / studentCount * 100
-                            : 0
-                    };
-                })
-                .OrderBy(g => g.GradeName)
-                .ToList();
-        }
-
-
-        // ============================================
-        // DTO OSZTÁLYOK
-        // ============================================
-
-        public class EventDto
-        {
-            public int EventId { get; set; }
-
-            public string EventName { get; set; } = string.Empty;
-        }
-
-
-        public class PopularProgramDto
-        {
-            public string Name { get; set; } = string.Empty;
-
-            public int ApplicationCount { get; set; }
-
-            public int Capacity { get; set; }
-
-            public double OccupancyPercent { get; set; }
-        }
-
-
-        public class GradeStatisticDto
-        {
-            public string GradeName { get; set; } = string.Empty;
-
-            public int StudentCount { get; set; }
-
-            public int ActiveStudentCount { get; set; }
-
-            public double ActivityPercent { get; set; }
+            return new JsonResult(result);
         }
     }
 }

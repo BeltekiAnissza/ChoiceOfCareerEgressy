@@ -1,5 +1,7 @@
+using ChoiceOfCareerEgressy.Dto.ProgramDto;
+using ChoiceOfCareerEgressy.Dto.ProgramDto.AdminPrograms;
+using ChoiceOfCareerEgressy.Dto.UserDto;
 using ChoiceOfCareerEgressy.Model.Admin;
-using ChoiceOfCareerEgressy.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,12 +12,10 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
     [Authorize(Roles = "Admin")]
     public class IndexModel : PageModel
     {
-        private readonly ChoiceOfCareerPersistence _context;
         private readonly EventService _eventService;
 
-        public IndexModel(ChoiceOfCareerPersistence context, EventService eventService)
+        public IndexModel(EventService eventService)
         {
-            _context = context;
             _eventService = eventService;
         }
 
@@ -23,7 +23,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
         // ESEMÉNYEK LISTÁJA
         // =========================================
 
-        public List<Event> Events { get; set; } = new();
+        public List<EventListItemDto> Events { get; set; } = new();
 
         // =========================================
         // ÁTNEVEZÉSHEZ SZÜKSÉGES ADATOK
@@ -51,16 +51,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
 
         public async Task OnGetAsync()
         {
-            Events = await _context.Events
-                .AsNoTracking()
-                .ToListAsync();
-
-            // SQLite esetén a DateTimeOffset szerinti
-            // rendezést memóriában végezzük.
-
-            Events = Events
-                .OrderByDescending(e => e.EventDate)
-                .ToList();
+            Events = await _eventService.GetAllAsync();
         }
 
         // =========================================
@@ -73,7 +64,8 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
             {
                 await _eventService.RenameAsync(
                     EventId,
-                    NewEventName);
+                    NewEventName
+                );
 
                 SuccessMessage =
                     "Az esemény nevét sikeresen módosítottuk.";
@@ -94,15 +86,15 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
         // ESEMÉNY TÖRLÉSE
         // =========================================
 
-        public async Task<IActionResult> OnPostDeleteAsync(
-            int eventId)
+        public async Task<IActionResult> OnPostDeleteAsync(int eventId)
         {
             try
             {
                 await _eventService.DeleteAsync(eventId);
 
                 SuccessMessage =
-                    "Az eseményt és a hozzá tartozó adatokat sikeresen töröltük.";
+                    "Az eseményt és a hozzá tartozó adatokat " +
+                    "sikeresen töröltük.";
             }
             catch (KeyNotFoundException ex)
             {
@@ -111,7 +103,8 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
             catch (DbUpdateException)
             {
                 ErrorMessage =
-                    "Az esemény törlése adatbázis-hiba miatt nem sikerült.";
+                    "Az esemény törlése adatbázis-hiba " +
+                    "miatt nem sikerült.";
             }
 
             return RedirectToPage();
@@ -127,7 +120,8 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
             {
                 await _eventService.SetRegistrationEnabledAsync(
                     eventId,
-                    isEnabled);
+                    isEnabled
+                );
 
                 SuccessMessage = isEnabled
                     ? "A jelentkezést sikeresen elindítottuk."

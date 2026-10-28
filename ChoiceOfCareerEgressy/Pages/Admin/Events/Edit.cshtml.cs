@@ -1,10 +1,8 @@
 ﻿using ChoiceOfCareerEgressy.Dto.ProgramDto;
 using ChoiceOfCareerEgressy.Model.Admin;
-using ChoiceOfCareerEgressy.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 
@@ -13,14 +11,10 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
     [Authorize(Roles = "Admin")]
     public class EditModel : PageModel
     {
-        private readonly ChoiceOfCareerPersistence _context;
         private readonly EventService _eventService;
 
-        public EditModel(
-            ChoiceOfCareerPersistence context,
-            EventService eventService)
+        public EditModel(EventService eventService)
         {
-            _context = context;
             _eventService = eventService;
         }
 
@@ -48,11 +42,13 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
 
         [BindProperty]
         [Required(ErrorMessage = "A jelentkezés kezdő dátuma kötelező.")]
-        public string RegistrationStartDateText { get; set; } = string.Empty;
+        public string RegistrationStartDateText { get; set; }
+            = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "A jelentkezés záró dátuma kötelező.")]
-        public string RegistrationEndDateText { get; set; } = string.Empty;
+        public string RegistrationEndDateText { get; set; }
+            = string.Empty;
 
         // =========================================
         // JELENTKEZÉSI IDŐPONTOK
@@ -60,18 +56,21 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
 
         [BindProperty]
         [Required(ErrorMessage = "A jelentkezés kezdő időpontja kötelező.")]
-        public string RegistrationStartTime { get; set; } = string.Empty;
+        public string RegistrationStartTime { get; set; }
+            = string.Empty;
 
         [BindProperty]
         [Required(ErrorMessage = "A jelentkezés záró időpontja kötelező.")]
-        public string RegistrationEndTime { get; set; } = string.Empty;
+        public string RegistrationEndTime { get; set; }
+            = string.Empty;
 
         // =========================================
         // IDŐSÁVOK
         // =========================================
 
         [BindProperty]
-        public List<EditTimeSlotInput> TimeSlots { get; set; } = new();
+        public List<EditTimeSlotInput> TimeSlots { get; set; }
+            = new();
 
         public class EditTimeSlotInput
         {
@@ -81,16 +80,16 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
             public int TimeSlotId { get; set; }
 
             [Required(ErrorMessage = "Az idősáv neve kötelező.")]
-            public string TimeSlotName { get; set; } = string.Empty;
+            public string TimeSlotName { get; set; }
+                = string.Empty;
 
             [Required(ErrorMessage = "Az idősáv kezdete kötelező.")]
-            public string StartTime { get; set; } = string.Empty;
+            public string StartTime { get; set; }
+                = string.Empty;
 
             [Required(ErrorMessage = "Az idősáv vége kötelező.")]
-            public string EndTime { get; set; } = string.Empty;
-
-            // A felületen jelezzük,
-            // ha egy idősáv már használatban van.
+            public string EndTime { get; set; }
+                = string.Empty;
 
             public bool IsProtected { get; set; }
         }
@@ -100,6 +99,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
         // =========================================
 
         private const string DateFormat = "yyyy/MM/dd";
+
         private const string TimeFormat = @"hh\:mm";
 
         // =========================================
@@ -107,9 +107,11 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
         // =========================================
 
         private static readonly TimeZoneInfo HungarianTimeZone =
-            TimeZoneInfo.FindSystemTimeZoneById("Europe/Budapest");
+            TimeZoneInfo.FindSystemTimeZoneById(
+                "Europe/Budapest");
 
-        private static DateTime ToHungarianLocal(DateTimeOffset value)
+        private static DateTime ToHungarianLocal(
+            DateTimeOffset value)
         {
             return TimeZoneInfo
                 .ConvertTime(value, HungarianTimeZone)
@@ -153,10 +155,8 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            var existingEvent = await _context.Events
-                .AsNoTracking()
-                .Include(e => e.TimeSlots)
-                .FirstOrDefaultAsync(e => e.EventId == id);
+            var existingEvent =
+                await _eventService.GetEditDetailsAsync(id);
 
             if (existingEvent == null)
             {
@@ -169,7 +169,8 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
             // ESEMÉNY ADATAI
             // =====================================
 
-            EventInput.EventName = existingEvent.EventName;
+            EventInput.EventName =
+                existingEvent.EventName;
 
             EventInput.IsRegistrationEnabled =
                 existingEvent.IsRegistrationEnabled;
@@ -187,10 +188,9 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
             var registrationEnd =
                 ToHungarianLocal(existingEvent.RegistrationEnd);
 
-            EventDateText =
-                eventDate.ToString(
-                    DateFormat,
-                    CultureInfo.InvariantCulture);
+            EventDateText = eventDate.ToString(
+                DateFormat,
+                CultureInfo.InvariantCulture);
 
             RegistrationStartDateText =
                 registrationStart.ToString(
@@ -209,32 +209,6 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
                 registrationEnd.ToString("HH:mm");
 
             // =====================================
-            // HASZNÁLT IDŐSÁVOK LEKÉRÉSE
-            // =====================================
-
-            var slotIds = existingEvent.TimeSlots
-                .Select(s => s.TimeSlotId)
-                .ToList();
-
-            var planSlotIds = await _context.PlanSessions
-                .AsNoTracking()
-                .Where(ps => slotIds.Contains(ps.TimeSlotId))
-                .Select(ps => ps.TimeSlotId)
-                .Distinct()
-                .ToListAsync();
-
-            var supervisionSlotIds = await _context.SupervisionPlaces
-                .AsNoTracking()
-                .Where(sp => slotIds.Contains(sp.TimeSlotId))
-                .Select(sp => sp.TimeSlotId)
-                .Distinct()
-                .ToListAsync();
-
-            var protectedSlotIds = planSlotIds
-                .Concat(supervisionSlotIds)
-                .ToHashSet();
-
-            // =====================================
             // IDŐSÁVOK BETÖLTÉSE
             // =====================================
 
@@ -242,17 +216,23 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
                 .OrderBy(s => s.BeginDate)
                 .Select(s =>
                 {
-                    var begin = ToHungarianLocal(s.BeginDate);
-                    var end = ToHungarianLocal(s.EndDate);
+                    var begin =
+                        ToHungarianLocal(s.BeginDate);
+
+                    var end =
+                        ToHungarianLocal(s.EndDate);
 
                     return new EditTimeSlotInput
                     {
                         TimeSlotId = s.TimeSlotId,
+
                         TimeSlotName = s.TimeSlotName,
+
                         StartTime = begin.ToString("HH:mm"),
+
                         EndTime = end.ToString("HH:mm"),
-                        IsProtected =
-                            protectedSlotIds.Contains(s.TimeSlotId)
+
+                        IsProtected = s.IsProtected
                     };
                 })
                 .ToList();
@@ -284,10 +264,10 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
                 return BadRequest();
             }
 
-            bool eventExists = await _context.Events
-                .AnyAsync(e => e.EventId == EventId);
+            var existingEvent =
+                await _eventService.GetEditDetailsAsync(EventId);
 
-            if (!eventExists)
+            if (existingEvent == null)
             {
                 return NotFound();
             }
@@ -297,7 +277,9 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
             // =====================================
 
             bool eventDateValid =
-                TryParseDate(EventDateText, out var eventDate);
+                TryParseDate(
+                    EventDateText,
+                    out var eventDate);
 
             bool registrationStartDateValid =
                 TryParseDate(
@@ -373,9 +355,11 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
             // IDŐSÁVOK FELDOLGOZÁSA
             // =====================================
 
-            var parsedSlots = new List<CreateTimeSlotDto>();
+            var parsedSlots =
+                new List<CreateTimeSlotDto>();
 
-            var existingSlotIds = new Dictionary<int, int>();
+            var existingSlotIds =
+                new Dictionary<int, int>();
 
             if (TimeSlots != null)
             {
@@ -392,26 +376,36 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
                         continue;
                     }
 
+                    // =================================
                     // MEGLÉVŐ IDŐSÁV AZONOSÍTÓJA
+                    // =================================
 
                     if (slot.TimeSlotId > 0)
                     {
-                        existingSlotIds[i] = slot.TimeSlotId;
+                        existingSlotIds[i] =
+                            slot.TimeSlotId;
                     }
 
+                    // =================================
                     // NÉV
+                    // =================================
 
-                    if (string.IsNullOrWhiteSpace(slot.TimeSlotName))
+                    if (string.IsNullOrWhiteSpace(
+                        slot.TimeSlotName))
                     {
                         ModelState.AddModelError(
                             $"TimeSlots[{i}].TimeSlotName",
                             "Az idősáv neve kötelező.");
                     }
 
+                    // =================================
                     // KEZDÉS
+                    // =================================
 
                     bool startValid =
-                        TryParseTime(slot.StartTime, out var startTime);
+                        TryParseTime(
+                            slot.StartTime,
+                            out var startTime);
 
                     if (!startValid)
                     {
@@ -420,10 +414,14 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
                             "Hibás kezdési időpont. Példa: 08:00.");
                     }
 
+                    // =================================
                     // BEFEJEZÉS
+                    // =================================
 
                     bool endValid =
-                        TryParseTime(slot.EndTime, out var endTime);
+                        TryParseTime(
+                            slot.EndTime,
+                            out var endTime);
 
                     if (!endValid)
                     {
@@ -432,19 +430,24 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
                             "Hibás befejezési időpont. Példa: 10:00.");
                     }
 
-                    if (!eventDateValid || !startValid || !endValid)
+                    if (!eventDateValid ||
+                        !startValid ||
+                        !endValid)
                     {
                         continue;
                     }
 
                     parsedSlots.Add(new CreateTimeSlotDto
                     {
-                        TimeSlotName = slot.TimeSlotName?.Trim()
+                        TimeSlotName =
+                            slot.TimeSlotName?.Trim()
                             ?? string.Empty,
 
-                        BeginDate = eventDate.Add(startTime),
+                        BeginDate =
+                            eventDate.Add(startTime),
 
-                        EndDate = eventDate.Add(endTime)
+                        EndDate =
+                            eventDate.Add(endTime)
                     });
                 }
             }
@@ -467,10 +470,12 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
             EventInput.EventDate = eventDate;
 
             EventInput.RegistrationStart =
-                registrationStartDate.Add(registrationStartTime);
+                registrationStartDate.Add(
+                    registrationStartTime);
 
             EventInput.RegistrationEnd =
-                registrationEndDate.Add(registrationEndTime);
+                registrationEndDate.Add(
+                    registrationEndTime);
 
             EventInput.TimeSlots = parsedSlots;
 
@@ -488,15 +493,24 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
                 TempData["SuccessMessage"] =
                     "Az esemény adatai sikeresen módosítva.";
 
-                return RedirectToPage("/Admin/Events/Index");
+                return RedirectToPage(
+                    "/Admin/Events/Index");
             }
             catch (ArgumentException ex)
             {
-                ModelState.AddModelError("", ex.Message);
+                ModelState.AddModelError(
+                    "",
+                    ex.Message);
             }
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError(
+                    "",
+                    ex.Message);
             }
 
             await RefreshProtectedSlotsAsync();
@@ -510,39 +524,30 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Events
 
         private async Task RefreshProtectedSlotsAsync()
         {
-            if (TimeSlots == null || TimeSlots.Count == 0)
+            if (TimeSlots == null ||
+                TimeSlots.Count == 0)
             {
                 return;
             }
 
             var slotIds = TimeSlots
-                .Where(s => s.TimeSlotId > 0)
+                .Where(s => s != null && s.TimeSlotId > 0)
                 .Select(s => s.TimeSlotId)
                 .Distinct()
                 .ToList();
 
-            var planSlotIds = await _context.PlanSessions
-                .AsNoTracking()
-                .Where(ps => slotIds.Contains(ps.TimeSlotId))
-                .Select(ps => ps.TimeSlotId)
-                .Distinct()
-                .ToListAsync();
-
-            var supervisionSlotIds = await _context.SupervisionPlaces
-                .AsNoTracking()
-                .Where(sp => slotIds.Contains(sp.TimeSlotId))
-                .Select(sp => sp.TimeSlotId)
-                .Distinct()
-                .ToListAsync();
-
-            var protectedIds = planSlotIds
-                .Concat(supervisionSlotIds)
-                .ToHashSet();
+            var protectedIds =
+                await _eventService
+                    .GetProtectedTimeSlotIdsAsync(slotIds);
 
             foreach (var slot in TimeSlots)
             {
-                slot.IsProtected =
-                    protectedIds.Contains(slot.TimeSlotId);
+                if (slot != null)
+                {
+                    slot.IsProtected =
+                        protectedIds.Contains(
+                            slot.TimeSlotId);
+                }
             }
         }
     }

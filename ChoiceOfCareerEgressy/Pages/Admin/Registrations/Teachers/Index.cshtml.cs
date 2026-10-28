@@ -1,4 +1,4 @@
-using ChoiceOfCareerEgressy.Dto.ProgramDto.TeacherPrograms;
+Ôªøusing ChoiceOfCareerEgressy.Dto.ProgramDto.TeacherPrograms;
 using ChoiceOfCareerEgressy.Model.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,20 +18,61 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations.Teachers
             _service = service;
         }
 
+        // =========================================
+        // ADATOK
+        // =========================================
+
         public AdminTeacherSupervisionPageDto Data { get; set; } = new();
 
         [BindProperty]
         public AdminSetTeacherSupervisionDto Change { get; set; } = new();
 
+        // =========================================
+        // MEGJELEN√çT√âSI M√ìD
+        // =========================================
+
+        public string ViewMode { get; set; } = "teachers";
+
+        // =========================================
+        // KERES√âSI FELT√âTELEK
+        // =========================================
+
+        [BindProperty(SupportsGet = true)]
+        public int? PlanSessionId { get; set; }
+
+        // =========================================
+        // VISSZAJELZ√âSEK
+        // =========================================
+
         public string? ErrorMessage { get; set; }
 
-        public async Task OnGetAsync(int? eventId)
+        // =========================================
+        // OLDAL BET√ñLT√âSE
+        // =========================================
+
+        public async Task OnGetAsync(int? eventId, int? planSessionId, string? viewMode)
         {
-            Data = await _service.GetPageAsync(eventId);
+            ViewMode = viewMode == "programs" ? "programs" : "teachers";
+
+            PlanSessionId = planSessionId;
+
+            Data = await _service.GetPageAsync(
+                eventId,
+                planSessionId);
         }
 
-        public async Task<IActionResult> OnPostSaveAsync()
+        // =========================================
+        // FEL√úGYELET MENT√âSE
+        // =========================================
+
+        public async Task<IActionResult> OnPostSaveAsync(int? planSessionId, string? viewMode)
         {
+            ViewMode = viewMode == "programs"
+                ? "programs"
+                : "teachers";
+
+            PlanSessionId = planSessionId;
+
             try
             {
                 await _service.SetAsync(Change);
@@ -41,38 +82,52 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations.Teachers
                     return new JsonResult(new
                     {
                         success = true,
-                        message = "A tan·r fel¸gyeleti jelentkezÈsÈt sikeresen mentetted."
+                        message = "A tan√°r fel√ºgyeleti jelentkez√©s√©t sikeresen mentetted."
                     });
                 }
 
                 TempData["Success"] =
-                    "A tan·r fel¸gyeleti jelentkezÈsÈt sikeresen mentetted.";
+                    "A tan√°r fel√ºgyeleti jelentkez√©s√©t sikeresen mentetted.";
 
-                return RedirectToPage(new { eventId = Change.EventId });
+                return RedirectToPage(new
+                {
+                    eventId = Change.EventId,
+                    planSessionId,
+                    viewMode = ViewMode
+                });
             }
             catch (InvalidOperationException ex)
             {
-                return await HandleErrorAsync(ex.Message, Change.EventId);
+                return await HandleErrorAsync(
+                    ex.Message,
+                    Change.EventId);
             }
             catch (DbUpdateException)
             {
                 return await HandleErrorAsync(
-                    "A mentÈs nem siker¸lt.",
+                    "A ment√©s nem siker√ºlt.",
                     Change.EventId);
             }
             catch (SqliteException)
             {
                 return await HandleErrorAsync(
-                    "Az adatb·zis foglalt. PrÛb·ld ˙jra.",
+                    "Az adatb√°zis foglalt. Pr√≥b√°ld √∫jra.",
                     Change.EventId);
             }
         }
 
-        public async Task<IActionResult> OnPostDeleteAsync(
-            int teacherId,
-            int supervisionId,
-            int eventId)
+        // =========================================
+        // FEL√úGYELET T√ñRL√âSE
+        // =========================================
+
+        public async Task<IActionResult> OnPostDeleteAsync(int teacherId, int supervisionId, int eventId, int? planSessionId, string? viewMode)
         {
+            ViewMode = viewMode == "programs"
+                ? "programs"
+                : "teachers";
+
+            PlanSessionId = planSessionId;
+
             try
             {
                 await _service.DeleteAsync(
@@ -85,41 +140,54 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations.Teachers
                     return new JsonResult(new
                     {
                         success = true,
-                        message = "A fel¸gyeleti jelentkezÈst tˆrˆlted."
+                        message = "A fel√ºgyeleti jelentkez√©st t√∂r√∂lted."
                     });
                 }
 
                 TempData["Success"] =
-                    "A fel¸gyeleti jelentkezÈst tˆrˆlted.";
+                    "A fel√ºgyeleti jelentkez√©st t√∂r√∂lted.";
 
-                return RedirectToPage(new { eventId });
+                return RedirectToPage(new
+                {
+                    eventId,
+                    planSessionId,
+                    viewMode = ViewMode
+                });
             }
             catch (InvalidOperationException ex)
             {
-                return await HandleErrorAsync(ex.Message, eventId);
+                return await HandleErrorAsync(
+                    ex.Message,
+                    eventId);
             }
             catch (DbUpdateException)
             {
                 return await HandleErrorAsync(
-                    "A tˆrlÈs nem siker¸lt.",
+                    "A t√∂rl√©s nem siker√ºlt.",
                     eventId);
             }
             catch (SqliteException)
             {
                 return await HandleErrorAsync(
-                    "Az adatb·zis foglalt. PrÛb·ld ˙jra.",
+                    "Az adatb√°zis foglalt. Pr√≥b√°ld √∫jra.",
                     eventId);
             }
         }
+
+        // =========================================
+        // AJAX ELLEN≈êRZ√âSE
+        // =========================================
 
         private bool IsAjaxRequest()
         {
             return Request.Headers["X-Requested-With"] == "XMLHttpRequest";
         }
 
-        private async Task<IActionResult> HandleErrorAsync(
-            string message,
-            int eventId)
+        // =========================================
+        // HIBAKEZEL√âS
+        // =========================================
+
+        private async Task<IActionResult> HandleErrorAsync(string message, int eventId)
         {
             if (IsAjaxRequest())
             {
@@ -134,6 +202,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Registrations.Teachers
             }
 
             ErrorMessage = message;
+
             Data = await _service.GetPageAsync(eventId);
 
             return Page();

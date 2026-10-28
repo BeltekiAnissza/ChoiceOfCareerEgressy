@@ -25,10 +25,12 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
         public List<AdminProgramListDto> Programs { get; set; } = new();
 
         // =========================================
-        // ESEMÉNYEK
+        // ESEMÉNYEK ÉS IDŐSÁVOK
         // =========================================
 
         public List<AdminProgramOptionDto> Events { get; set; } = new();
+
+        public List<AdminTimeSlotOptionDto> TimeSlots { get; set; } = new();
 
         // =========================================
         // KERESÉSI FELTÉTELEK
@@ -39,6 +41,9 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
 
         [BindProperty(SupportsGet = true)]
         public int? EventId { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? TimeSlotId { get; set; }
 
         // =========================================
         // VISSZAJELZÉSEK
@@ -57,19 +62,30 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
             SuccessMessage = TempData["SuccessMessage"] as string;
             ErrorMessage = TempData["ErrorMessage"] as string;
 
+            // =========================================
+            // ESEMÉNYEK ÉS IDŐSÁVOK BETÖLTÉSE
+            // =========================================
+
             var options = await _service.GetOptionsAsync();
 
             Events = options.Events;
+            TimeSlots = options.TimeSlots;
+
+            // =========================================
+            // ALAPÉRTELMEZETT ESEMÉNY KIVÁLASZTÁSA
+            // =========================================
 
             // Ha nincs kiválasztott esemény,
             // automatikusan az elsőt választjuk.
-            // A szolgáltatás az eseményeket
-            // dátum szerint csökkenő sorrendben adja vissza.
 
             if (!EventId.HasValue && Events.Any())
             {
                 EventId = Events.First().Id;
             }
+
+            // =========================================
+            // ESEMÉNY ELLENŐRZÉSE
+            // =========================================
 
             // Csak létező eseményt engedünk.
 
@@ -81,14 +97,54 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
                 ErrorMessage = "A kiválasztott esemény nem található.";
             }
 
-            // Csak a kiválasztott esemény
-            // programjait töltjük be.
+            // =========================================
+            // IDŐSÁVOK SZŰRÉSE ESEMÉNY ALAPJÁN
+            // =========================================
+
+            if (EventId.HasValue)
+            {
+                // Kizárólag a kiválasztott eseményhez
+                // tartozó idősávokat jelenítjük meg.
+
+                TimeSlots = TimeSlots
+                    .Where(t => t.EventId == EventId.Value)
+                    .OrderBy(t => t.BeginDate)
+                    .ToList();
+
+                // =========================================
+                // KIVÁLASZTOTT IDŐSÁV ELLENŐRZÉSE
+                // =========================================
+
+                // Ha a kiválasztott idősáv nem tartozik
+                // az aktuális eseményhez, megszüntetjük
+                // az idősáv szerinti szűrést.
+
+                if (TimeSlotId.HasValue &&
+                    !TimeSlots.Any(t =>
+                        t.TimeSlotId == TimeSlotId.Value))
+                {
+                    TimeSlotId = null;
+                }
+            }
+            else
+            {
+                // Ha nincs érvényes esemény,
+                // nem jelenítünk meg idősávokat.
+
+                TimeSlots.Clear();
+                TimeSlotId = null;
+            }
+
+            // =========================================
+            // PROGRAMOK BETÖLTÉSE
+            // =========================================
 
             if (EventId.HasValue)
             {
                 Programs = (await _service.GetProgramsAsync(
-                    EventId,
-                    Search))
+                    eventId: EventId,
+                    search: Search,
+                    timeSlotId: TimeSlotId))
                     .OrderBy(p => p.PlanName)
                     .ThenBy(p => p.BeginDate)
                     .ToList();
@@ -99,8 +155,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Programs
         // ÖSSZES PROGRAM TÖRLÉSE
         // =========================================
 
-        public async Task<IActionResult> OnPostDeleteAllAsync(
-            int eventId)
+        public async Task<IActionResult> OnPostDeleteAllAsync(int eventId)
         {
             if (eventId <= 0)
             {

@@ -1,18 +1,69 @@
 @page
 @model ChoiceOfCareerEgressy.Pages.Teacher.RenameGradeModel
+
 @{
     ViewData["Title"] = "Osztályom átnevezése";
 }
+
 <h1>Osztályom átnevezése</h1>
-<p>Jelenlegi osztály: <strong>@Model.CurrentGradeName</strong></p>
-@if (Model.ErrorMessage != null) { <div class="alert alert-danger">@Model.ErrorMessage</div> }
-<form method="post" class="card p-3" style="max-width: 540px">
-    <input asp-for="Rename.GradeId" type="hidden" />
-    <label asp-for="Rename.NewGradeName" class="form-label">Új osztálynév</label>
-    <input asp-for="Rename.NewGradeName" class="form-control" maxlength="100" required placeholder="Például: 13.I" />
-    <span asp-validation-for="Rename.NewGradeName" class="text-danger"></span>
-    <div class="d-flex gap-2 mt-3">
-        <button type="submit" class="btn btn-primary">Átnevezés</button>
-        <a asp-page="/Teacher/Homeroom" class="btn btn-outline-secondary">Mégse</a>
+
+<p>
+    Jelenlegi osztály:
+    <strong>@Model.CurrentGradeName</strong>
+</p>
+
+@if (Model.ErrorMessage != null)
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
     </div>
+}
+
+<form method="post"
+      class="card p-3"
+      style="max-width: 540px">
+
+    <input asp-for="Rename.GradeId"
+           type="hidden" />
+
+    <label asp-for="Rename.NewGradeName"
+           class="form-label">
+        Új osztálynév
+    </label>
+
+    <input asp-for="Rename.NewGradeName"
+           class="form-control grade-name-validation"
+           maxlength="5"
+           required
+           placeholder="Például: 13.I" />
+
+    <span asp-validation-for="Rename.NewGradeName"
+          class="text-danger">
+    </span>
+
+    <div class="form-text">
+        Az osztálynév 9–14. évfolyammal kezdődhet,
+        amelyet pont és legfeljebb 2 karakter követhet.
+        Például: 9.E, 10.K, 13.I, 12.ES.
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+
+        <button type="submit"
+                class="btn btn-primary">
+            Átnevezés
+        </button>
+
+        <a asp-page="/Teacher/Homeroom"
+           class="btn btn-outline-secondary">
+            Mégse
+        </a>
+
+    </div>
+
 </form>
+
+@section Scripts {
+    <script src="~/js/grade-validation.js"
+            asp-append-version="true"></script>
+}

@@ -1,4 +1,5 @@
 ﻿using ChoiceOfCareerEgressy.Dto.ProgramDto;
+using ChoiceOfCareerEgressy.Dto.UserDto;
 using ChoiceOfCareerEgressy.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -713,6 +714,153 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             await _context.SaveChangesAsync();
 
             await transaction.CommitAsync();
+        }
+
+        // =========================================
+        // ESEMÉNYEK LISTÁZÁSA
+        // =========================================
+
+        public async Task<List<EventListItemDto>> GetAllAsync()
+        {
+            var events = await _context.Events
+                .AsNoTracking()
+                .Select(e => new EventListItemDto
+                {
+                    EventId = e.EventId,
+                    EventName = e.EventName,
+                    EventDate = e.EventDate,
+                    RegistrationStart = e.RegistrationStart,
+                    RegistrationEnd = e.RegistrationEnd,
+                    IsRegistrationEnabled = e.IsRegistrationEnabled
+                })
+                .ToListAsync();
+
+            return events
+                .OrderByDescending(e => e.EventDate)
+                .ToList();
+        }
+
+        // =========================================
+        // EGY ESEMÉNY RÉSZLETEINEK LEKÉRDEZÉSE
+        // =========================================
+
+        public async Task<EventDetailsDto?> GetByIdAsync(int eventId)
+        {
+            var eventData = await _context.Events
+                .AsNoTracking()
+                .Where(e => e.EventId == eventId)
+                .Select(e => new EventDetailsDto
+                {
+                    EventId = e.EventId,
+                    EventName = e.EventName,
+                    EventDate = e.EventDate,
+                    RegistrationStart = e.RegistrationStart,
+                    RegistrationEnd = e.RegistrationEnd,
+                    IsRegistrationEnabled = e.IsRegistrationEnabled,
+
+                    TimeSlots = e.TimeSlots
+                        .Select(t => new EventTimeSlotDto
+                        {
+                            TimeSlotId = t.TimeSlotId,
+                            TimeSlotName = t.TimeSlotName,
+                            BeginDate = t.BeginDate,
+                            EndDate = t.EndDate
+                        })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (eventData == null)
+            {
+                return null;
+            }
+
+            eventData.TimeSlots = eventData.TimeSlots
+                .OrderBy(t => t.BeginDate)
+                .ToList();
+
+            return eventData;
+        }
+
+        // =========================================
+        // ESEMÉNY SZERKESZTÉSI ADATAINAK LEKÉRÉSE
+        // =========================================
+
+        public async Task<EventEditDetailsDto?> GetEditDetailsAsync(int eventId)
+        {
+            var existingEvent = await _context.Events
+                .AsNoTracking()
+                .Include(e => e.TimeSlots)
+                .FirstOrDefaultAsync(e => e.EventId == eventId);
+
+            if (existingEvent == null)
+            {
+                return null;
+            }
+
+            var slotIds = existingEvent.TimeSlots
+                .Select(s => s.TimeSlotId)
+                .ToList();
+
+            var protectedIds = await GetProtectedTimeSlotIdsAsync(slotIds);
+
+            return new EventEditDetailsDto
+            {
+                EventId = existingEvent.EventId,
+                EventName = existingEvent.EventName,
+                EventDate = existingEvent.EventDate,
+                RegistrationStart = existingEvent.RegistrationStart,
+                RegistrationEnd = existingEvent.RegistrationEnd,
+                IsRegistrationEnabled = existingEvent.IsRegistrationEnabled,
+
+                TimeSlots = existingEvent.TimeSlots
+                    .OrderBy(s => s.BeginDate)
+                    .Select(s => new EventEditTimeSlotDto
+                    {
+                        TimeSlotId = s.TimeSlotId,
+                        TimeSlotName = s.TimeSlotName,
+                        BeginDate = s.BeginDate,
+                        EndDate = s.EndDate,
+                        IsProtected = protectedIds.Contains(s.TimeSlotId)
+                    })
+                    .ToList()
+            };
+        }
+
+        // =========================================
+        // VÉDETT IDŐSÁVOK AZONOSÍTÓI
+        // =========================================
+
+        public async Task<HashSet<int>> GetProtectedTimeSlotIdsAsync(
+            IEnumerable<int> timeSlotIds)
+        {
+            var ids = timeSlotIds
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
+            if (ids.Count == 0)
+            {
+                return new HashSet<int>();
+            }
+
+            var planSlotIds = await _context.PlanSessions
+                .AsNoTracking()
+                .Where(ps => ids.Contains(ps.TimeSlotId))
+                .Select(ps => ps.TimeSlotId)
+                .Distinct()
+                .ToListAsync();
+
+            var supervisionSlotIds = await _context.SupervisionPlaces
+                .AsNoTracking()
+                .Where(sp => ids.Contains(sp.TimeSlotId))
+                .Select(sp => sp.TimeSlotId)
+                .Distinct()
+                .ToListAsync();
+
+            return planSlotIds
+                .Concat(supervisionSlotIds)
+                .ToHashSet();
         }
     }
 }

@@ -72,3 +72,24 @@
         margin-top: 8px;
     }
 }
+.student-program-card {
+    display: block;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.student-program-card:hover {
+    border-color: #6f42c1 !important;
+    background-color: rgba(111, 66, 193, 0.05);
+}
+
+.student-program-card:has(.student-program-radio:checked) {
+    border-color: #6f42c1 !important;
+    background-color: rgba(111, 66, 193, 0.12);
+    box-shadow: 0 0 0 1px #6f42c1;
+}
+
+.student-program-card:has(.student-program-radio:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

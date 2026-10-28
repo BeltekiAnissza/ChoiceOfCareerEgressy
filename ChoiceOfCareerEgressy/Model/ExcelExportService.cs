@@ -1,5 +1,7 @@
-using ClosedXML.Excel;
+
+using ChoiceOfCareerEgressy.Dto.UserDto;
 using ChoiceOfCareerEgressy.Persistence;
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Text;
@@ -14,6 +16,143 @@ public class ExcelExportService
     public ExcelExportService(ChoiceOfCareerPersistence db)
     {
         _db = db;
+    }
+
+    // =====================================================
+    // ADMIN EXPORTÁLÁSI LEHETŐSÉGEK LEKÉRDEZÉSE
+    // =====================================================
+
+    public async Task<ExcelExportOptionsDto> GetExportOptionsAsync()
+    {
+        // Események
+
+        var events = await _db.Events
+            .AsNoTracking()
+            .Select(e => new
+            {
+                e.EventId,
+                e.EventName,
+                e.EventDate
+            })
+            .ToListAsync();
+
+        // Osztályok
+
+        var grades = await _db.Grades
+            .AsNoTracking()
+            .OrderBy(g => g.GradeName)
+            .Select(g => new ExportGradeOptionDto(
+                g.GradeId,
+                g.GradeName))
+            .ToListAsync();
+
+        // Programok
+
+        var plans = await _db.PlanSessions
+            .AsNoTracking()
+            .Select(s => new
+            {
+                s.PlanId,
+                s.Plan.PlanName
+            })
+            .Distinct()
+            .OrderBy(s => s.PlanName)
+            .ToListAsync();
+
+        // Programokhoz tartozó idősávok
+
+        var sessions = await _db.PlanSessions
+            .AsNoTracking()
+            .Select(s => new
+            {
+                s.PlanId,
+                s.TimeSlotId,
+                s.TimeSlot.EventId,
+                s.TimeSlot.TimeSlotName,
+                s.TimeSlot.BeginDate
+            })
+            .Distinct()
+            .ToListAsync();
+
+        // Idősávok számozása eseményenként.
+        // SQLite DateTimeOffset rendezési probléma
+        // elkerülése érdekében memóriában rendezünk.
+
+        var slotNumbers = sessions
+            .GroupBy(s => s.EventId)
+            .SelectMany(group => group
+                .GroupBy(s => s.TimeSlotId)
+                .Select(g => g.First())
+                .OrderBy(s => s.BeginDate)
+                .ThenBy(s => s.TimeSlotId)
+                .Select((s, index) => new
+                {
+                    s.EventId,
+                    s.TimeSlotId,
+                    Number = index + 1
+                }))
+            .ToDictionary(
+                s => (s.EventId, s.TimeSlotId),
+                s => s.Number);
+
+        return new ExcelExportOptionsDto
+        {
+            Events = events
+                .OrderByDescending(e => e.EventDate)
+                .Select(e => new ExportEventOptionDto(
+                    e.EventId,
+                    e.EventName))
+                .ToList(),
+
+            Grades = grades,
+
+            Plans = plans
+                .Select(p => new ExportPlanOptionDto(
+                    p.PlanId,
+                    p.PlanName))
+                .ToList(),
+
+            TimeSlots = sessions
+                .Select(s => new ExportTimeSlotOptionDto(
+                    s.TimeSlotId,
+                    s.EventId,
+                    s.PlanId,
+                    s.TimeSlotName,
+                    slotNumbers[(s.EventId, s.TimeSlotId)]))
+                .OrderBy(s => s.EventId)
+                .ThenBy(s => s.PlanId)
+                .ThenBy(s => s.Number)
+                .ToList()
+        };
+    }
+
+    // =====================================================
+    // TANÁRI EXPORTÁLÁSI LEHETŐSÉGEK LEKÉRDEZÉSE
+    // =====================================================
+
+    public async Task<List<ExportEventOptionDto>>
+        GetMyGradeExportOptionsAsync(int teacherId)
+    {
+        // Osztályfőnöki jogosultság ellenőrzése
+
+        await GetOwnGradeIdAsync(teacherId);
+
+        var events = await _db.Events
+            .AsNoTracking()
+            .Select(e => new
+            {
+                e.EventId,
+                e.EventName,
+                e.EventDate
+            })
+            .ToListAsync();
+
+        return events
+            .OrderByDescending(e => e.EventDate)
+            .Select(e => new ExportEventOptionDto(
+                e.EventId,
+                e.EventName))
+            .ToList();
     }
 
     // =====================================================
@@ -39,7 +178,9 @@ public class ExcelExportService
     // OSZTÁLYONKÉNTI EXCEL EXPORTÁLÁS
     // =====================================================
 
-    public async Task<byte[]> ExportGradeAsync(int eventId, int gradeId)
+    public async Task<byte[]> ExportGradeAsync(
+        int eventId,
+        int gradeId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -145,13 +286,17 @@ public class ExcelExportService
     // PROGRAMONKÉNTI EXCEL EXPORTÁLÁS
     // =====================================================
 
-    public async Task<byte[]> ExportPlanAsync(int eventId, int planId, int timeSlotId, bool includeSupervisors = false)
+    public async Task<byte[]> ExportPlanAsync(
+        int eventId,
+        int planId,
+        int timeSlotId,
+        bool includeSupervisors = false)
     {
         var ev = await _db.Events
-        .AsNoTracking()
-        .FirstOrDefaultAsync(e => e.EventId == eventId)
-        ?? throw new InvalidOperationException(
-            "Az esemény nem található.");
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.EventId == eventId)
+            ?? throw new InvalidOperationException(
+                "Az esemény nem található.");
 
         var plan = await _db.Plans
             .AsNoTracking()
@@ -209,13 +354,13 @@ public class ExcelExportService
             .OrderBy(a => a.UserName)
             .Select(a => new[]
             {
-            a.UserName,
-            a.GradeName,
-            plan.PlanName,
-            a.TimeSlotName,
-            $"{a.BeginDate:yyyy.MM.dd HH:mm} – {a.EndDate:HH:mm}",
-            a.LocationName,
-            a.Status.ToString()
+                a.UserName,
+                a.GradeName,
+                plan.PlanName,
+                a.TimeSlotName,
+                $"{a.BeginDate:yyyy.MM.dd HH:mm} – {a.EndDate:HH:mm}",
+                a.LocationName,
+                a.Status.ToString()
             })
             .ToList();
 
@@ -249,13 +394,13 @@ public class ExcelExportService
                 .OrderBy(s => s.UserName)
                 .Select(s => new[]
                 {
-                s.UserName,
-                "Tanár",
-                plan.PlanName,
-                s.TimeSlotName,
-                $"{s.BeginDate:yyyy.MM.dd HH:mm} – {s.EndDate:HH:mm}",
-                s.LocationName,
-                "Felügyelő"
+                    s.UserName,
+                    "Tanár",
+                    plan.PlanName,
+                    s.TimeSlotName,
+                    $"{s.BeginDate:yyyy.MM.dd HH:mm} – {s.EndDate:HH:mm}",
+                    s.LocationName,
+                    "Felügyelő"
                 })
                 .ToList();
 
@@ -274,18 +419,18 @@ public class ExcelExportService
             $"{plan.PlanName} – {slot.TimeSlotName} – {ev.EventName}",
             new[]
             {
-            "Diák / tanár neve",
-            "Osztály",
-            "Program",
-            "Idősáv",
-            "Időpont",
-            "Helyszín",
-            "Jelentkezés állapota"
+                "Diák / tanár neve",
+                "Osztály",
+                "Program",
+                "Idősáv",
+                "Időpont",
+                "Helyszín",
+                "Jelentkezés állapota"
             },
             rows,
             supervisorCount);
     }
-    
+
     // =====================================================
     // TANÁRI FELÜGYELETI JELENTKEZÉSEK EXCEL EXPORTÁLÁSA
     // =====================================================
@@ -370,13 +515,13 @@ public class ExcelExportService
             {
                 rows.Add(new[]
                 {
-                teacher.UserName,
-                "Nincs jelentkezés",
-                "",
-                "",
-                "",
-                ""
-            });
+                    teacher.UserName,
+                    "Nincs jelentkezés",
+                    "",
+                    "",
+                    "",
+                    ""
+                });
 
                 continue;
             }
@@ -387,13 +532,13 @@ public class ExcelExportService
             {
                 rows.Add(new[]
                 {
-                teacher.UserName,
-                supervision.ProgramName,
-                supervision.Type,
-                supervision.TimeSlotName,
-                $"{supervision.BeginDate:yyyy.MM.dd HH:mm} – {supervision.EndDate:HH:mm}",
-                supervision.LocationName
-            });
+                    teacher.UserName,
+                    supervision.ProgramName,
+                    supervision.Type,
+                    supervision.TimeSlotName,
+                    $"{supervision.BeginDate:yyyy.MM.dd HH:mm} – {supervision.EndDate:HH:mm}",
+                    supervision.LocationName
+                });
             }
         }
 
@@ -403,12 +548,12 @@ public class ExcelExportService
             $"Tanári felügyeletek – {ev.EventName}",
             new[]
             {
-            "Tanár neve",
-            "Program / Felügyeleti hely",
-            "Felügyelet típusa",
-            "Idősáv",
-            "Időpont",
-            "Helyszín"
+                "Tanár neve",
+                "Program / Felügyeleti hely",
+                "Felügyelet típusa",
+                "Idősáv",
+                "Időpont",
+                "Helyszín"
             },
             rows);
     }
@@ -420,7 +565,9 @@ public class ExcelExportService
     // 2026_10i.xlsx
     // =====================================================
 
-    public async Task<string> GetGradeExportFileNameAsync(int eventId, int gradeId)
+    public async Task<string> GetGradeExportFileNameAsync(
+        int eventId,
+        int gradeId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -449,7 +596,10 @@ public class ExcelExportService
     // 2026_noi_joga_1_idosav.xlsx
     // =====================================================
 
-    public async Task<string> GetPlanExportFileNameAsync(int eventId, int planId, int timeSlotId)
+    public async Task<string> GetPlanExportFileNameAsync(
+        int eventId,
+        int planId,
+        int timeSlotId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -501,6 +651,7 @@ public class ExcelExportService
 
         return $"{year}_{planName}_{slotNumber}_idosav.xlsx";
     }
+
     // =====================================================
     // TANÁRI EXPORT FÁJLNEVE
     //
@@ -508,7 +659,8 @@ public class ExcelExportService
     // 2026_tanari_jelentkezesek.xlsx
     // =====================================================
 
-    public async Task<string> GetTeachersExportFileNameAsync(int eventId)
+    public async Task<string> GetTeachersExportFileNameAsync(
+        int eventId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -520,6 +672,7 @@ public class ExcelExportService
 
         return $"{year}_tanari_jelentkezesek.xlsx";
     }
+
     // =====================================================
     // OSZTÁLYNÉV NORMALIZÁLÁSA
     //
@@ -602,7 +755,11 @@ public class ExcelExportService
     // EXCEL MUNKAFÜZET LÉTREHOZÁSA
     // =====================================================
 
-    private static byte[] BuildWorkbook(string title, string[] headers, List<string[]> rows, int highlightedRows = 0)
+    private static byte[] BuildWorkbook(
+        string title,
+        string[] headers,
+        List<string[]> rows,
+        int highlightedRows = 0)
     {
         using var workbook = new XLWorkbook();
 
@@ -642,6 +799,7 @@ public class ExcelExportService
         }
 
         // Fejléc formázása
+
         if (highlightedRows > 0)
         {
             // Az adatok a 4. sorban kezdődnek.
