@@ -4,7 +4,7 @@
 
 
 // =====================================================
-// ESEMÉNY KIVÁLASZTÁSA
+// ESEMÉNY ÉS PROGRAM KIVÁLASZTÁSA
 // =====================================================
 
 document.addEventListener("change", function (event) {
@@ -73,6 +73,11 @@ document.addEventListener("submit", async function (event) {
     const teacherId = teacherCard
         ?.id.replace("teacher-card-", "");
 
+    const viewMode = new URL(
+        form.action,
+        window.location.origin
+    ).searchParams.get("viewMode") || "teachers";
+
     button.disabled = true;
     button.textContent = "Feldolgozás...";
 
@@ -105,8 +110,8 @@ document.addEventListener("submit", async function (event) {
 
             }
             catch {
-                // Ha a szerver nem JSON-t küldött,
-                // az alapértelmezett hibaüzenetet használjuk.
+                // Nem JSON-válasz esetén az alapértelmezett
+                // hibaüzenetet használjuk.
             }
 
             throw new Error(errorMessage);
@@ -121,10 +126,19 @@ document.addEventListener("submit", async function (event) {
         }
 
         // =================================================
-        // TANÁRI ADATOK FRISSÍTÉSE
+        // NÉZET FRISSÍTÉSE
         // =================================================
 
-        await refreshTeacherSupervisions(teacherId);
+        if (viewMode === "programs") {
+
+            await refreshProgramSupervisions();
+
+        }
+        else {
+
+            await refreshTeacherSupervisions(teacherId);
+
+        }
 
         showSupervisionMessage(
             result.message || "A művelet sikeresen befejeződött.",
@@ -144,9 +158,6 @@ document.addEventListener("submit", async function (event) {
     }
     finally {
 
-        // Ha az AJAX-frissítés során a régi gomb
-        // már kikerült a dokumentumból, ez nem okoz hibát.
-
         button.disabled = false;
         button.textContent = originalText;
 
@@ -161,30 +172,7 @@ document.addEventListener("submit", async function (event) {
 
 async function refreshTeacherSupervisions(openTeacherId) {
 
-    const url = new URL(window.location.href);
-
-    const response = await fetch(url.toString(), {
-        method: "GET",
-        credentials: "same-origin",
-        headers: {
-            "X-Requested-With": "XMLHttpRequest"
-        }
-    });
-
-    if (!response.ok) {
-        throw new Error(
-            "A frissített adatok betöltése nem sikerült."
-        );
-    }
-
-    const html = await response.text();
-
-    const parser = new DOMParser();
-
-    const newDocument = parser.parseFromString(
-        html,
-        "text/html"
-    );
+    const newDocument = await fetchUpdatedPage();
 
     const newAccordion =
         newDocument.getElementById("teachersAccordion");
@@ -221,8 +209,6 @@ async function refreshTeacherSupervisions(openTeacherId) {
         return;
     }
 
-    // A tanár paneljét animáció nélkül nyitjuk vissza.
-
     collapseElement.classList.add("show");
 
     const headerButton =
@@ -239,6 +225,91 @@ async function refreshTeacherSupervisions(openTeacherId) {
         );
 
     }
+
+}
+
+
+// =====================================================
+// PROGRAM ADATAINAK FRISSÍTÉSE
+// =====================================================
+
+async function refreshProgramSupervisions() {
+
+    const newDocument = await fetchUpdatedPage();
+
+    const newProgramContainer =
+        newDocument.getElementById("programSupervisions");
+
+    const currentProgramContainer =
+        document.getElementById("programSupervisions");
+
+    if (!newProgramContainer || !currentProgramContainer) {
+        throw new Error(
+            "A program felügyeleti adatai nem találhatók."
+        );
+    }
+
+    // =================================================
+    // PROGRAM ADATAINAK ÉS FELÜGYELŐINEK FRISSÍTÉSE
+    // =================================================
+
+    currentProgramContainer.innerHTML =
+        newProgramContainer.innerHTML;
+
+    // =================================================
+    // PROGRAMVÁLASZTÓ FRISSÍTÉSE
+    // =================================================
+
+    const newProgramSelect =
+        newDocument.querySelector(
+            'select[name="planSessionId"]'
+        );
+
+    const currentProgramSelect =
+        document.querySelector(
+            'select[name="planSessionId"]'
+        );
+
+    if (newProgramSelect && currentProgramSelect) {
+
+        currentProgramSelect.innerHTML =
+            newProgramSelect.innerHTML;
+
+    }
+
+}
+
+
+// =====================================================
+// FRISSÍTETT OLDAL LEKÉRÉSE
+// =====================================================
+
+async function fetchUpdatedPage() {
+
+    const url = new URL(window.location.href);
+
+    const response = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "same-origin",
+        headers: {
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(
+            "A frissített adatok betöltése nem sikerült."
+        );
+    }
+
+    const html = await response.text();
+
+    const parser = new DOMParser();
+
+    return parser.parseFromString(
+        html,
+        "text/html"
+    );
 
 }
 

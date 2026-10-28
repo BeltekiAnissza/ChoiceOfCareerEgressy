@@ -231,5 +231,54 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Exports
                 return Page();
             }
         }
+        // =========================================
+        // 4. ÖSSZES DIÁK EXPORTÁLÁSA
+        // GET: ?handler=AllStudents
+        // =========================================
+
+        public async Task<IActionResult> OnGetAllStudentsAsync(int eventId)
+        {
+            // =====================================
+            // PARAMÉTEREK ELLENŐRZÉSE
+            // =====================================
+
+            if (eventId <= 0)
+            {
+                return BadRequest(
+                    "Válassz ki egy eseményt.");
+            }
+
+            // =====================================
+            // EXCEL EXPORTÁLÁSA
+            // =====================================
+
+            try
+            {
+                var bytes = await _export.ExportAllStudentsAsync(
+                    eventId);
+
+                var fileName =
+                    await _export.GetAllStudentsExportFileNameAsync(
+                        eventId);
+
+                return File(
+                    bytes,
+                    ExcelContentType,
+                    fileName);
+            }
+
+            // =====================================
+            // HIBAKEZELÉS
+            // =====================================
+
+            catch (InvalidOperationException ex)
+            {
+                ErrorMessage = ex.Message;
+
+                await LoadOptionsAsync();
+
+                return Page();
+            }
+        }
     }
 }

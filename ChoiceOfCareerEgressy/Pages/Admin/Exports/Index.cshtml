@@ -32,7 +32,79 @@
 }
 
 <div class="row g-3">
+    <!-- ========================================= -->
+    <!-- ÖSSZES DIÁK EXPORTÁLÁSA                  -->
+    <!-- ========================================= -->
 
+    <div class="col-12 col-lg-6">
+
+        <section class="card p-3 h-100">
+
+            <h2 class="h5">Összes diák jelentkezései</h2>
+
+            <p class="text-muted">
+                A kiválasztott esemény összes diákjának
+                exportálása egyetlen Excel-fájlba.
+
+                Az osztályok külön munkalapokon jelennek meg,
+                a diákok neve mellett az idősávonként
+                kiválasztott programokkal.
+
+                A jelentkezés nélküli diákok is szerepelnek
+                az Excelben.
+            </p>
+
+            <form method="get"
+                  asp-page="/Admin/Exports/Index"
+                  class="d-grid gap-3">
+
+                <input type="hidden"
+                       name="handler"
+                       value="AllStudents" />
+
+                <div>
+
+                    <label class="form-label"
+                           for="allStudentsEventId">
+
+                        Esemény
+
+                    </label>
+
+                    <select id="allStudentsEventId"
+                            name="eventId"
+                            class="form-select"
+                            required>
+
+                        <option value="">
+                            Válassz eseményt
+                        </option>
+
+                        @foreach (var ev in Model.Events)
+                        {
+                            <option value="@ev.Id">
+                                @ev.Name
+                            </option>
+                        }
+
+                    </select>
+
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary">
+
+                    <i class="bi bi-file-earmark-excel me-1"></i>
+
+                    Összes diák Excel letöltése
+
+                </button>
+
+            </form>
+
+        </section>
+
+    </div>
     <!-- ========================================= -->
     <!-- OSZTÁLY EXPORT                           -->
     <!-- ========================================= -->

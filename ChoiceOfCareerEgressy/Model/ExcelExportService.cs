@@ -172,15 +172,280 @@ public class ExcelExportService
         return gradeId
             ?? throw new UnauthorizedAccessException(
                 "Nem vagy osztályfőnök.");
+    }// =====================================================
+     // ÖSSZES DIÁK JELENTKEZÉSEINEK EXPORTÁLÁSA
+     // OSZTÁLYONKÉNT KÜLÖN MUNKALAPRA
+     // =====================================================
+
+    public async Task<byte[]> ExportAllStudentsAsync(int eventId)
+    {
+        // =========================================
+        // ESEMÉNY LEKÉRDEZÉSE
+        // =========================================
+
+        var ev = await _db.Events
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.EventId == eventId)
+            ?? throw new InvalidOperationException(
+                "Az esemény nem található.");
+
+        // =========================================
+        // DIÁKOK LEKÉRDEZÉSE
+        // =========================================
+
+        var students = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.Role == RoleChoice.Student)
+            .Select(u => new
+            {
+                u.UserId,
+                u.UserName,
+                GradeName = u.Grade != null
+                    ? u.Grade.GradeName
+                    : "Nincs osztály"
+            })
+            .ToListAsync();
+
+        // =========================================
+        // ESEMÉNY IDŐSÁVJAI
+        // =========================================
+
+        var slots = await _db.TimeSlots
+            .AsNoTracking()
+            .Where(t => t.EventId == eventId)
+            .Select(t => new
+            {
+                t.TimeSlotId,
+                t.TimeSlotName,
+                t.BeginDate,
+                t.EndDate
+            })
+            .ToListAsync();
+
+        // SQLite miatt memóriában rendezzük a dátumokat.
+
+        var orderedSlots = slots
+            .OrderBy(t => t.BeginDate)
+            .ThenBy(t => t.TimeSlotId)
+            .ToList();
+
+        // =========================================
+        // JELENTKEZÉSEK LEKÉRDEZÉSE
+        // =========================================
+
+        var applications = await _db.Applications
+            .AsNoTracking()
+            .Where(a =>
+                a.PlanSession.TimeSlot.EventId == eventId)
+            .Select(a => new
+            {
+                a.UserId,
+                a.PlanSession.TimeSlotId,
+                a.PlanSession.Plan.PlanName,
+                a.Status
+            })
+            .ToListAsync();
+
+        // Csak az aktív jelentkezések számítanak.
+        // Az állapotot nem írjuk ki az Excelbe.
+
+        var activeApplications = applications
+            .Where(a => a.Status.ToString() == "Active")
+            .ToList();
+
+        // =========================================
+        // EXCEL MUNKAFÜZET LÉTREHOZÁSA
+        // =========================================
+
+        using var workbook = new XLWorkbook();
+
+        var studentGroups = students
+            .GroupBy(s => s.GradeName)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        var usedSheetNames = new HashSet<string>(
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in studentGroups)
+        {
+            // Excel munkalapnevek:
+            // maximum 31 karakter, tiltott karakterek nélkül.
+
+            var baseSheetName = Regex.Replace(
+                group.Key,
+                @"[\[\]:*?/\\]",
+                "_");
+
+            baseSheetName = baseSheetName
+                .Trim(' ', '\'');
+
+            if (string.IsNullOrWhiteSpace(baseSheetName))
+            {
+                baseSheetName = "Osztály";
+            }
+
+            baseSheetName = baseSheetName.Length > 31
+                ? baseSheetName[..31]
+                : baseSheetName;
+
+            var sheetName = baseSheetName;
+            var suffix = 2;
+
+            while (!usedSheetNames.Add(sheetName))
+            {
+                var ending = $"_{suffix++}";
+
+                sheetName =
+                    baseSheetName[
+                        ..Math.Min(
+                            baseSheetName.Length,
+                            31 - ending.Length)]
+                    + ending;
+            }
+
+            var ws = workbook.Worksheets.Add(sheetName);
+
+            // =====================================
+            // CÍM
+            // =====================================
+
+            int columnCount = 2 + orderedSlots.Count;
+
+            ws.Cell(1, 1).Value = ev.EventName;
+
+            ws.Range(1, 1, 1, columnCount).Merge();
+
+            ws.Cell(1, 1).Style.Font.Bold = true;
+            ws.Cell(1, 1).Style.Font.FontSize = 16;
+
+            ws.Cell(2, 1).Value = $"Osztály: {group.Key}";
+
+            // =====================================
+            // FEJLÉCEK
+            // =====================================
+
+            ws.Cell(4, 1).Value = "Diák neve";
+            ws.Cell(4, 2).Value = "Osztály";
+
+            for (int i = 0; i < orderedSlots.Count; i++)
+            {
+                var slot = orderedSlots[i];
+
+                ws.Cell(4, i + 3).Value =
+                    $"{i + 1}. idősáv – {slot.BeginDate:HH:mm}–{slot.EndDate:HH:mm}";
+            }
+
+            var header = ws.Range(
+                4, 1, 4, columnCount);
+
+            header.Style.Font.Bold = true;
+
+            header.Style.Fill.BackgroundColor =
+                XLColor.FromHtml("#E9E5F7");
+
+            // =====================================
+            // DIÁKOK ÉS PROGRAMJAIK
+            // =====================================
+
+            int row = 5;
+
+            foreach (var student in group.OrderBy(s => s.UserName))
+            {
+                ws.Cell(row, 1).Value = student.UserName;
+                ws.Cell(row, 2).Value = student.GradeName;
+
+                var ownApplications = activeApplications
+                    .Where(a => a.UserId == student.UserId)
+                    .ToList();
+
+                for (int i = 0; i < orderedSlots.Count; i++)
+                {
+                    var slot = orderedSlots[i];
+
+                    var application = ownApplications
+                        .FirstOrDefault(a =>
+                            a.TimeSlotId == slot.TimeSlotId);
+
+                    ws.Cell(row, i + 3).Value =
+                        application?.PlanName
+                        ?? "Nincs jelentkezés";
+                }
+
+                row++;
+            }
+
+            // =====================================
+            // FORMÁZÁS
+            // =====================================
+
+            ws.Range(
+                4,
+                1,
+                Math.Max(4, row - 1),
+                columnCount)
+                .SetAutoFilter();
+
+            ws.SheetView.FreezeRows(4);
+
+            ws.Columns().AdjustToContents();
+
+            foreach (var column in ws.ColumnsUsed())
+            {
+                if (column.Width > 55)
+                {
+                    column.Width = 55;
+                }
+            }
+        }
+
+        // Ha még nincs diák az adatbázisban,
+        // akkor is érvényes Excel-fájlt készítünk.
+
+        if (workbook.Worksheets.Count == 0)
+        {
+            var ws = workbook.Worksheets.Add("Diákok");
+
+            ws.Cell(1, 1).Value = ev.EventName;
+            ws.Cell(3, 1).Value = "Nincs diák az adatbázisban.";
+        }
+
+        // =========================================
+        // EXCEL MENTÉSE
+        // =========================================
+
+        using var stream = new MemoryStream();
+
+        workbook.SaveAs(stream);
+
+        return stream.ToArray();
+    }
+
+
+    // =====================================================
+    // ÖSSZES DIÁK EXPORT FÁJLNEVE
+    // =====================================================
+
+    public async Task<string> GetAllStudentsExportFileNameAsync(  int eventId)
+    {
+        var ev = await _db.Events
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.EventId == eventId)
+            ?? throw new InvalidOperationException(
+                "Az esemény nem található.");
+
+        // A meglévő normalizáló metódust használjuk.
+
+        var fileName = NormalizeFileName(ev.EventName);
+
+        return $"{fileName}.xlsx";
     }
 
     // =====================================================
     // OSZTÁLYONKÉNTI EXCEL EXPORTÁLÁS
     // =====================================================
 
-    public async Task<byte[]> ExportGradeAsync(
-        int eventId,
-        int gradeId)
+    public async Task<byte[]> ExportGradeAsync(  int eventId, int gradeId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -286,11 +551,7 @@ public class ExcelExportService
     // PROGRAMONKÉNTI EXCEL EXPORTÁLÁS
     // =====================================================
 
-    public async Task<byte[]> ExportPlanAsync(
-        int eventId,
-        int planId,
-        int timeSlotId,
-        bool includeSupervisors = false)
+    public async Task<byte[]> ExportPlanAsync(  int eventId,  int planId,  int timeSlotId,  bool includeSupervisors = false)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -565,9 +826,7 @@ public class ExcelExportService
     // 2026_10i.xlsx
     // =====================================================
 
-    public async Task<string> GetGradeExportFileNameAsync(
-        int eventId,
-        int gradeId)
+    public async Task<string> GetGradeExportFileNameAsync(  int eventId,   int gradeId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -596,10 +855,7 @@ public class ExcelExportService
     // 2026_noi_joga_1_idosav.xlsx
     // =====================================================
 
-    public async Task<string> GetPlanExportFileNameAsync(
-        int eventId,
-        int planId,
-        int timeSlotId)
+    public async Task<string> GetPlanExportFileNameAsync(  int eventId,  int planId, int timeSlotId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -659,8 +915,7 @@ public class ExcelExportService
     // 2026_tanari_jelentkezesek.xlsx
     // =====================================================
 
-    public async Task<string> GetTeachersExportFileNameAsync(
-        int eventId)
+    public async Task<string> GetTeachersExportFileNameAsync(  int eventId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -755,11 +1010,7 @@ public class ExcelExportService
     // EXCEL MUNKAFÜZET LÉTREHOZÁSA
     // =====================================================
 
-    private static byte[] BuildWorkbook(
-        string title,
-        string[] headers,
-        List<string[]> rows,
-        int highlightedRows = 0)
+    private static byte[] BuildWorkbook(   string title,  string[] headers,  List<string[]> rows, int highlightedRows = 0)
     {
         using var workbook = new XLWorkbook();
 
