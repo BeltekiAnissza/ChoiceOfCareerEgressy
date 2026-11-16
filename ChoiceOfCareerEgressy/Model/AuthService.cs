@@ -1,4 +1,5 @@
-﻿using ChoiceOfCareerEgressy.Dto.UserDto;
+﻿using ChoiceOfCareerEgressy.Model.Security;
+using ChoiceOfCareerEgressy.Dto.UserDto;
 using ChoiceOfCareerEgressy.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -11,13 +12,15 @@ namespace ChoiceOfCareerEgressy.Model
     {
         private readonly ChoiceOfCareerPersistence _context;
         private readonly PasswordService _passwordService;
+        private readonly PersonalDataCrypto _crypto;
 
         public AuthService(
             ChoiceOfCareerPersistence context,
-            PasswordService passwordService)
+            PasswordService passwordService, PersonalDataCrypto crypto)
         {
             _context = context;
             _passwordService = passwordService;
+            _crypto = crypto;
         }
 
         public async Task<LoggedInUserDto?> LoginAsync(LoginDto login)
@@ -25,7 +28,7 @@ namespace ChoiceOfCareerEgressy.Model
             var email = login.EmailAddress.Trim().ToLowerInvariant();
 
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.EmailAddress.ToLower() == email);
+                .FirstOrDefaultAsync(u => u.EmailSearchHash == _crypto.EmailLookup(email));
 
             if (user == null)
                 return null;

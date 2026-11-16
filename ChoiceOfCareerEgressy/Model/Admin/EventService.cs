@@ -146,9 +146,9 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             // JELENTKEZÉSI IDŐSZAK ELLENŐRZÉSE
             // =====================================
 
-            var firstSlotStart = timeSlots.First().BeginDate;
+            var firstSlotStart = timeSlots.Min(x => x.BeginDate);
 
-            if (registrationEnd > firstSlotStart)
+            if (registrationEnd.ToUniversalTime() >= firstSlotStart.ToUniversalTime())
             {
                 throw new ArgumentException(
                     "A jelentkezési időszaknak az esemény " +

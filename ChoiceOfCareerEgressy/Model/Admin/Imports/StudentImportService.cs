@@ -1,4 +1,5 @@
-﻿using ChoiceOfCareerEgressy.Dto.UserDto.Student;
+﻿using ChoiceOfCareerEgressy.Model.Security;
+using ChoiceOfCareerEgressy.Dto.UserDto.Student;
 using ChoiceOfCareerEgressy.Persistence;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
@@ -12,12 +13,14 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
     {
         private readonly ChoiceOfCareerPersistence _context;
         private readonly PasswordService _passwordService;
+        private readonly PersonalDataCrypto _crypto;
         private readonly ILogger<StudentImportService> _logger;
 
-        public StudentImportService(ChoiceOfCareerPersistence context, PasswordService passwordService, ILogger<StudentImportService> logger)
+        public StudentImportService(ChoiceOfCareerPersistence context, PasswordService passwordService, ILogger<StudentImportService> logger, PersonalDataCrypto crypto)
         {
             _context = context;
             _passwordService = passwordService;
+            _crypto = crypto;
             _logger = logger;
         }
 
@@ -198,7 +201,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
 
             var existingEmails = (await _context.Users
                 .AsNoTracking()
-                .Select(u => u.EmailAddress)
+                .Select(u => u.EmailSearchHash)
                 .ToListAsync())
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -263,7 +266,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                 // DUPLIKÁLT EMAIL ELLENŐRZÉSE
                 // =========================================
 
-                if (!existingEmails.Add(student.EmailAddress))
+                if (!existingEmails.Add(_crypto.EmailLookup(student.EmailAddress)))
                 {
                     result.SkippedCount++;
 
@@ -346,6 +349,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                 {
                     UserName = student.UserName,
                     EmailAddress = student.EmailAddress,
+                    OmIdentifierHash = _crypto.OmLookup(student.OmIdentifier),
                     PasswordHash = "",
                     Role = RoleChoice.Student,
                     MustChangePassword = true,

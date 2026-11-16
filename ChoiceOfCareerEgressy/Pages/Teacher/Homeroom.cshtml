@@ -120,28 +120,29 @@
 
                                             <h5>@slot.TimeSlotName</h5>
 
-                                            @if (current != null)
-                                            {
-                                                <p>
-                                                    <strong>@current.PlanName</strong>
+                                            <div class="homeroom-current-application">
+                                                @if (current != null)
+                                                {
+                                                    <p>
+                                                        <strong>@current.PlanName</strong>
+                                                        <span class="text-muted">
+                                                            – @current.LocationName
+                                                        </span>
+                                                    </p>
 
-                                                    <span class="text-muted">
-                                                        – @current.LocationName
-                                                    </span>
-                                                </p>
-
-                                                <p class="small text-muted">
-                                                    @current.BeginDate.ToString("HH:mm")
-                                                    –
-                                                    @current.EndDate.ToString("HH:mm")
-                                                </p>
-                                            }
-                                            else
-                                            {
-                                                <p class="text-warning">
-                                                    Még nem jelentkezett.
-                                                </p>
-                                            }
+                                                    <p class="small text-muted">
+                                                        @current.BeginDate.ToString("HH:mm")
+                                                        –
+                                                        @current.EndDate.ToString("HH:mm")
+                                                    </p>
+                                                }
+                                                else
+                                                {
+                                                    <p class="text-warning">
+                                                        Még nem jelentkezett.
+                                                    </p>
+                                                }
+                                            </div>
 
                                             <form method="post"
                                                   asp-page-handler="Change"

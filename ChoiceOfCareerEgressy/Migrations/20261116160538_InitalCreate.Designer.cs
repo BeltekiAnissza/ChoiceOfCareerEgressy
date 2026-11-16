@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ChoiceOfCareerEgressy.Migrations
 {
     [DbContext(typeof(ChoiceOfCareerPersistence))]
-    [Migration("20261116144749_InitalCreate")]
+    [Migration("20261116160538_InitalCreate")]
     partial class InitalCreate
     {
         /// <inheritdoc />
@@ -409,14 +409,22 @@ namespace ChoiceOfCareerEgressy.Migrations
 
                     b.Property<string>("EmailAddress")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                        .HasColumnType("text");
+
+                    b.Property<string>("EmailSearchHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<int?>("GradeId")
                         .HasColumnType("integer");
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("OmIdentifierHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -430,17 +438,19 @@ namespace ChoiceOfCareerEgressy.Migrations
 
                     b.Property<string>("UserName")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
+                        .HasColumnType("text");
 
                     b.HasKey("UserId");
 
                     b.HasIndex("BranchId");
 
-                    b.HasIndex("EmailAddress")
+                    b.HasIndex("EmailSearchHash")
                         .IsUnique();
 
                     b.HasIndex("GradeId");
+
+                    b.HasIndex("OmIdentifierHash")
+                        .IsUnique();
 
                     b.HasIndex("SexId");
 

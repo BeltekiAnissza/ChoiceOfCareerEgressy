@@ -1,4 +1,5 @@
-﻿using ChoiceOfCareerEgressy.Dto.UserDto;
+﻿using ChoiceOfCareerEgressy.Model.Security;
+using ChoiceOfCareerEgressy.Dto.UserDto;
 using ChoiceOfCareerEgressy.Dto.UserDto.Admin;
 using ChoiceOfCareerEgressy.Dto.UserDto.Student;
 using ChoiceOfCareerEgressy.Persistence;
@@ -10,11 +11,13 @@ namespace ChoiceOfCareerEgressy.Model
     {
         private readonly ChoiceOfCareerPersistence _context;
         private readonly PasswordService _passwordService;
+        private readonly PersonalDataCrypto _crypto;
 
-        public UserService(ChoiceOfCareerPersistence context, PasswordService passwordService)
+        public UserService(ChoiceOfCareerPersistence context, PasswordService passwordService, PersonalDataCrypto crypto)
         {
             _context = context;
             _passwordService = passwordService;
+            _crypto = crypto;
         }
 
         // Összes felhasználó lekérése
@@ -209,7 +212,7 @@ namespace ChoiceOfCareerEgressy.Model
             bool emailExists = await _context.Users
                 .AnyAsync(u =>
                     u.UserId != dto.UserId &&
-                    u.EmailAddress.ToLower() == email.ToLower());
+                    u.EmailSearchHash == _crypto.EmailLookup(email));
 
             if (emailExists)
                 throw new InvalidOperationException(
@@ -277,8 +280,6 @@ namespace ChoiceOfCareerEgressy.Model
 
             var oldValue = new
             {
-                user.UserName,
-                user.EmailAddress,
                 user.SexId,
                 user.BranchId,
                 user.GradeId
@@ -363,7 +364,7 @@ namespace ChoiceOfCareerEgressy.Model
             }
 
             bool emailExists = await _context.Users.AnyAsync(u =>
-                u.EmailAddress.ToLower() == email.ToLower());
+                u.EmailSearchHash == _crypto.EmailLookup(email));
 
             if (emailExists)
             {
@@ -427,8 +428,6 @@ namespace ChoiceOfCareerEgressy.Model
                 NewValue = System.Text.Json.JsonSerializer.Serialize(
                     new
                     {
-                        user.UserName,
-                        user.EmailAddress,
                         Role = user.Role.ToString(),
                         user.SexId,
                         user.BranchId,
@@ -487,8 +486,6 @@ namespace ChoiceOfCareerEgressy.Model
             var oldValue = new
             {
                 user.UserId,
-                user.UserName,
-                user.EmailAddress,
                 Role = user.Role.ToString(),
                 user.SexId,
                 user.BranchId,
@@ -550,9 +547,8 @@ namespace ChoiceOfCareerEgressy.Model
             {
                 string searchText = search.Trim();
 
-                query = query.Where(u =>
-                    u.UserName.Contains(searchText) ||
-                    u.EmailAddress.Contains(searchText));
+                // Titkosított mezőkben SQL oldalon nem lehet részszövegre keresni.
+                // A szűrés a lekérdezés után, visszafejtett értékeken történik.
             }
 
             // =========================================
@@ -599,6 +595,7 @@ namespace ChoiceOfCareerEgressy.Model
             // 5. RENDEZÉS
             // =========================================
 
+            /* A név szerinti adatbázis-rendezés titkosított szövegen hibás eredményt ad.
             query = sort switch
             {
                 "grade_asc" => query
@@ -621,7 +618,8 @@ namespace ChoiceOfCareerEgressy.Model
             // 6. FELHASZNÁLÓK LEKÉRDEZÉSE
             // =========================================
 
-            return await query
+            */
+            var users = await query
                 .Select(u => new UserDto
                 {
                     UserId = u.UserId,
@@ -639,6 +637,24 @@ namespace ChoiceOfCareerEgressy.Model
                         ? u.Sex.SexName : null
                 })
                 .ToListAsync();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                users = users.Where(u =>
+                    u.UserName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    u.EmailAddress.Contains(term, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            return sort switch
+            {
+                "name_desc" => users.OrderByDescending(u => u.UserName).ToList(),
+                "grade_asc" => users.OrderBy(u => u.GradeName == null)
+                    .ThenBy(u => u.GradeName).ThenBy(u => u.UserName).ToList(),
+                "grade_desc" => users.OrderBy(u => u.GradeName == null)
+                    .ThenByDescending(u => u.GradeName).ThenBy(u => u.UserName).ToList(),
+                _ => users.OrderBy(u => u.UserName).ToList()
+            };
         }
 
 

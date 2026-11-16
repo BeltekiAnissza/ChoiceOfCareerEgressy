@@ -1,4 +1,5 @@
-﻿using ChoiceOfCareerEgressy.Dto.UserDto.Teacher;
+﻿using ChoiceOfCareerEgressy.Model.Security;
+using ChoiceOfCareerEgressy.Dto.UserDto.Teacher;
 using ChoiceOfCareerEgressy.Persistence;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
@@ -12,15 +13,17 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
     {
         private readonly ChoiceOfCareerPersistence _context;
         private readonly PasswordService _passwordService;
+        private readonly PersonalDataCrypto _crypto;
         private readonly ILogger<TeacherImportService> _logger;
 
         public TeacherImportService(
             ChoiceOfCareerPersistence context,
             PasswordService passwordService,
-            ILogger<TeacherImportService> logger)
+            ILogger<TeacherImportService> logger, PersonalDataCrypto crypto)
         {
             _context = context;
             _passwordService = passwordService;
+            _crypto = crypto;
             _logger = logger;
         }
 
@@ -181,7 +184,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
 
             var existingEmails = (await _context.Users
                 .AsNoTracking()
-                .Select(u => u.EmailAddress)
+                .Select(u => u.EmailSearchHash)
                 .ToListAsync())
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -275,7 +278,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                 // DUPLIKÁLT EMAIL ELLENŐRZÉSE
                 // =========================================
 
-                if (existingEmails.Contains(teacher.EmailAddress))
+                if (existingEmails.Contains(_crypto.EmailLookup(teacher.EmailAddress)))
                 {
                     error =
                         "Az email-cím már szerepel az adatbázisban vagy a fájlban.";
@@ -339,6 +342,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                 {
                     UserName = teacher.UserName,
                     EmailAddress = teacher.EmailAddress,
+                    OmIdentifierHash = _crypto.OmLookup(teacher.OmIdentifier),
                     PasswordHash = "",
                     Role = RoleChoice.Teacher,
                     GradeId = grade?.GradeId,
@@ -355,7 +359,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                 // A sikeresen feldolgozott emailt
                 // azonnal hozzáadjuk a HashSet-hez.
 
-                existingEmails.Add(teacher.EmailAddress);
+                existingEmails.Add(_crypto.EmailLookup(teacher.EmailAddress));
 
                 // =========================================
                 // OSZTÁLYFŐNÖKI KAPCSOLAT ELŐKÉSZÍTÉSE

@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ChoiceOfCareerEgressy.Model.Security;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
@@ -28,13 +30,48 @@ namespace ChoiceOfCareerEgressy.Persistence
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         public DbSet<SchoolYearTransition> SchoolYearTransitions => Set<SchoolYearTransition>();
 
+        private readonly PersonalDataCrypto _crypto;
+
         public ChoiceOfCareerPersistence(
-            DbContextOptions<ChoiceOfCareerPersistence> options
-        ) : base(options) { }
+            DbContextOptions<ChoiceOfCareerPersistence> options,
+            PersonalDataCrypto crypto
+        ) : base(options) => _crypto = crypto;
+
+        private void UpdateSearchHashes()
+        {
+            foreach (var entry in ChangeTracker.Entries<User>()
+                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
+            {
+                if (string.IsNullOrWhiteSpace(entry.Entity.EmailAddress))
+                    throw new InvalidOperationException("Az e-mail-cím kötelező.");
+                entry.Entity.EmailSearchHash = _crypto.EmailLookup(entry.Entity.EmailAddress);
+            }
+        }
+
+        public override int SaveChanges()
+        {
+            UpdateSearchHashes();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            UpdateSearchHashes();
+            return base.SaveChangesAsync(cancellationToken);
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Az alkalmazásban olvasható, PostgreSQL-ben AES-GCM titkosított értékek.
+            var encrypted = new ValueConverter<string, string>(
+                value => _crypto.Encrypt(value),
+                value => _crypto.Decrypt(value));
+            modelBuilder.Entity<User>().Property(u => u.UserName)
+                .HasConversion(encrypted).HasColumnType("text");
+            modelBuilder.Entity<User>().Property(u => u.EmailAddress)
+                .HasConversion(encrypted).HasColumnType("text");
 
             // USER - GRADE
             modelBuilder.Entity<User>()
@@ -154,18 +191,23 @@ namespace ChoiceOfCareerEgressy.Persistence
     // USER
     // ======================================================
 
-    [Index(nameof(EmailAddress), IsUnique = true)]
+    [Index(nameof(EmailSearchHash), IsUnique = true)]
+    [Index(nameof(OmIdentifierHash), IsUnique = true)]
     public class User
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int UserId { get; set; }
 
-        [MaxLength(150)]
         public required string UserName { get; set; }
 
-        [MaxLength(255)]
         public required string EmailAddress { get; set; }
+
+        [MaxLength(64)]
+        public string EmailSearchHash { get; set; } = "";
+
+        [MaxLength(64)]
+        public string? OmIdentifierHash { get; set; }
 
         public RoleChoice Role { get; set; }
 

@@ -1,4 +1,5 @@
-﻿using ChoiceOfCareerEgressy.Dto.UserDto;
+﻿using ChoiceOfCareerEgressy.Model.Security;
+using ChoiceOfCareerEgressy.Dto.UserDto;
 using ChoiceOfCareerEgressy.Model;
 using ChoiceOfCareerEgressy.Model.Admin;
 using ChoiceOfCareerEgressy.Model.Admin.Imports;
@@ -45,6 +46,7 @@ builder.Services.AddDbContext<ChoiceOfCareerPersistence>(options =>
     options.UseNpgsql(connectionString)
 );
 
+builder.Services.AddSingleton<PersonalDataCrypto>();
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();

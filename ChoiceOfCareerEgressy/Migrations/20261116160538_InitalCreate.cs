@@ -252,8 +252,10 @@ namespace ChoiceOfCareerEgressy.Migrations
                 {
                     UserId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
-                    EmailAddress = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    UserName = table.Column<string>(type: "text", nullable: false),
+                    EmailAddress = table.Column<string>(type: "text", nullable: false),
+                    EmailSearchHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    OmIdentifierHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     Role = table.Column<int>(type: "integer", nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
                     MustChangePassword = table.Column<bool>(type: "boolean", nullable: false),
@@ -430,15 +432,21 @@ namespace ChoiceOfCareerEgressy.Migrations
                 column: "BranchId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_EmailAddress",
+                name: "IX_Users_EmailSearchHash",
                 table: "Users",
-                column: "EmailAddress",
+                column: "EmailSearchHash",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_GradeId",
                 table: "Users",
                 column: "GradeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_OmIdentifierHash",
+                table: "Users",
+                column: "OmIdentifierHash",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_SexId",
