@@ -25,7 +25,7 @@ namespace ChoiceOfCareerEgressy.Pages.Admin.Grades
 
         public bool SchoolYearAlreadyStarted { get; set; }
 
-        public int CurrentYear => DateTime.Now.Year;
+        public int CurrentYear => DateTime.UtcNow.Year;
 
         [BindProperty]
         public GradeCreateDto Create { get; set; } = new();

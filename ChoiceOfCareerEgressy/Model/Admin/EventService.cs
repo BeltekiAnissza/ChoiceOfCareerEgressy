@@ -33,9 +33,20 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                 local, zone.GetUtcOffset(local));
         }
 
-        // =========================================
-        // ESEMÉNY LÉTREHOZÁSA
-        // =========================================
+        private static readonly TimeZoneInfo HungarianZone =
+            TimeZoneInfo.FindSystemTimeZoneById("Europe/Budapest");
+
+        // A webes űrlap DateTime értékei magyar helyi időpontok.
+        private static DateTimeOffset ToUtc(DateTime localValue)
+        {
+            return ToHungarianTime(localValue).ToUniversalTime();
+        }
+
+        // Az adatbázisban UTC, a felületen magyar helyi idő.
+        private static DateTimeOffset ToHungarianDisplay(DateTimeOffset utcValue)
+        {
+            return TimeZoneInfo.ConvertTime(utcValue, HungarianZone);
+        }
 
         // =========================================
         // ESEMÉNY LÉTREHOZÁSA
@@ -80,14 +91,9 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             // MAGYAR IDŐZÓNA
             // =====================================
 
-            var registrationStart =
-                ToHungarianTime(dto.RegistrationStart);
-
-            var registrationEnd =
-                ToHungarianTime(dto.RegistrationEnd);
-
-            var eventStart =
-                ToHungarianTime(eventDate);
+            var registrationStart = ToUtc(dto.RegistrationStart);
+            var registrationEnd = ToUtc(dto.RegistrationEnd);
+            var eventStart = ToUtc(eventDate);
 
             // =====================================
             // IDŐSÁVOK FELDOLGOZÁSA
@@ -99,7 +105,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             {
                 // IDŐSÁV NEVE
 
-                if (string.IsNullOrWhiteSpace(slot.TimeSlotName))
+                if (slot == null || string.IsNullOrWhiteSpace(slot.TimeSlotName))
                 {
                     throw new ArgumentException(
                         "Minden idősávnak nevet kell adni.");
@@ -126,11 +132,8 @@ namespace ChoiceOfCareerEgressy.Model.Admin
 
                 // MAGYAR IDŐZÓNA SZERINTI ÁTALAKÍTÁS
 
-                var beginDate =
-                    ToHungarianTime(slot.BeginDate);
-
-                var endDate =
-                    ToHungarianTime(slot.EndDate);
+                var beginDate = ToUtc(slot.BeginDate);
+                var endDate = ToUtc(slot.EndDate);
 
                 timeSlots.Add(new TimeSlot
                 {
@@ -145,7 +148,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             // =====================================
 
             timeSlots = timeSlots
-                .OrderBy(s => s.BeginDate)
+                .OrderBy(s => s.BeginDate.ToUniversalTime())
                 .ToList();
 
             // =====================================
@@ -214,7 +217,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             {
                 EventId = newEvent.EventId,
                 EventName = newEvent.EventName,
-                EventDate = newEvent.EventDate
+                EventDate = ToHungarianDisplay(newEvent.EventDate)
             };
         }
 
@@ -467,14 +470,9 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             }
 
             var eventDate = dto.EventDate.Date;
-
-            var newEventDate = ToHungarianTime(eventDate);
-
-            var registrationStart =
-                ToHungarianTime(dto.RegistrationStart);
-
-            var registrationEnd =
-                ToHungarianTime(dto.RegistrationEnd);
+            var newEventDate = ToUtc(eventDate);
+            var registrationStart = ToUtc(dto.RegistrationStart);
+            var registrationEnd = ToUtc(dto.RegistrationEnd);
 
             var updatedSlots = new List<(
                 int? ExistingId,
@@ -485,6 +483,8 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             // =====================================
             // IDŐSÁVOK FELDOLGOZÁSA
             // =====================================
+
+            // A DTO-ban szereplő dátumok magyar helyi időt jelentenek.
 
             for (int i = 0; i < dto.TimeSlots.Count; i++)
             {
@@ -512,6 +512,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                         "az esemény napjára kell esnie.");
                 }
 
+
                 int? existingId = null;
 
                 if (existingSlotIds.TryGetValue(i, out int slotId) &&
@@ -523,8 +524,8 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                 updatedSlots.Add((
                     existingId,
                     slot.TimeSlotName.Trim(),
-                    ToHungarianTime(slot.BeginDate),
-                    ToHungarianTime(slot.EndDate)
+                    ToUtc(slot.BeginDate),
+                    ToUtc(slot.EndDate)
                 ));
             }
 
@@ -600,7 +601,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             // ESEMÉNY DÁTUMÁNAK VÉDELME
             // =====================================
 
-            if (existingEvent.EventDate.Date != newEventDate.Date &&
+            if (ToHungarianDisplay(existingEvent.EventDate).Date != eventDate &&
                 protectedSlotIds.Count > 0)
             {
                 throw new ArgumentException(
@@ -735,6 +736,13 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                 })
                 .ToListAsync();
 
+            foreach (var item in events)
+            {
+                item.EventDate = ToHungarianDisplay(item.EventDate);
+                item.RegistrationStart = ToHungarianDisplay(item.RegistrationStart);
+                item.RegistrationEnd = ToHungarianDisplay(item.RegistrationEnd);
+            }
+
             return events
                 .OrderByDescending(e => e.EventDate)
                 .ToList();
@@ -775,6 +783,16 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                 return null;
             }
 
+            eventData.EventDate = ToHungarianDisplay(eventData.EventDate);
+            eventData.RegistrationStart = ToHungarianDisplay(eventData.RegistrationStart);
+            eventData.RegistrationEnd = ToHungarianDisplay(eventData.RegistrationEnd);
+
+            foreach (var slot in eventData.TimeSlots)
+            {
+                slot.BeginDate = ToHungarianDisplay(slot.BeginDate);
+                slot.EndDate = ToHungarianDisplay(slot.EndDate);
+            }
+
             eventData.TimeSlots = eventData.TimeSlots
                 .OrderBy(t => t.BeginDate)
                 .ToList();
@@ -808,9 +826,9 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             {
                 EventId = existingEvent.EventId,
                 EventName = existingEvent.EventName,
-                EventDate = existingEvent.EventDate,
-                RegistrationStart = existingEvent.RegistrationStart,
-                RegistrationEnd = existingEvent.RegistrationEnd,
+                EventDate = ToHungarianDisplay(existingEvent.EventDate),
+                RegistrationStart = ToHungarianDisplay(existingEvent.RegistrationStart),
+                RegistrationEnd = ToHungarianDisplay(existingEvent.RegistrationEnd),
                 IsRegistrationEnabled = existingEvent.IsRegistrationEnabled,
 
                 TimeSlots = existingEvent.TimeSlots
@@ -819,8 +837,8 @@ namespace ChoiceOfCareerEgressy.Model.Admin
                     {
                         TimeSlotId = s.TimeSlotId,
                         TimeSlotName = s.TimeSlotName,
-                        BeginDate = s.BeginDate,
-                        EndDate = s.EndDate,
+                        BeginDate = ToHungarianDisplay(s.BeginDate),
+                        EndDate = ToHungarianDisplay(s.EndDate),
                         IsProtected = protectedIds.Contains(s.TimeSlotId)
                     })
                     .ToList()
@@ -831,8 +849,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin
         // VÉDETT IDŐSÁVOK AZONOSÍTÓI
         // =========================================
 
-        public async Task<HashSet<int>> GetProtectedTimeSlotIdsAsync(
-            IEnumerable<int> timeSlotIds)
+        public async Task<HashSet<int>> GetProtectedTimeSlotIdsAsync(IEnumerable<int> timeSlotIds)
         {
             var ids = timeSlotIds
                 .Where(id => id > 0)

@@ -1,12 +1,13 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace ChoiceOfCareerEgressy.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitalCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,15 +16,15 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "AuditLogs",
                 columns: table => new
                 {
-                    AuditLogId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: true),
-                    Action = table.Column<string>(type: "TEXT", nullable: false),
-                    EntityName = table.Column<string>(type: "TEXT", nullable: false),
-                    EntityId = table.Column<int>(type: "INTEGER", nullable: false),
-                    OldValue = table.Column<string>(type: "TEXT", nullable: true),
-                    NewValue = table.Column<string>(type: "TEXT", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    AuditLogId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: true),
+                    Action = table.Column<string>(type: "text", nullable: false),
+                    EntityName = table.Column<string>(type: "text", nullable: false),
+                    EntityId = table.Column<int>(type: "integer", nullable: false),
+                    OldValue = table.Column<string>(type: "text", nullable: true),
+                    NewValue = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -34,9 +35,9 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "Branches",
                 columns: table => new
                 {
-                    BranchId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    BranchName = table.Column<string>(type: "TEXT", nullable: false)
+                    BranchId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    BranchName = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -44,13 +45,30 @@ namespace ChoiceOfCareerEgressy.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Events",
+                columns: table => new
+                {
+                    EventId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    EventName = table.Column<string>(type: "text", nullable: false),
+                    EventDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    RegistrationStart = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    RegistrationEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    IsRegistrationEnabled = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Events", x => x.EventId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Locations",
                 columns: table => new
                 {
-                    LocationId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    LocationName = table.Column<string>(type: "TEXT", nullable: false),
-                    Capacity = table.Column<int>(type: "INTEGER", nullable: true)
+                    LocationId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    LocationName = table.Column<string>(type: "text", nullable: false),
+                    Capacity = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -58,29 +76,27 @@ namespace ChoiceOfCareerEgressy.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Settings",
+                name: "SchoolYearTransitions",
                 columns: table => new
                 {
-                    EventId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    EventName = table.Column<string>(type: "TEXT", nullable: false),
-                    EventDate = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    RegistrationStart = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    RegistrationEnd = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    IsRegistrationEnabled = table.Column<bool>(type: "INTEGER", nullable: false)
+                    SchoolYearTransitionId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CalendarYear = table.Column<int>(type: "integer", nullable: false),
+                    ExecutedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ExecutedByUserId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Settings", x => x.EventId);
+                    table.PrimaryKey("PK_SchoolYearTransitions", x => x.SchoolYearTransitionId);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Sexes",
                 columns: table => new
                 {
-                    SexId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    SexName = table.Column<string>(type: "TEXT", nullable: false)
+                    SexId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    SexName = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -91,20 +107,20 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "TimeSlots",
                 columns: table => new
                 {
-                    TimeSlotId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    TimeSlotName = table.Column<string>(type: "TEXT", nullable: false),
-                    BeginDate = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    EndDate = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    EventId = table.Column<int>(type: "INTEGER", nullable: false)
+                    TimeSlotId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TimeSlotName = table.Column<string>(type: "text", nullable: false),
+                    BeginDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    EndDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    EventId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TimeSlots", x => x.TimeSlotId);
                     table.ForeignKey(
-                        name: "FK_TimeSlots_Settings_EventId",
+                        name: "FK_TimeSlots_Events_EventId",
                         column: x => x.EventId,
-                        principalTable: "Settings",
+                        principalTable: "Events",
                         principalColumn: "EventId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -113,12 +129,12 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "Plans",
                 columns: table => new
                 {
-                    PlanId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    PlanName = table.Column<string>(type: "TEXT", nullable: false),
-                    PlanDescription = table.Column<string>(type: "TEXT", nullable: false),
-                    BranchId = table.Column<int>(type: "INTEGER", nullable: true),
-                    SexId = table.Column<int>(type: "INTEGER", nullable: true)
+                    PlanId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    PlanName = table.Column<string>(type: "text", nullable: false),
+                    PlanDescription = table.Column<string>(type: "text", nullable: false),
+                    BranchId = table.Column<int>(type: "integer", nullable: true),
+                    SexId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -141,11 +157,11 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "SupervisionPlaces",
                 columns: table => new
                 {
-                    SupervisionPlaceId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    TimeSlotId = table.Column<int>(type: "INTEGER", nullable: false),
-                    RequiredSupervisors = table.Column<int>(type: "INTEGER", nullable: false)
+                    SupervisionPlaceId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    TimeSlotId = table.Column<int>(type: "integer", nullable: false),
+                    RequiredSupervisors = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -162,13 +178,13 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "PlanSessions",
                 columns: table => new
                 {
-                    PlanSessionId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    PlanId = table.Column<int>(type: "INTEGER", nullable: false),
-                    TimeSlotId = table.Column<int>(type: "INTEGER", nullable: false),
-                    LocationId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Capacity = table.Column<int>(type: "INTEGER", nullable: false),
-                    RequiredSupervisors = table.Column<int>(type: "INTEGER", nullable: false)
+                    PlanSessionId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    PlanId = table.Column<int>(type: "integer", nullable: false),
+                    TimeSlotId = table.Column<int>(type: "integer", nullable: false),
+                    LocationId = table.Column<int>(type: "integer", nullable: false),
+                    Capacity = table.Column<int>(type: "integer", nullable: false),
+                    RequiredSupervisors = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -197,13 +213,13 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "Applications",
                 columns: table => new
                 {
-                    ApplicationId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    PlanSessionId = table.Column<int>(type: "INTEGER", nullable: false),
-                    ApplicationDate = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    UpdateDate = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false)
+                    ApplicationId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    PlanSessionId = table.Column<int>(type: "integer", nullable: false),
+                    ApplicationDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdateDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -220,10 +236,10 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "Grades",
                 columns: table => new
                 {
-                    GradeId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    GradeName = table.Column<string>(type: "TEXT", nullable: false),
-                    HomeroomTeacherId = table.Column<int>(type: "INTEGER", nullable: true)
+                    GradeId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    GradeName = table.Column<string>(type: "text", nullable: false),
+                    HomeroomTeacherId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -234,16 +250,16 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    UserName = table.Column<string>(type: "TEXT", maxLength: 150, nullable: false),
-                    EmailAddress = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
-                    Role = table.Column<int>(type: "INTEGER", nullable: false),
-                    PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
-                    MustChangePassword = table.Column<bool>(type: "INTEGER", nullable: false),
-                    GradeId = table.Column<int>(type: "INTEGER", nullable: true),
-                    BranchId = table.Column<int>(type: "INTEGER", nullable: true),
-                    SexId = table.Column<int>(type: "INTEGER", nullable: true)
+                    UserId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    EmailAddress = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    Role = table.Column<int>(type: "integer", nullable: false),
+                    PasswordHash = table.Column<string>(type: "text", nullable: false),
+                    MustChangePassword = table.Column<bool>(type: "boolean", nullable: false),
+                    GradeId = table.Column<int>(type: "integer", nullable: true),
+                    BranchId = table.Column<int>(type: "integer", nullable: true),
+                    SexId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -272,18 +288,18 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "Supervisions",
                 columns: table => new
                 {
-                    SupervisionId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    PlanSessionId = table.Column<int>(type: "INTEGER", nullable: true),
-                    SupervisionPlaceId = table.Column<int>(type: "INTEGER", nullable: true),
-                    ApplicationDate = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    UpdateDate = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    SupervisionId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    PlanSessionId = table.Column<int>(type: "integer", nullable: true),
+                    SupervisionPlaceId = table.Column<int>(type: "integer", nullable: true),
+                    ApplicationDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdateDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Supervisions", x => x.SupervisionId);
-                    table.CheckConstraint("CK_Supervision_ExactlyOneTarget", "(PlanSessionId IS NOT NULL AND SupervisionPlaceId IS NULL) OR (PlanSessionId IS NULL AND SupervisionPlaceId IS NOT NULL)");
+                    table.CheckConstraint("CK_Supervision_ExactlyOneTarget", "(\"PlanSessionId\" IS NOT NULL AND \"SupervisionPlaceId\" IS NULL) OR (\"PlanSessionId\" IS NULL AND \"SupervisionPlaceId\" IS NOT NULL)");
                     table.ForeignKey(
                         name: "FK_Supervisions_PlanSessions_PlanSessionId",
                         column: x => x.PlanSessionId,
@@ -364,6 +380,12 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "IX_PlanSessions_TimeSlotId",
                 table: "PlanSessions",
                 column: "TimeSlotId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SchoolYearTransitions_CalendarYear",
+                table: "SchoolYearTransitions",
+                column: "CalendarYear",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sexes_SexName",
@@ -454,6 +476,9 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "AuditLogs");
 
             migrationBuilder.DropTable(
+                name: "SchoolYearTransitions");
+
+            migrationBuilder.DropTable(
                 name: "Supervisions");
 
             migrationBuilder.DropTable(
@@ -472,7 +497,7 @@ namespace ChoiceOfCareerEgressy.Migrations
                 name: "TimeSlots");
 
             migrationBuilder.DropTable(
-                name: "Settings");
+                name: "Events");
 
             migrationBuilder.DropTable(
                 name: "Users");

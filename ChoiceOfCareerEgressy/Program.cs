@@ -32,8 +32,17 @@ Directory.CreateDirectory(
 );
 
 // SQLite adatbázis kapcsolat
-builder.Services.AddDbContext<ChoiceOfCareerPersistence>(options =>
+/*builder.Services.AddDbContext<ChoiceOfCareerPersistence>(options =>
     options.UseSqlite($"Data Source={databasePath}")
+);*/
+
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "A PostgreSQL kapcsolati karakterlánc nincs beállítva.");
+
+builder.Services.AddDbContext<ChoiceOfCareerPersistence>(options =>
+    options.UseNpgsql(connectionString)
 );
 
 builder.Services.AddScoped<PasswordService>();

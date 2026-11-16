@@ -70,9 +70,10 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                     $"nem egyértelmű: \"{value}\".");
             }
 
+            // Az Excel magyar helyi idejét UTC-re alakítjuk PostgreSQL-hez.
             return new DateTimeOffset(
                 localDate,
-                timeZone.GetUtcOffset(localDate));
+                timeZone.GetUtcOffset(localDate)).ToUniversalTime();
         }
 
         public async Task<ProgramImportResultDto> ImportAsync(
@@ -106,6 +107,12 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                 throw new InvalidDataException(
                     "A kiválasztott esemény nem található.");
             }
+
+            // A naptári napokat mindig magyar idő szerint hasonlítjuk össze.
+            var hungarianTimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+                "Europe/Budapest");
+            var eventLocalDate = TimeZoneInfo.ConvertTime(
+                selectedEvent.EventDate, hungarianTimeZone).Date;
 
             using var stream = file.OpenReadStream();
             using var workbook = new XLWorkbook(stream);
@@ -348,15 +355,20 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                         "későbbinek kell lennie, mint a kezdési időpont.");
                 }
 
-                if (validBegin &&
-                    begin.Date != selectedEvent.EventDate.Date)
+                if (validBegin)
                 {
-                    AddError(
-                        row,
-                        "kezdodatum",
-                        $"A program dátuma ({begin:yyyy.MM.dd}) " +
-                        $"nem egyezik a kiválasztott esemény " +
-                        $"dátumával ({selectedEvent.EventDate:yyyy.MM.dd}).");
+                    var beginLocalDate = TimeZoneInfo.ConvertTime(
+                        begin, hungarianTimeZone).Date;
+
+                    if (beginLocalDate != eventLocalDate)
+                    {
+                        AddError(
+                            row,
+                            "kezdodatum",
+                            $"A program dátuma ({beginLocalDate:yyyy.MM.dd}) " +
+                            $"nem egyezik a kiválasztott esemény " +
+                            $"dátumával ({eventLocalDate:yyyy.MM.dd}).");
+                    }
                 }
 
                 // ÁGAZAT
@@ -586,8 +598,8 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                     slot = new TimeSlot
                     {
                         TimeSlotName =
-                            $"{data.BeginDate:HH:mm} - " +
-                            $"{data.EndDate:HH:mm}",
+                            $"{TimeZoneInfo.ConvertTime(data.BeginDate, hungarianTimeZone):HH:mm} - " +
+                            $"{TimeZoneInfo.ConvertTime(data.EndDate, hungarianTimeZone):HH:mm}",
                         BeginDate = data.BeginDate,
                         EndDate = data.EndDate,
                         Event = selectedEvent

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -138,8 +139,8 @@ namespace ChoiceOfCareerEgressy.Persistence
             modelBuilder.Entity<Supervision>()
                 .ToTable(t => t.HasCheckConstraint(
                     "CK_Supervision_ExactlyOneTarget",
-                    "(PlanSessionId IS NOT NULL AND SupervisionPlaceId IS NULL) " +
-                    "OR (PlanSessionId IS NULL AND SupervisionPlaceId IS NOT NULL)"
+                    "(\"PlanSessionId\" IS NOT NULL AND \"SupervisionPlaceId\" IS NULL) " +
+                    "OR (\"PlanSessionId\" IS NULL AND \"SupervisionPlaceId\" IS NOT NULL)"
                 ));
 
             // UNIQUE SUPERVISION PLACE PER TIME SLOT
@@ -157,6 +158,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class User
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int UserId { get; set; }
 
         [MaxLength(150)]
@@ -200,6 +202,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class Grade
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int GradeId { get; set; }
 
         public required string GradeName { get; set; }
@@ -218,6 +221,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class Branch
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int BranchId { get; set; }
 
         public required string BranchName { get; set; }
@@ -235,6 +239,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class Sex
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int SexId { get; set; }
 
         public required string SexName { get; set; }
@@ -252,6 +257,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class Location
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int LocationId { get; set; }
 
         public required string LocationName { get; set; }
@@ -268,6 +274,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class TimeSlot
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int TimeSlotId { get; set; }
 
         public required string TimeSlotName { get; set; }
@@ -290,6 +297,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class Plan
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PlanId { get; set; }
 
         public required string PlanName { get; set; }
@@ -312,6 +320,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class PlanSession
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PlanSessionId { get; set; }
 
         public int PlanId { get; set; }
@@ -339,6 +348,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class Application
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ApplicationId { get; set; }
 
         public int UserId { get; set; }
@@ -369,6 +379,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class Supervision
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int SupervisionId { get; set; }
 
         public int UserId { get; set; }
@@ -393,6 +404,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class SupervisionPlace
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int SupervisionPlaceId { get; set; }
 
         public required string Name { get; set; }
@@ -412,6 +424,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class Event
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int EventId { get; set; }
 
         public required string EventName { get; set; }
@@ -433,6 +446,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class AuditLog
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AuditLogId { get; set; }
 
         public int? UserId { get; set; }
@@ -455,6 +469,7 @@ namespace ChoiceOfCareerEgressy.Persistence
     public class SchoolYearTransition
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int SchoolYearTransitionId { get; set; }
 
         // A naptári év, amelyben megtörtént a léptetés
