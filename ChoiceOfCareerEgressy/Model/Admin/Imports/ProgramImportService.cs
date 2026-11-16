@@ -1,5 +1,6 @@
 ﻿using ChoiceOfCareerEgressy.Dto.ProgramDto.ImportPrograms;
 using ChoiceOfCareerEgressy.Persistence;
+using ChoiceOfCareerEgressy.Model.Shared;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -45,35 +46,14 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                     "Elvárt formátum például: 2026.11.20 09:00.");
             }
 
-            TimeZoneInfo timeZone;
-
             try
             {
-                timeZone = TimeZoneInfo.FindSystemTimeZoneById(
-                    "Europe/Budapest");
+                return HungarianDateTime.ToUtc(localDate);
             }
-            catch (TimeZoneNotFoundException)
+            catch (ArgumentException ex)
             {
-                timeZone = TimeZoneInfo.FindSystemTimeZoneById(
-                    "Central Europe Standard Time");
+                throw new FormatException(ex.Message, ex);
             }
-
-            localDate = DateTime.SpecifyKind(
-                localDate,
-                DateTimeKind.Unspecified);
-
-            if (timeZone.IsInvalidTime(localDate)
-                || timeZone.IsAmbiguousTime(localDate))
-            {
-                throw new FormatException(
-                    $"A megadott időpont nem létezik vagy " +
-                    $"nem egyértelmű: \"{value}\".");
-            }
-
-            // Az Excel magyar helyi idejét UTC-re alakítjuk PostgreSQL-hez.
-            return new DateTimeOffset(
-                localDate,
-                timeZone.GetUtcOffset(localDate)).ToUniversalTime();
         }
 
         public async Task<ProgramImportResultDto> ImportAsync(
@@ -109,10 +89,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
             }
 
             // A naptári napokat mindig magyar idő szerint hasonlítjuk össze.
-            var hungarianTimeZone = TimeZoneInfo.FindSystemTimeZoneById(
-                "Europe/Budapest");
-            var eventLocalDate = TimeZoneInfo.ConvertTime(
-                selectedEvent.EventDate, hungarianTimeZone).Date;
+            var eventLocalDate = HungarianDateTime.LocalDate(selectedEvent.EventDate);
 
             using var stream = file.OpenReadStream();
             using var workbook = new XLWorkbook(stream);
@@ -357,8 +334,7 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
 
                 if (validBegin)
                 {
-                    var beginLocalDate = TimeZoneInfo.ConvertTime(
-                        begin, hungarianTimeZone).Date;
+                    var beginLocalDate = HungarianDateTime.LocalDate(begin);
 
                     if (beginLocalDate != eventLocalDate)
                     {
@@ -598,8 +574,8 @@ namespace ChoiceOfCareerEgressy.Model.Admin.Imports
                     slot = new TimeSlot
                     {
                         TimeSlotName =
-                            $"{TimeZoneInfo.ConvertTime(data.BeginDate, hungarianTimeZone):HH:mm} - " +
-                            $"{TimeZoneInfo.ConvertTime(data.EndDate, hungarianTimeZone):HH:mm}",
+                            $"{HungarianDateTime.ToLocal(data.BeginDate):HH:mm} - " +
+                            $"{HungarianDateTime.ToLocal(data.EndDate):HH:mm}",
                         BeginDate = data.BeginDate,
                         EndDate = data.EndDate,
                         Event = selectedEvent

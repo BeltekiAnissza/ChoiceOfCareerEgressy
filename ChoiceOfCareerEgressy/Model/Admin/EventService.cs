@@ -1,6 +1,7 @@
 ﻿using ChoiceOfCareerEgressy.Dto.ProgramDto;
 using ChoiceOfCareerEgressy.Dto.UserDto;
 using ChoiceOfCareerEgressy.Persistence;
+using ChoiceOfCareerEgressy.Model.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChoiceOfCareerEgressy.Model.Admin
@@ -14,39 +15,11 @@ namespace ChoiceOfCareerEgressy.Model.Admin
             _context = context;
         }
 
-        private static DateTimeOffset ToHungarianTime(DateTime value)
-        {
-            var zone = TimeZoneInfo.FindSystemTimeZoneById(
-                "Europe/Budapest");
-
-            var local = DateTime.SpecifyKind(
-                value, DateTimeKind.Unspecified);
-
-            if (zone.IsInvalidTime(local) ||
-                zone.IsAmbiguousTime(local))
-            {
-                throw new ArgumentException(
-                    "Az egyik időpont nem létezik, vagy nem egyértelmű.");
-            }
-
-            return new DateTimeOffset(
-                local, zone.GetUtcOffset(local));
-        }
-
-        private static readonly TimeZoneInfo HungarianZone =
-            TimeZoneInfo.FindSystemTimeZoneById("Europe/Budapest");
-
-        // A webes űrlap DateTime értékei magyar helyi időpontok.
         private static DateTimeOffset ToUtc(DateTime localValue)
-        {
-            return ToHungarianTime(localValue).ToUniversalTime();
-        }
+            => HungarianDateTime.ToUtc(localValue);
 
-        // Az adatbázisban UTC, a felületen magyar helyi idő.
         private static DateTimeOffset ToHungarianDisplay(DateTimeOffset utcValue)
-        {
-            return TimeZoneInfo.ConvertTime(utcValue, HungarianZone);
-        }
+            => HungarianDateTime.ToLocal(utcValue);
 
         // =========================================
         // ESEMÉNY LÉTREHOZÁSA
