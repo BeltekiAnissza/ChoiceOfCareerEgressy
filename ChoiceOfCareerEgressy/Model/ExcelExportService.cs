@@ -426,7 +426,7 @@ public class ExcelExportService
     // ÖSSZES DIÁK EXPORT FÁJLNEVE
     // =====================================================
 
-    public async Task<string> GetAllStudentsExportFileNameAsync(  int eventId)
+    public async Task<string> GetAllStudentsExportFileNameAsync(int eventId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -445,7 +445,7 @@ public class ExcelExportService
     // OSZTÁLYONKÉNTI EXCEL EXPORTÁLÁS
     // =====================================================
 
-    public async Task<byte[]> ExportGradeAsync(  int eventId, int gradeId)
+    public async Task<byte[]> ExportGradeAsync(int eventId, int gradeId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -507,13 +507,13 @@ public class ExcelExportService
             {
                 rows.Add(new[]
                 {
-                    student.UserName,
-                    grade.GradeName,
-                    "Nincs jelentkezés",
-                    "",
-                    "",
-                    "",
-                    ""
+                     student.UserName,
+                     grade.GradeName,
+                     "Nincs jelentkezés",
+                     "",
+                     "",
+                     "",
+                     "Nem jelentkezett"
                 });
             }
 
@@ -551,7 +551,7 @@ public class ExcelExportService
     // PROGRAMONKÉNTI EXCEL EXPORTÁLÁS
     // =====================================================
 
-    public async Task<byte[]> ExportPlanAsync(  int eventId,  int planId,  int timeSlotId,  bool includeSupervisors = false)
+    public async Task<byte[]> ExportPlanAsync(int eventId, int planId, int timeSlotId, bool includeSupervisors = false)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -826,7 +826,7 @@ public class ExcelExportService
     // 2026_10i.xlsx
     // =====================================================
 
-    public async Task<string> GetGradeExportFileNameAsync(  int eventId,   int gradeId)
+    public async Task<string> GetGradeExportFileNameAsync(int eventId, int gradeId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -855,7 +855,7 @@ public class ExcelExportService
     // 2026_noi_joga_1_idosav.xlsx
     // =====================================================
 
-    public async Task<string> GetPlanExportFileNameAsync(  int eventId,  int planId, int timeSlotId)
+    public async Task<string> GetPlanExportFileNameAsync(int eventId, int planId, int timeSlotId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -915,7 +915,7 @@ public class ExcelExportService
     // 2026_tanari_jelentkezesek.xlsx
     // =====================================================
 
-    public async Task<string> GetTeachersExportFileNameAsync(  int eventId)
+    public async Task<string> GetTeachersExportFileNameAsync(int eventId)
     {
         var ev = await _db.Events
             .AsNoTracking()
@@ -1010,7 +1010,7 @@ public class ExcelExportService
     // EXCEL MUNKAFÜZET LÉTREHOZÁSA
     // =====================================================
 
-    private static byte[] BuildWorkbook(   string title,  string[] headers,  List<string[]> rows, int highlightedRows = 0)
+    private static byte[] BuildWorkbook(string title, string[] headers, List<string[]> rows, int highlightedRows = 0)
     {
         using var workbook = new XLWorkbook();
 
@@ -1081,12 +1081,24 @@ public class ExcelExportService
 
         // Szűrő
 
-        ws.Range(
+        var filterRange = ws.Range(
             3,
             1,
             Math.Max(3, rows.Count + 3),
-            headers.Length)
-            .SetAutoFilter();
+            headers.Length);
+
+        var filter = filterRange.SetAutoFilter();
+
+        int statusColumn = Array.IndexOf(
+            headers,
+            "Jelentkezés állapota") + 1;
+
+        if (statusColumn > 0)
+        {
+            filter.Column(statusColumn)
+                .AddFilter("Active")
+                .AddFilter("Nem jelentkezett");
+        }
 
         // Első három sor rögzítése
 
